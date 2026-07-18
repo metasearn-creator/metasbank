@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MetasBank — Email Verified</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{orange:{50:'#fff3ed',100:'#ffded3',200:'#ffbca6',300:'#ff8f6e',400:'#ff6b42',500:'#ff5c35',600:'#e84a24',700:'#c53b1b',800:'#9e321a',900:'#7f2c19'}}}}}</script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=EB+Garamond:wght@400;500;600;700;800&display=swap');
+    * { font-family: 'Inter', sans-serif; }
+    h1 { font-family: 'EB Garamond', serif; text-transform: uppercase; font-weight: 800; letter-spacing: 0.02em; }
+    :root { --bg: #13151d; --bg-card: #1a1d28; --text: #e2e4e9; --text-muted: #6b7185; --border: rgba(255,255,255,0.06); --shadow: rgba(255,92,53,0.2); }
+    .light-mode { --bg: #eef0f4; --bg-card: #ffffff; --text: #1e2229; --text-muted: #7a8191; --border: rgba(0,0,0,0.06); --shadow: rgba(255,92,53,0.15); }
+    body { background: var(--bg); }
+    .card { background: var(--bg-card); border: 1px solid var(--border); }
+    .gradient-orange { background: linear-gradient(135deg, #ff5c35, #ff8f6e); }
+    button:active { transform: scale(0.96); transition: transform 0.08s; }
+  </style>
+  <script>const h=new Date().getHours();if(h>=6&&h<18)document.documentElement.classList.add('light-mode');</script>
+</head>
+<body class="min-h-screen flex flex-col" style="color: var(--text);">
+  <div class="flex-1 flex items-center justify-center p-4">
+    <div class="w-full max-w-sm">
+      <div class="text-center mb-6">
+        <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto" style="background: rgba(16,185,129,0.1);">
+          <svg class="w-8 h-8 text-[#10b981]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <h1 class="text-xl font-bold mt-4" style="color: var(--text);">Email Verified</h1>
+        <p class="text-[12px] mt-1" style="color: var(--text-muted);">Your email address has been confirmed successfully.</p>
+      </div>
+      <div class="card rounded-xl p-6 text-center space-y-4">
+        <div class="rounded-lg p-4" style="background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.15);">
+          <p class="text-[13px] font-semibold" style="color: var(--text);">Account Activated</p>
+          <p class="text-[11px] mt-1" style="color: var(--text-muted);">You can now sign in to your MetasBank account.</p>
+        </div>
+        <a href="/login/" class="block w-full py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">Proceed to Sign In</a>
+      </div>
+      <div class="mt-6 text-center">
+        <p class="text-[10px]" style="color: var(--text-muted);">&copy; 2026 MetasBank. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

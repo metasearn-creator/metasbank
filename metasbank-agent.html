@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MetasBank — Agent Console</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            orange: { 50: '#fff3ed', 100: '#ffded3', 200: '#ffbca6', 300: '#ff8f6e', 400: '#ff6b42', 500: '#ff5c35', 600: '#e84a24', 700: '#c53b1b', 800: '#9e321a', 900: '#7f2c19' },
+            brand: { orange: '#ff5c35', amber: '#d4a017', teal: '#10b981', purple: '#9b6dff' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=EB+Garamond:wght@400;500;600;700;800&display=swap');
+    *, *::before, *::after { box-sizing: border-box; }
+    * { font-family: 'Inter', sans-serif; }
+    h1 { font-family: 'EB Garamond', serif; text-transform: uppercase; font-weight: 800; letter-spacing: 0.02em; }
+
+    :root {
+      --bg: #13151d;
+      --bg-card: #1a1d28;
+      --bg-sidebar: #141720;
+      --bg-header: #141720;
+      --text: #e2e4e9;
+      --text-secondary: #a8acba;
+      --text-muted: #6b7185;
+      --border: rgba(255,255,255,0.06);
+      --input-bg: #0e1018;
+      --hover: rgba(255,255,255,0.02);
+      --separator: #3a3d4a;
+      --scrollbar: #2a2d3a;
+      --card-shadow: none;
+      --header-h: 56px;
+    }
+    .light-mode {
+      --bg: #eef0f4;
+      --bg-card: #ffffff;
+      --bg-sidebar: #ffffff;
+      --bg-header: #ffffff;
+      --text: #1e2229;
+      --text-secondary: #4f5665;
+      --text-muted: #8790a2;
+      --border: rgba(0,0,0,0.06);
+      --input-bg: #f0f1f4;
+      --hover: rgba(0,0,0,0.02);
+      --separator: #d1d5db;
+      --scrollbar: #d1d5db;
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    html { height: 100%; width: 100%; overflow-x: hidden; }
+    body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); transition: background 0.4s; overflow: hidden; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden; overflow-y: auto; }
+    input, select, textarea { font-size: 16px; touch-action: manipulation; }
+    .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
+    .main-wrapper { padding-top: var(--header-h); flex: 1; display: flex; min-height: 0; }
+    .glass { background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--card-shadow); }
+    .gradient-orange { background: linear-gradient(135deg, #ff5c35, #ff8f6e); }
+    button:active { transform: scale(0.96); transition: transform 0.08s; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 4px; }
+    .glass-hover:hover { border-color: rgba(255,92,53,0.2); transition: border-color 0.3s; }
+    .badge-amber { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.15); }
+    .badge-green { background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.15); }
+    .badge-red { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.15); }
+    .chat-msg-member { background: rgba(255,92,53,0.08); border: 1px solid rgba(255,92,53,0.12); }
+    .chat-msg-agent { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.15); }
+    .chat-msg-row .time { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .animate-slide-up { animation: slideUp 0.3s ease-out; }
+    @media (max-width: 1023px) {
+      #adminSidebar { position: fixed; left: 0; top: var(--header-h); bottom: 0; z-index: 95; transform: translateX(-100%); transition: transform 0.3s; }
+      #adminSidebar.open { transform: translateX(0); }
+      #adminMain { margin-left: 0 !important; }
+    }
+    @media (min-width: 1024px) {
+      #sidebarOverlay { display: none !important; }
+    }
+
+    /* ===== MOBILE COMPACT (under 640px) — app-like density ===== */
+    @media (max-width: 640px) {
+      .text-\[12px\] { font-size: 10px !important; }
+      .text-\[11px\] { font-size: 9px !important; }
+      .text-\[10px\], .text-\[9px\] { font-size: 8px !important; }
+      .p-5 { padding: 8px !important; }
+      .px-6 { padding-left: 10px !important; padding-right: 10px !important; }
+      .py-5 { padding-top: 8px !important; padding-bottom: 8px !important; }
+      .px-4 { padding-left: 8px !important; padding-right: 8px !important; }
+      .py-4 { padding-top: 8px !important; padding-bottom: 8px !important; }
+      .px-3 { padding-left: 6px !important; padding-right: 6px !important; }
+      .py-3 { padding-top: 6px !important; padding-bottom: 6px !important; }
+      .py-2 { padding-top: 4px !important; padding-bottom: 4px !important; }
+      .gap-4 { gap: 4px !important; }
+      .gap-3 { gap: 3px !important; }
+      .gap-2 { gap: 3px !important; }
+      .gap-2\.5 { gap: 4px !important; }
+      .gap-1\.5 { gap: 3px !important; }
+      .text-sm { font-size: 10px !important; }
+      .text-xs { font-size: 9px !important; }
+      .text-lg { font-size: 12px !important; }
+      .text-2xl { font-size: 14px !important; }
+      .text-3xl { font-size: 16px !important; }
+      .text-base { font-size: 11px !important; }
+      .text-xl { font-size: 15px !important; }
+      .w-10 { width: 24px !important; height: 24px !important; }
+      .h-10 { height: 24px !important; }
+      .w-12 { width: 28px !important; height: 28px !important; }
+      .h-12 { height: 28px !important; }
+      .w-14 { width: 32px !important; height: 32px !important; }
+      .h-14 { height: 32px !important; }
+      .w-7 { width: 20px !important; height: 20px !important; }
+      .h-7 { height: 20px !important; }
+      .w-9 { width: 28px !important; height: 28px !important; }
+      .h-9 { height: 28px !important; }
+      .w-5 { width: 14px !important; height: 14px !important; }
+      .h-5 { height: 14px !important; }
+      #adminMain { padding: 6px !important; }
+      #adminMain .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 10px !important; }
+      table.min-w-\[900px\] { min-width: 0 !important; }
+      #chatConvWrapper { max-height: 160px !important; }
+      .rounded-xl { border-radius: 8px !important; }
+      .rounded-lg { border-radius: 6px !important; }
+      #adminSidebar .px-3 { padding-left: 8px !important; padding-right: 8px !important; }
+      #adminSidebar .py-2 { padding-top: 4px !important; padding-bottom: 4px !important; }
+      header .h-14 { height: 44px !important; }
+    }
+    @media (min-width: 641px) {
+      #chatConvWrapper { max-height: 450px; border-right: 1px solid var(--border); border-bottom: none; }
+    }
+  </style>
+  <style>html.js-loading *{transition:none!important}</style>
+  <script>
+    document.documentElement.classList.add('js-loading');
+    const _h = new Date().getHours(); if (_h >= 6 && _h < 18) document.documentElement.classList.add('light-mode');
+    document.addEventListener('DOMContentLoaded', function(){ requestAnimationFrame(function(){ document.documentElement.classList.remove('js-loading') }) });
+  </script>
+</head>
+<body style="display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh;">
+
+  <!-- ===== HEADER ===== -->
+  <header class="fixed-header h-14 flex items-center justify-between px-4 lg:px-6" style="background: var(--bg-header); border-bottom: 1px solid var(--border);">
+    <div class="flex items-center gap-3">
+      <button id="agentToggleSidebar" class="lg:hidden p-1.5 rounded-lg transition-all" style="color: var(--text-muted);">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="w-9 h-9 rounded-lg gradient-orange flex items-center justify-center text-white font-black text-sm shrink-0" style="box-shadow: 0 0 12px rgba(255,92,53,0.3);">MB</div>
+      <div>
+        <span style="color: var(--text-secondary); font-family: 'EB Garamond', serif; font-weight: 800; font-size: 16px; text-transform: uppercase; letter-spacing: 0.02em;">MetasBank</span>
+        <span id="agentHeaderLabel" style="color: var(--text-muted); font-family: 'EB Garamond', serif; font-weight: 800; font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; margin-left: 6px;">AGENT CONSOLE</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 lg:gap-4">
+      <div class="hidden sm:flex items-center gap-2 text-[10px]" style="color: var(--text-muted);">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        <span>Encrypted</span>
+      </div>
+      <span id="adminUserName" class="hidden sm:block text-[11px]" style="color: var(--text-muted);"></span>
+      <div class="w-7 h-7 rounded-full gradient-orange flex items-center justify-center text-[10px] font-bold text-white">A</div>
+    </div>
+  </header>
+
+  <!-- ===== LAYOUT ===== -->
+  <div class="main-wrapper">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside id="adminSidebar" class="w-56 flex flex-col shrink-0" style="background: var(--bg-sidebar); border-right: 1px solid var(--border);">
+      <nav class="flex-1 p-3 space-y-0.5">
+        <div id="agentNavLiveChat" class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);" data-sidebar-tab="liveChatSection">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+          Live Chat
+          <span id="sidebarChatCount" class="ml-auto text-[10px] hidden" style="color:#ff6b42;"></span>
+        </div>
+        <div id="agentNavPool" class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);" data-sidebar-tab="agentPoolSection">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Agent Pool
+          <span id="sidebarAgentCount" class="ml-auto text-[10px] hidden" style="color:#10b981;"></span>
+        </div>
+        <div class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);" id="agentNavCallbacks" data-sidebar-tab="callbackRequestsSection">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+          Callback Requests
+          <span id="sidebarCallbackCount" class="ml-auto text-[10px] hidden" style="color:#ff6b42;"></span>
+        </div>
+        <div class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);" id="agentNavPassword" data-sidebar-tab="agentChangePasswordSection">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          Change Password
+        </div>
+      </nav>
+      <div class="p-3" style="border-top: 1px solid var(--border);">
+        <div class="px-3 py-2 rounded-lg text-[10px] font-semibold" style="background: var(--hover); color: var(--text-muted);">MetasBank v2.4.1</div>
+      </div>
+    </aside>
+
+    <!-- ===== MAIN ===== -->
+    <main id="adminMain" class="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
+
+      <!-- LIVE CHAT -->
+      <div id="liveChatSection" class="glass rounded-xl p-5">
+        <h2 class="text-sm font-bold mb-4" style="color:var(--text);">Live Chat</h2>
+        <div class="flex flex-col lg:flex-row gap-4" style="min-height: 400px;">
+          <div id="chatConvWrapper" class="w-full lg:w-56 shrink-0 overflow-y-auto" style="max-height: 250px; border-bottom: 1px solid var(--border);">
+            <div id="chatConvList" class="pr-2 space-y-0.5"></div>
+          </div>
+          <div class="flex-1 flex flex-col">
+            <div id="chatEmpty" class="flex items-center justify-center flex-1 text-[12px]" style="color:var(--text-muted);">Select a conversation</div>
+            <div id="chatView" class="hidden flex-1 flex flex-col">
+              <div id="chatMessages" class="flex-1 overflow-y-auto mb-3 space-y-1" style="max-height: 360px; min-height: 200px;"></div>
+              <div class="flex gap-2">
+                <input id="chatReplyInput" type="text" placeholder="Type your reply..." class="flex-1 px-3 py-2 rounded-lg text-[12px]" style="background:var(--input-bg); color:var(--text); border:1px solid var(--border); outline:none;">
+                <button id="agentSendReply" class="px-4 py-2 rounded-lg text-white text-[11px] font-bold gradient-orange">Send</button>
+                <button id="claimConvBtn" class="hidden px-3 py-2 rounded-lg text-[11px] font-semibold" style="background:#10b981;color:#fff;">Claim</button>
+                <button id="agentCloseChat" class="px-3 py-2 rounded-lg text-[11px] font-semibold" style="background:var(--hover);color:var(--text-muted);">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AGENT POOL -->
+      <div id="agentPoolSection" class="glass rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4 flex-wrap">
+          <div>
+            <h2 class="text-sm font-bold" style="color: var(--text);">Agent Pool</h2>
+            <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">View support agents and their availability</p>
+          </div>
+        </div>
+        <div class="mb-4 flex items-center gap-3 flex-wrap">
+          <span class="text-[11px] font-semibold" style="color:var(--text-muted);">Your status:</span>
+          <button id="agentStatusToggle" class="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style="background:rgba(16,185,129,0.15);color:#10b981;">Online</button>
+          <span class="text-[11px]" id="agentStatusLabel" style="color:var(--text-muted);">You are online</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-[11px] font-semibold uppercase tracking-wide" style="color: var(--text-muted); border-bottom: 1px solid var(--border);">
+                <th class="text-left pb-3 font-medium whitespace-nowrap">Name</th>
+                <th class="text-left pb-3 font-medium whitespace-nowrap">Email</th>
+                <th class="text-left pb-3 font-medium whitespace-nowrap">Status</th>
+                <th class="text-left pb-3 font-medium whitespace-nowrap">Last Seen</th>
+              </tr>
+            </thead>
+            <tbody id="agentPoolBody" class="divide-y" style="border-color: var(--border);">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CALLBACK REQUESTS -->
+      <div id="callbackRequestsSection" class="glass rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4 flex-wrap">
+          <div>
+            <h2 class="text-sm font-bold" style="color: var(--text);">Callback Requests</h2>
+            <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">Members requesting SMS callback</p>
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            <button id="agentRefreshCallbacks" class="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style="color: #ff6b42; background: rgba(255,92,53,0.1);">Refresh</button>
+            <div class="flex rounded-lg overflow-hidden text-[11px] font-semibold" style="border: 1px solid var(--border);">
+              <button id="cbFilterAll" class="px-3 py-1.5 transition-all" style="background: rgba(255,92,53,0.1); color: #ff6b42;">All</button>
+              <button id="cbFilterPending" class="px-3 py-1.5 transition-all" style="color: var(--text-muted); background: transparent;">Pending</button>
+              <button id="cbFilterContacted" class="px-3 py-1.5 transition-all" style="color: var(--text-muted); background: transparent;">Contacted</button>
+              <button id="cbFilterCompleted" class="px-3 py-1.5 transition-all" style="color: var(--text-muted); background: transparent;">Completed</button>
+            </div>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm min-w-[900px]">
+            <thead>
+              <tr class="text-[11px] font-semibold uppercase tracking-wide" style="color: var(--text-muted); border-bottom: 1px solid var(--border);">
+                <th class="text-left pb-3 font-medium">Date</th>
+                <th class="text-left pb-3 font-medium">Full Name</th>
+                <th class="text-left pb-3 font-medium">Email</th>
+                <th class="text-left pb-3 font-medium">Phone</th>
+                <th class="text-left pb-3 font-medium">Message</th>
+                <th class="text-left pb-3 font-medium">Status</th>
+                <th class="text-left pb-3 font-medium">Note</th>
+                <th class="text-right pb-3 font-medium">Action</th>
+              </tr>
+            </thead>
+            <tbody id="callbackRequestBody" class="divide-y" style="border-color: var(--border);">
+            </tbody>
+          </table>
+          <div id="callbackLoading" class="flex justify-center items-center py-6">
+            <div class="w-6 h-6 border-2 border-[#ff5c35] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHANGE PASSWORD -->
+      <div id="agentChangePasswordSection" class="glass rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4 flex-wrap">
+          <div>
+            <h2 class="text-sm font-bold" style="color: var(--text);">Change Your Password</h2>
+            <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">Update your agent login password. Admin will be able to see the new password.</p>
+          </div>
+        </div>
+        <div class="max-w-md space-y-3">
+          <div>
+            <label class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Current Password</label>
+            <input type="password" id="agentCurrentPw" placeholder="Enter current password" class="w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+          </div>
+          <div>
+            <label class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">New Password</label>
+            <input type="password" id="agentNewPw" placeholder="Enter new password" class="w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+          </div>
+          <div>
+            <label class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Confirm New Password</label>
+            <input type="password" id="agentConfirmPw" placeholder="Confirm new password" class="w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+          </div>
+          <button id="agentChangePw" class="px-6 py-2.5 rounded-lg text-white text-[12px] font-bold hover:opacity-90 transition-all" style="background: #ff5c35;">
+            Update Password
+          </button>
+          <div id="agentChangePwResult" class="text-[12px] hidden"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Sidebar overlay -->
+  <div id="sidebarOverlay"></div>
+
+  <!-- Sign Out -->
+  <div class="fixed bottom-4 right-4" style="z-index: 100;">
+    <a href="#" id="agentSignOut" class="text-[11px] rounded-lg px-3 py-2 transition-all" style="color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border);">Sign Out</a>
+  </div>
+
+  <script>
+    // ==== ROLE-BASED ACCESS CONTROL ====
+    function applyRoleRestrictions() {
+      let session = getAdminSession();
+      if (!session || !session.user) return;
+      if (session.user.role === 'admin') {
+        window.location.href = '/admin/';
+        return;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+      initSupabase();
+      try { await supabaseClient.auth.signOut(); } catch(e) {}
+      let session = await verifyAdminSession('agent');
+      if (!session) { window.location.href = '/admin/login.html'; return; }
+      applyRoleRestrictions();
+
+      let userNameEl = document.getElementById('adminUserName');
+      if (userNameEl && session.user && session.user.name) {
+        userNameEl.textContent = session.user.name;
+      }
+      loadAllData();
+      setupAgentRealtime();
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+      // Wire event listeners
+      const el = (id) => document.getElementById(id)
+      el('agentToggleSidebar')?.addEventListener('click', toggleSidebar)
+      el('agentNavLiveChat')?.addEventListener('click', function() { scrollToSection('liveChatSection'); loadChatConversations() })
+      el('agentNavPool')?.addEventListener('click', function() { scrollToSection('agentPoolSection') })
+      el('agentNavCallbacks')?.addEventListener('click', function() { scrollToSection('callbackRequestsSection') })
+      el('agentNavPassword')?.addEventListener('click', function() { scrollToSection('agentChangePasswordSection') })
+      el('agentSendReply')?.addEventListener('click', sendChatReply)
+      el('claimConvBtn')?.addEventListener('click', claimConversation)
+      el('agentCloseChat')?.addEventListener('click', closeChatConversation)
+      el('agentStatusToggle')?.addEventListener('click', toggleMyAgentStatus)
+      el('agentRefreshCallbacks')?.addEventListener('click', loadCallbackRequests)
+      el('cbFilterAll')?.addEventListener('click', function() { renderCallbackRequests('all') })
+      el('cbFilterPending')?.addEventListener('click', function() { renderCallbackRequests('pending') })
+      el('cbFilterContacted')?.addEventListener('click', function() { renderCallbackRequests('contacted') })
+      el('cbFilterCompleted')?.addEventListener('click', function() { renderCallbackRequests('completed') })
+      el('agentChangePw')?.addEventListener('click', changeAgentPassword)
+      el('sidebarOverlay')?.addEventListener('click', closeSidebar)
+      el('agentSignOut')?.addEventListener('click', function(e) { e.preventDefault(); adminLogout() })
+      // Event delegation for chat conversations
+      el('chatConvList')?.addEventListener('click', function(e) {
+        let target = e.target.closest('[data-conv-id]')
+        if (target) selectConversation(target.dataset.convId)
+      })
+    });
+
+    async function adminLogout() {
+      cleanupAgentRealtime();
+      try { await supabaseClient.auth.signOut(); } catch(e) {}
+      sessionStorage.removeItem('admin_session');
+      window.location.href = '/admin/login.html';
+    }
+
+    async function loadAllData() {
+      try { loadChatConversations(); } catch(e) { console.error('loadChatConversations error:', e) }
+      try { loadCallbackRequests(); } catch(e) { console.error('loadCallbackRequests error:', e) }
+      try { loadAgents(); } catch(e) { console.error('loadAgents error:', e) }
+      try { initAgentStatus(); } catch(e) { console.error('initAgentStatus error:', e) }
+    }
+
+    function toggleSidebar() {
+      let s = document.getElementById('adminSidebar');
+      if (s) s.classList.toggle('open');
+    }
+    function closeSidebar() {
+      let s = document.getElementById('adminSidebar');
+      if (s) s.classList.remove('open');
+    }
+    function scrollToSection(id) {
+      let el = document.getElementById(id);
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeSidebar(); }
+    }
+
+    // ===== REALTIME SUBSCRIPTIONS =====
+    let agentRtChannels = [];
+
+    function setupAgentRealtime() {
+      cleanupAgentRealtime();
+
+      let cChan = supabaseClient.channel('rt-agent-chat');
+      cChan.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_conversations' }, function(payload) {
+        loadChatConversations();
+        if (payload.new && payload.new.status === 'unassigned') {
+          notifyAgent('New chat request from a member');
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_conversations' }, function() { loadChatConversations(); })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_conversations' }, function() { loadChatConversations(); })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, function(payload) {
+        if (payload.new && payload.new.sender === 'member') {
+          if (!selectedConvId || payload.new.conversation_id !== selectedConvId) {
+            loadChatConversations();
+            notifyAgent('New message from a member');
+          } else {
+            renderChatMessages(selectedConvId);
+            loadChatConversations();
+          }
+        }
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_messages' }, function() { if (selectedConvId) renderChatMessages(selectedConvId); }).subscribe();
+      agentRtChannels.push(cChan);
+
+      let agentChan = supabaseClient.channel('rt-agent-agents');
+      agentChan.on('postgres_changes', { event: '*', schema: 'public', table: 'agents' }, function() { loadAgents(); }).subscribe();
+      agentRtChannels.push(agentChan);
+
+      let cbChan = supabaseClient.channel('rt-agent-callbacks');
+      cbChan.on('postgres_changes', { event: '*', schema: 'public', table: 'sms_callbacks' }, function(payload) {
+        loadCallbackRequests();
+        if (payload.eventType === 'INSERT') {
+          notifyAgent('New callback request from ' + (payload.new.full_name || 'a member'));
+        }
+      }).subscribe();
+      agentRtChannels.push(cbChan);
+    }
+
+    function cleanupAgentRealtime() {
+      agentRtChannels.forEach(function(c) { supabaseClient.removeChannel(c); });
+      agentRtChannels = [];
+    }
+
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'hidden') {
+        let session = getAdminSession();
+        let agentId = session && session.user ? session.user.agent_id : null;
+        if (agentId) { rpcUpdate('agent', { id: agentId }, { status: 'offline', last_seen: new Date().toISOString() }).then(); }
+      }
+    });
+    window.addEventListener('beforeunload', function() {
+      cleanupAgentRealtime();
+    });
+
+    // ===== LIVE CHAT =====
+    let chatConversations = [];
+    let selectedConvId = null;
+
+    async function loadChatConversations() {
+      try {
+        let session = getAdminSession();
+        let agentId = session && session.user ? session.user.agent_id : null;
+        let { data, error } = await supabaseClient.from('chat_conversations').select('id, member_id, member_name, member_email, status, assigned_to, created_at, updated_at').order('created_at', { ascending: false }).limit(50);
+        if (error) { console.error('load convs error:', error); return; }
+        chatConversations = data || [];
+        // Batch-fetch missing member names
+        let missingIds = chatConversations.filter(function(c) { return !c.member_name && !c.member_email && c.member_id; }).map(function(c) { return c.member_id; });
+        if (missingIds.length) {
+          let { data: members } = await supabaseClient.from('members').select('id, name, email, username').in('id', missingIds);
+          let memberMap = {};
+          if (members) { members.forEach(function(m) { memberMap[m.id] = { name: m.name || m.username, email: m.email }; }); }
+          chatConversations.forEach(function(c) {
+            let m = memberMap[c.member_id];
+            if (m) { c.member_name = c.member_name || m.name; c.member_email = c.member_email || m.email; }
+          });
+        }
+        renderChatConversations(agentId);
+      } catch(e) { console.error('loadChatConversations error:', e); }
+    }
+
+    function renderChatConversations(agentId) {
+      let list = document.getElementById('chatConvList');
+      if (!list) return;
+      if (!chatConversations.length) {
+        list.innerHTML = '<div class="text-[11px] p-2" style="color:var(--text-muted);">No conversations</div>';
+        return;
+      }
+      list.innerHTML = chatConversations.map(function(c) {
+        let isActive = c.id === selectedConvId;
+        let statusColors = { unassigned: '#f59e0b', assigned: '#3b82f6', closed: '#6b7280' };
+        let statusColor = statusColors[c.status] || '#6b7280';
+        return '<div data-conv-id="' + c.id + '" class="px-2 py-1.5 rounded-lg text-[11px] cursor-pointer transition-all ' + (isActive ? 'font-semibold' : '') + '" style="background:' + (isActive ? 'rgba(255,92,53,0.1)' : 'transparent') + ';color:' + (isActive ? '#ff6b42' : 'var(--text-secondary)') + ';">' +
+          '<div class="flex items-center justify-between"><span class="truncate max-w-[120px]">' + escHtml(c.member_name || c.member_email || 'Unknown') + '</span><span class="w-1.5 h-1.5 rounded-full" style="background:' + statusColor + ';"></span></div>' +
+          '<div class="text-[9px] mt-0.5" style="color:var(--text-muted);">' + escHtml(c.status) + (c.assigned_to ? ' • assigned' : '') + '</div></div>';
+      }).join('');
+      updateChatBadge();
+    }
+
+    function updateChatBadge() {
+      let count = chatConversations.filter(function(c) { return c.status !== 'closed'; }).length;
+      let badge = document.getElementById('sidebarChatCount');
+      if (badge) { badge.textContent = count > 0 ? count.toString() : ''; badge.style.display = count > 0 ? 'inline' : 'none'; }
+    }
+
+    async function selectConversation(convId) {
+      selectedConvId = convId;
+      document.getElementById('chatEmpty').classList.add('hidden');
+      document.getElementById('chatView').classList.remove('hidden');
+      let session = getAdminSession();
+      let agentId = session && session.user ? session.user.agent_id : null;
+      renderChatConversations(agentId);
+      renderChatMessages(convId);
+    }
+
+    async function renderChatMessages(convId) {
+      let container = document.getElementById('chatMessages');
+      if (!container) return;
+      let { data, error } = await supabaseClient.from('chat_messages').select('*').eq('conversation_id', convId).order('created_at', { ascending: true });
+      if (error) { container.innerHTML = '<div class="text-[11px]" style="color:#ef4444;">Error loading messages</div>'; return; }
+      let msgs = data || [];
+      if (!msgs.length) { container.innerHTML = '<div class="text-[11px] p-3" style="color:var(--text-muted);">No messages yet</div>'; return; }
+      container.innerHTML = msgs.map(function(m) {
+        let isMember = m.sender === 'member';
+        let senderLabel = isMember ? 'Member' : (m.admin_name || 'Support');
+        return '<div class="chat-msg-row ' + (isMember ? 'chat-msg-member' : 'chat-msg-agent') + ' rounded-lg px-3 py-2 max-w-[80%] ' + (isMember ? '' : 'ml-auto') + '">' +
+          '<div class="text-[12px] leading-relaxed" style="color:var(--text);">' + escHtml(m.message) + '</div>' +
+          '<div class="time flex justify-between"><span>' + escHtml(senderLabel) + '</span><span>' + new Date(m.created_at).toLocaleTimeString() + '</span></div></div>';
+      }).join('');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendChatReply() {
+      if (!selectedConvId) { showToast('Select a conversation first'); return; }
+      let input = document.getElementById('chatReplyInput');
+      let msg = input.value.trim();
+      if (!msg) return;
+      input.value = '';
+      let session = getAdminSession();
+      let senderName = session && session.user ? (session.user.name || 'Support Agent') : 'Support Agent';
+      let { error } = await rpcInsert('chat_message', {
+        conversation_id: selectedConvId,
+        sender: 'admin',
+        message: msg,
+        admin_name: senderName
+      });
+      if (error) { showToast('Error sending message'); return; }
+      renderChatMessages(selectedConvId);
+    }
+
+    async function claimConversation() {
+      if (!selectedConvId) return;
+      let session = getAdminSession();
+      let agentId = session && session.user ? session.user.agent_id : null;
+      if (!agentId) { showToast('Login required to claim'); return; }
+      let { error } = await rpcUpdate('chat_conversation', { id: selectedConvId }, { assigned_to: agentId, status: 'assigned' });
+      if (error) { showToast('Error claiming conversation'); return; }
+      showToast('Conversation claimed');
+      document.getElementById('claimConvBtn').classList.add('hidden');
+      loadChatConversations();
+    }
+
+    async function closeChatConversation() {
+      if (!selectedConvId) return;
+      let session = getAdminSession();
+      let agentId = session && session.user ? session.user.agent_id : null;
+      let { error } = await rpcUpdate('chat_conversation', { id: selectedConvId }, { status: 'closed', updated_at: new Date().toISOString() });
+      if (agentId) { rpcInsert('chat_message', {
+        conversation_id: selectedConvId, sender: 'system', message: 'Chat closed by support agent.'
+      }).then(); }
+      if (error) { showToast('Error closing conversation'); return; }
+      showToast('Conversation closed');
+      selectedConvId = null;
+      document.getElementById('chatView').classList.add('hidden');
+      document.getElementById('chatEmpty').classList.remove('hidden');
+      loadChatConversations();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      let input = document.getElementById('chatReplyInput');
+      if (input) input.addEventListener('keydown', function(e) { if (e.key === 'Enter') sendChatReply(); });
+      // Event delegation for callback table actions
+      const cbBody = document.getElementById('callbackRequestBody');
+      if (cbBody) cbBody.addEventListener('click', function(e) {
+        let btn = e.target.closest('[data-cb-action]');
+        if (!btn) return;
+        let id = btn.dataset.cbId;
+        let action = btn.dataset.cbAction;
+        if (action === 'contacted') updateCallbackStatus(id, 'contacted');
+        else if (action === 'completed') updateCallbackStatus(id, 'completed');
+        else if (action === 'delete') deleteCallback(id);
+        else if (action === 'savenote') saveCallbackNote(id);
+      });
+    });
+
+    // ===== AGENT POOL =====
+    async function loadAgents() {
+      try {
+        let { data, error } = await supabaseClient.from('agents').select('id, name, email, status, last_seen').order('name');
+        if (error) { console.error('load agents error:', error); return; }
+        renderAgentPool(data || []);
+      } catch(e) { console.error('loadAgents error:', e); }
+    }
+
+    function renderAgentPool(agents) {
+      let tbody = document.getElementById('agentPoolBody');
+      if (!tbody) return;
+      let session = getAdminSession();
+      let myAgentId = session && session.user ? session.user.agent_id : null;
+      tbody.innerHTML = agents.map(function(a) {
+        let isMe = a.id === myAgentId;
+        let statusColor = a.status === 'online' ? '#10b981' : a.status === 'busy' ? '#f59e0b' : '#6b7280';
+        let statusLabel = a.status === 'online' ? 'Online' : a.status === 'busy' ? 'Busy' : 'Offline';
+        let lastSeen = a.last_seen ? new Date(a.last_seen).toLocaleString() : '-';
+        return '<tr>' +
+          '<td class="py-3 pr-4 text-[12px]" style="color:var(--text);">' + escHtml(a.name) + (isMe ? ' <span class="text-[10px]" style="color:#10b981;">(you)</span>' : '') + '</td>' +
+          '<td class="py-3 pr-4 text-[12px]" style="color:var(--text-secondary);">' + escHtml(a.email) + '</td>' +
+          '<td class="py-3 pr-4"><span class="text-[11px] font-semibold" style="color:' + statusColor + ';">' + statusLabel + '</span></td>' +
+          '<td class="py-3 text-[11px]" style="color:var(--text-muted);">' + lastSeen + '</td>' +
+          '</tr>';
+      }).join('');
+      updateAgentBadge(agents);
+    }
+
+    function updateAgentBadge(agents) {
+      let online = agents.filter(function(a) { return a.status === 'online' || a.status === 'busy'; }).length;
+      let badge = document.getElementById('sidebarAgentCount');
+      if (badge) { badge.textContent = online > 0 ? online.toString() : ''; badge.style.display = online > 0 ? 'inline' : 'none'; }
+    }
+
+    async function toggleMyAgentStatus() {
+      let session = getAdminSession();
+      let agentId = session && session.user ? session.user.agent_id : null;
+      if (!agentId) { showToast('Login required'); return; }
+      let btn = document.getElementById('agentStatusToggle');
+      let label = document.getElementById('agentStatusLabel');
+      let { data: agent } = await supabaseClient.from('agents').select('status').eq('id', agentId).single();
+      if (!agent) return;
+      let newStatus = agent.status === 'online' ? 'offline' : 'online';
+      await rpcUpdate('agent', { id: agentId }, { status: newStatus, last_seen: new Date().toISOString() });
+      if (btn) {
+        btn.textContent = newStatus === 'online' ? 'Online' : 'Offline';
+        btn.style.background = newStatus === 'online' ? 'rgba(16,185,129,0.15)' : 'rgba(107,114,128,0.15)';
+        btn.style.color = newStatus === 'online' ? '#10b981' : '#6b7280';
+      }
+      if (label) label.textContent = 'You are ' + (newStatus === 'online' ? 'online' : 'offline');
+      loadAgents();
+    }
+
+    async function initAgentStatus() {
+      let session = getAdminSession();
+      let agentId = session && session.user ? session.user.agent_id : null;
+      if (!agentId) return;
+      let btn = document.getElementById('agentStatusToggle');
+      let label = document.getElementById('agentStatusLabel');
+      // Only set online if currently offline
+      let { data: current } = await supabaseClient.from('agents').select('status').eq('id', agentId).single();
+      if (current && current.status === 'offline') {
+        await rpcUpdate('agent', { id: agentId }, { status: 'online', last_seen: new Date().toISOString() });
+      }
+      let { data: agent } = await supabaseClient.from('agents').select('status').eq('id', agentId).single();
+      if (!agent) return;
+      if (btn) {
+        btn.textContent = agent.status === 'online' ? 'Online' : agent.status === 'busy' ? 'Busy' : 'Offline';
+        btn.style.background = agent.status === 'online' ? 'rgba(16,185,129,0.15)' : agent.status === 'busy' ? 'rgba(245,158,11,0.15)' : 'rgba(107,114,128,0.15)';
+        btn.style.color = agent.status === 'online' ? '#10b981' : agent.status === 'busy' ? '#f59e0b' : '#6b7280';
+      }
+      if (label) label.textContent = 'You are ' + (agent.status || 'offline');
+    }
+
+    // ===== CALLBACK REQUESTS =====
+    let allCallbacks = [];
+    let callbackFilter = 'all';
+
+    async function loadCallbackRequests() {
+      try {
+        let { data, error } = await supabaseClient.from('sms_callbacks').select('*').order('created_at', { ascending: false }).limit(50);
+        if (error) { console.error('load callbacks error:', error); return; }
+        allCallbacks = data || [];
+        renderCallbackRequests(callbackFilter);
+        updateCallbackBadge();
+      } catch(e) { console.error('loadCallbackRequests error:', e); }
+      let loading = document.getElementById('callbackLoading');
+      if (loading) loading.style.display = 'none';
+    }
+
+    function renderCallbackRequests(filter) {
+      callbackFilter = filter || 'all';
+      let tbody = document.getElementById('callbackRequestBody');
+      if (!tbody) return;
+      document.querySelectorAll('[id^=cbFilter]').forEach(function(b) { b.style.background = 'transparent'; b.style.color = 'var(--text-muted)'; });
+      let activeBtn = document.getElementById('cbFilter' + (callbackFilter === 'all' ? 'All' : callbackFilter.charAt(0).toUpperCase() + callbackFilter.slice(1)));
+      if (activeBtn) { activeBtn.style.background = 'rgba(255,92,53,0.1)'; activeBtn.style.color = '#ff6b42'; }
+      let filtered = callbackFilter === 'all' ? allCallbacks : allCallbacks.filter(function(c) { return c.status === callbackFilter; });
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="py-6 text-center text-[12px]" style="color:var(--text-muted);">No callback requests</td></tr>';
+        return;
+      }
+      tbody.innerHTML = filtered.map(function(c) {
+        let statusColor = c.status === 'pending' ? '#f59e0b' : c.status === 'contacted' ? '#3b82f6' : '#10b981';
+        let actions = c.status === 'pending' ? '<button data-cb-action="contacted" data-cb-id="' + c.id + '" class="px-2 py-1 rounded text-[10px] font-semibold" style="color:#3b82f6;background:rgba(59,130,246,0.1);">Contacted</button>' : '';
+        actions += c.status !== 'completed' ? ' <button data-cb-action="completed" data-cb-id="' + c.id + '" class="px-2 py-1 rounded text-[10px] font-semibold" style="color:#10b981;background:rgba(16,185,129,0.1);">Complete</button>' : '';
+        actions += ' <button data-cb-action="delete" data-cb-id="' + c.id + '" class="px-2 py-1 rounded text-[10px] font-semibold" style="color:#ef4444;background:rgba(239,68,68,0.1);">Delete</button>';
+        return '<tr data-cb-row="' + c.id + '">' +
+          '<td class="py-3 text-[11px]" style="color:var(--text-muted);">' + new Date(c.created_at).toLocaleDateString() + '</td>' +
+          '<td class="py-3 text-[12px]" style="color:var(--text);">' + escHtml(c.full_name || '') + '</td>' +
+          '<td class="py-3 text-[12px]" style="color:var(--text-secondary);">' + escHtml(c.email || '') + '</td>' +
+          '<td class="py-3 font-mono text-[12px]" style="color:var(--text-secondary);">' + escHtml(c.phone) + '</td>' +
+          '<td class="py-3 max-w-[200px] truncate" title="' + escHtml(c.message || '') + '" style="color:var(--text-secondary);">' + escHtml(c.message || '') + '</td>' +
+          '<td class="py-3"><span class="text-[11px] font-semibold" style="color:' + statusColor + ';">' + escHtml(c.status.charAt(0).toUpperCase() + c.status.slice(1)) + '</span></td>' +
+          '<td class="py-3"><input type="text" data-cb-note-id="' + c.id + '" value="' + (c.admin_note ? escHtml(c.admin_note) : '') + '" placeholder="Note" class="w-24 rounded px-1.5 py-1 text-[11px] focus:outline-none" style="background:var(--input-bg);border:1px solid var(--border);color:var(--text);"><button data-cb-action="savenote" data-cb-id="' + c.id + '" class="px-1.5 py-1 rounded text-[10px] font-semibold" style="color:var(--text-muted);background:var(--hover);">Save</button></td>' +
+          '<td class="py-3 text-right">' + actions + '</td></tr>';
+      }).join('');
+    }
+
+    function updateCallbackBadge() {
+      let pending = allCallbacks.filter(function(c) { return c.status === 'pending'; }).length;
+      let badge = document.getElementById('sidebarCallbackCount');
+      if (badge) { badge.textContent = pending > 0 ? pending.toString() : ''; badge.style.display = pending > 0 ? 'inline' : 'none'; }
+    }
+
+    async function updateCallbackStatus(id, status) {
+      let { error } = await supabaseClient.rpc('rpc_update_sms_callback', { p_id: id, p_status: status, p_updated_at: new Date().toISOString() });
+      if (error) { showToast('Error: ' + error.message); return; }
+      for (let i = 0; i < allCallbacks.length; i++) {
+        if (allCallbacks[i].id === id) { allCallbacks[i].status = status; break; }
+      }
+      renderCallbackRequests(callbackFilter);
+      updateCallbackBadge();
+      showToast('Status updated to ' + status);
+    }
+
+    async function saveCallbackNote(id) {
+      let noteEl = document.querySelector('[data-cb-note-id="' + id + '"]');
+      let note = noteEl ? noteEl.value.trim() : '';
+      let { error } = await supabaseClient.rpc('rpc_update_sms_callback', { p_id: id, p_admin_note: note, p_updated_at: new Date().toISOString() });
+      if (error) { showToast('Error: ' + error.message); return; }
+      for (let i = 0; i < allCallbacks.length; i++) {
+        if (allCallbacks[i].id === id) { allCallbacks[i].admin_note = note; break; }
+      }
+      showToast('Note saved.');
+    }
+
+    async function deleteCallback(id) {
+      if (!confirm('Delete this callback request?')) return;
+      let { error } = await supabaseClient.rpc('rpc_delete_sms_callback', { p_id: id });
+      if (error) { showToast('Error: ' + error.message); return; }
+      allCallbacks = allCallbacks.filter(function(c) { return c.id !== id; });
+      renderCallbackRequests(callbackFilter);
+      updateCallbackBadge();
+      showToast('Callback deleted.');
+    }
+
+    // ===== CHANGE PASSWORD =====
+    async function changeAgentPassword() {
+      let currentPw = document.getElementById('agentCurrentPw').value;
+      let newPw = document.getElementById('agentNewPw').value;
+      let confirmPw = document.getElementById('agentConfirmPw').value;
+      let resultEl = document.getElementById('agentChangePwResult');
+      resultEl.classList.add('hidden');
+
+      if (!currentPw || !newPw || !confirmPw) { showToast('Fill all fields.'); return; }
+      if (newPw !== confirmPw) { showToast('New passwords do not match.'); return; }
+      if (newPw.length < 6) { showToast('Password must be at least 6 characters.'); return; }
+
+      let session = getAdminSession();
+      if (!session || !session.user || !session.user.agent_id) { showToast('You must be logged in as an agent.'); return; }
+
+      if (!crypto || !crypto.subtle) { showToast('Secure context required'); return; }
+      let curHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(currentPw));
+      let curHashHex = Array.from(new Uint8Array(curHash)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+
+      let { data: agentData } = await supabaseClient.from('agents').select('password_hash').eq('id', session.user.agent_id).single();
+      if (!agentData || agentData.password_hash !== curHashHex) { showToast('Current password is incorrect.'); return; }
+
+      let newHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(newPw));
+      let newHashHex = Array.from(new Uint8Array(newHash)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+      let { error } = await rpcUpdate('agent', { id: session.user.agent_id }, { password_hash: newHashHex });
+      if (error) { showToast('Error: ' + error.message); return; }
+
+      document.getElementById('agentCurrentPw').value = '';
+      document.getElementById('agentNewPw').value = '';
+      document.getElementById('agentConfirmPw').value = '';
+      resultEl.classList.remove('hidden');
+      resultEl.innerHTML = '<span class="text-[#10b981]">Password updated successfully. Admin can see the new password.</span>';
+      showToast('Agent password changed.');
+    }
+
+    // ===== TOAST =====
+    function showToast(msg) {
+      let container = document.getElementById('adminNotificationContainer');
+      if (!container) return;
+      container.style.display = 'flex';
+      let toast = document.createElement('div');
+      toast.className = 'text-[12px] px-4 py-3 rounded-xl shadow-lg font-semibold animate-slide-up';
+      toast.style.cssText = 'background:var(--bg-card);color:var(--text);border:1px solid var(--border);';
+      toast.textContent = msg;
+      container.appendChild(toast);
+      setTimeout(function() {
+        toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s';
+        setTimeout(function() { toast.remove(); if (!container.children.length) container.style.display = 'none'; }, 300);
+      }, 4000);
+    }
+
+    function notifyAgent(msg) {
+      showToast(msg);
+      // Browser desktop notification
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('MetasBank', { body: msg, icon: '/favicon.ico' });
+      } else if ('Notification' in window && Notification.permission !== 'denied') {
+        Notification.requestPermission();
+      }
+      // Notification sound
+      try {
+        if (!window._sharedAudioCtx) window._sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let ctx = window._sharedAudioCtx;
+        let osc = ctx.createOscillator();
+        let gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = 800; gain.gain.value = 0.15;
+        osc.start(); osc.stop(ctx.currentTime + 0.15);
+      } catch(e) {}
+    }
+
+    function escHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+  </script>
+  <div id="adminNotificationContainer" class="fixed bottom-6 right-6 z-[9999]" style="display:none;flex-direction:column;gap:8px;"></div>
+</body>
+</html>

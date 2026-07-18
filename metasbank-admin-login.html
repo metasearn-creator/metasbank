@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MetasBank — Admin Login</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { orange: { 50: '#fff3ed', 100: '#ffded3', 200: '#ffbca6', 300: '#ff8f6e', 400: '#ff6b42', 500: '#ff5c35', 600: '#e84a24', 700: '#c53b1b', 800: '#9e321a', 900: '#7f2c19' } },
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=EB+Garamond:wght@400;500;600;700;800&display=swap');
+    *, *::before, *::after { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+    h1 { font-family: 'EB Garamond', serif; text-transform: uppercase; font-weight: 800; letter-spacing: 0.02em; }
+
+    :root {
+      --bg: #13151d;
+      --bg-card: #1a1d28;
+      --text: #e2e4e9;
+      --text-muted: #6b7185;
+      --border: rgba(255,255,255,0.06);
+      --input-bg: #0e1018;
+      --shadow: rgba(255, 92, 53, 0.2);
+      --card-shadow: none;
+      --header-h: 36px;
+    }
+    .light-mode {
+      --bg: #eef0f4;
+      --bg-card: #ffffff;
+      --text: #1e2229;
+      --text-muted: #7a8191;
+      --border: rgba(0,0,0,0.06);
+      --input-bg: #f0f1f4;
+      --shadow: rgba(255, 92, 53, 0.15);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    html { height: 100%; width: 100%; overflow-x: hidden; }
+    body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); transition: background 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden; }
+    .card { background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--card-shadow); }
+    .gradient-orange { background: linear-gradient(135deg, #ff5c35, #ff8f6e); }
+    button:active { transform: scale(0.96); transition: transform 0.08s; }
+    .gradient-orange:active { transform: scale(0.96); }
+    input, select, textarea { font-size: 16px; touch-action: manipulation; }
+    .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
+    .main-content { padding-top: var(--header-h); flex: 1; display: flex; flex-direction: column; }
+    .footer-area { margin-top: auto; }
+    @media (max-width: 640px) {
+      .text-\[12px\] { font-size: 10px !important; }
+      .text-\[11px\] { font-size: 9px !important; }
+      .text-\[10px\] { font-size: 8px !important; }
+      .text-sm { font-size: 10px !important; }
+      .text-xl { font-size: 15px !important; }
+      .p-6 { padding: 10px !important; }
+      .px-4 { padding-left: 8px !important; padding-right: 8px !important; }
+      .py-3 { padding-top: 6px !important; padding-bottom: 6px !important; }
+      .gap-4 { gap: 4px !important; }
+      .gap-3 { gap: 3px !important; }
+    }
+  </style>
+  <style>html.js-loading *{transition:none!important}</style>
+  <script>
+    document.documentElement.classList.add('js-loading');
+    const _h = new Date().getHours(); if (_h >= 6 && _h < 18) document.documentElement.classList.add('light-mode');
+    document.addEventListener('DOMContentLoaded', function(){ requestAnimationFrame(function(){ document.documentElement.classList.remove('js-loading') }) });
+  </script>
+</head>
+<body class="flex flex-col" style="color: var(--text); min-height: 100vh; min-height: 100dvh;">
+
+  <!-- Fixed header -->
+  <header class="fixed-header flex items-center justify-between px-4 lg:px-6 py-2 text-[10px]" style="background: var(--bg-card); border-bottom: 1px solid var(--border);">
+    <div class="flex items-center gap-3 flex-wrap">
+      <span style="color: var(--text-muted);">Agent Console</span>
+      <span class="w-px h-3" style="background: var(--border);"></span>
+      <span style="color: var(--text-muted);">Session: <span class="text-[#10b981] font-medium">Encrypted</span></span>
+    </div>
+    <div class="shrink-0" style="color: var(--text-muted);">Restricted Access | <a href="#" class="text-[#ff6b42] hover:text-[#ff5c35] font-medium">IT Support</a></div>
+  </header>
+
+  <!-- Main content -->
+  <div class="main-content">
+    <div class="flex-1 flex items-center justify-center px-4 py-6">
+
+      <div class="w-full max-w-sm">
+
+        <div class="text-center mb-8">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-sm mx-auto" style="background: #ff4757; box-shadow: 0 0 20px rgba(255,71,87,0.2);">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          </div>
+          <h1 class="text-xl font-bold mt-4" style="color: var(--text);">Agent Console</h1>
+          <p class="text-[12px]" style="color: var(--text-muted);">MetasBank — Agent Access Only</p>
+          <p class="text-[10px] mt-1" style="color: var(--text-muted);">Authorized personnel only. All access is logged and monitored.</p>
+        </div>
+
+        <div class="rounded-xl p-6 card">
+          <form id="adminLoginForm">
+            <div id="adminLoginError" class="hidden mb-4 rounded-lg px-4 py-2.5 text-[12px] font-medium" style="background: rgba(255,71,87,0.1); color: #ff4757; border: 1px solid rgba(255,71,87,0.15);"></div>
+            <div class="mb-4">
+              <label for="adminEmail" class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Agent Username</label>
+              <input id="adminEmail" type="text" placeholder="Enter your agent email" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            </div>
+            <div class="mb-5">
+              <label for="adminPassword" class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Password</label>
+              <input id="adminPassword" type="password" placeholder="Enter your password" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            </div>
+            <button id="adminLoginBtn" type="submit" class="w-full py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">Sign In as Agent</button>
+          </form>
+          <div class="mt-4 pt-4" style="border-top: 1px solid var(--border);">
+            <div class="flex items-center justify-center gap-4 flex-wrap">
+              <div class="flex items-center gap-1.5 text-[10px]" style="color: var(--text-muted);">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                <span>Encrypted</span>
+              </div>
+              <span style="color: var(--border);">|</span>
+              <div class="flex items-center gap-1.5 text-[10px]" style="color: var(--text-muted);">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Real-time</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Footer (outside flex-1 centering so it sticks to bottom) -->
+    <footer class="footer-area px-4 py-4 text-center">
+      <div class="flex items-center justify-center gap-2 sm:gap-4 text-[10px] flex-wrap" style="color: var(--text-muted);">
+        <a href="#" class="hover:text-[#ff6b42] transition-all" style="cursor: default;">Security Policy</a>
+        <span>|</span>
+        <a href="#" class="hover:text-[#ff6b42] transition-all" style="cursor: default;">Access Logs</a>
+        <span>|</span>
+        <a href="mailto:it@metasbank.com" class="hover:text-[#ff6b42] transition-all">IT Support</a>
+      </div>
+      <p class="text-[10px] mt-2" style="color: var(--text-muted);">
+        &copy; 2026 MetasBank. All rights reserved. | v2.4.1a
+      </p>
+    </footer>
+
+  </div>
+
+  <script>
+    initSupabase()
+    document.getElementById('adminLoginForm').addEventListener('submit', function(e) { e.preventDefault(); handleAdminLogin() })
+    if (supabaseClient) supabaseClient.auth.signOut().catch(function() {})
+    sessionStorage.removeItem('admin_session')
+    if (typeof loadAdminPasswordHash === 'function') loadAdminPasswordHash()
+    function handleAdminLogin() {
+      const btn = document.getElementById('adminLoginBtn')
+      if (btn.disabled) return
+
+      const errEl = document.getElementById('adminLoginError')
+      errEl.classList.add('hidden')
+
+      const email = document.getElementById('adminEmail').value.trim()
+      const password = document.getElementById('adminPassword').value.trim()
+
+      if (!email) { showAdminError('Please enter your email'); return }
+      if (!password) { showAdminError('Please enter your password'); return }
+
+      btn.textContent = 'Signing in...'; btn.disabled = true; btn.style.opacity = '0.7'
+
+      adminLogin(email, password).then(function(result) {
+        const user = result && result.data && result.data.user
+        if (!user) {
+          showAdminError((result && result.error) || 'Login failed: unexpected response')
+          btn.textContent = 'Sign In'; btn.disabled = false; btn.style.opacity = '1'
+        } else if (user.role === 'admin') {
+          window.location.href = '/admin/'
+        } else {
+          window.location.href = '/agent/'
+        }
+      }).catch(function(err) {
+        console.error('Admin login failed:', err);
+        showAdminError('An unexpected error occurred');
+        btn.textContent = 'Sign In'; btn.disabled = false; btn.style.opacity = '1'
+      })
+    }
+
+    function showAdminError(msg) {
+      const el = document.getElementById('adminLoginError')
+      el.textContent = msg
+      el.classList.remove('hidden')
+    }
+  </script>
+
+</body>
+</html>
