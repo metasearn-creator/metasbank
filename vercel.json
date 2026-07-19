@@ -1,0 +1,10 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/root-index.html" },
+    { "source": "/login", "destination": "/metasbank-login.html" },
+    { "source": "/member", "destination": "/metasbank-member.html" },
+    { "source": "/admin", "destination": "/metasbank-admin.html" },
+    { "source": "/agent", "destination": "/metasbank-agent.html" },
+    { "source": "/signup", "destination": "/metasbank-signup.html" }
+  ]
+}

@@ -5,3 +5,5 @@ upload.ps1
 .vercel
 
 run_sql.js
+
+server.js
