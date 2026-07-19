@@ -1,3 +1,7 @@
 node_modules/
 server.js
 upload.ps1
+
+.vercel
+
+run_sql.js

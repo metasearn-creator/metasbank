@@ -512,9 +512,10 @@ $$;
 
 CREATE OR REPLACE FUNCTION rpc_insert_account_request(
   p_member_id UUID, p_account_type TEXT,
-  p_first_name TEXT, p_middle_name TEXT DEFAULT NULL, p_last_name TEXT,
+  p_first_name TEXT, p_last_name TEXT,
   p_tax_id TEXT, p_dob TEXT, p_address TEXT, p_city TEXT, p_state TEXT,
   p_zip TEXT, p_phone TEXT, p_id_type TEXT, p_id_number TEXT,
+  p_middle_name TEXT DEFAULT NULL,
   p_status TEXT DEFAULT 'pending'
 ) RETURNS JSONB
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
@@ -783,6 +784,7 @@ END;
 $$;
 
 -- rpc_get_audit_logs
+DROP FUNCTION IF EXISTS rpc_get_audit_logs(INTEGER);
 CREATE OR REPLACE FUNCTION rpc_get_audit_logs(p_limit INTEGER DEFAULT 50)
 RETURNS SETOF audit_logs
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
@@ -793,6 +795,7 @@ END;
 $$;
 
 -- rpc_confirm_deposit
+DROP FUNCTION IF EXISTS rpc_confirm_deposit(UUID);
 CREATE OR REPLACE FUNCTION rpc_confirm_deposit(p_deposit_id UUID)
 RETURNS TABLE(success BOOLEAN, new_balance NUMERIC, transaction_id UUID)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
@@ -822,6 +825,7 @@ END;
 $$;
 
 -- admin_create_member
+DROP FUNCTION IF EXISTS admin_create_member(TEXT, TEXT, TEXT, TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION admin_create_member(p_name TEXT, p_username TEXT, p_email TEXT DEFAULT NULL, p_access_key TEXT DEFAULT NULL, p_balance NUMERIC DEFAULT 0)
 RETURNS JSONB
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
@@ -837,6 +841,7 @@ END;
 $$;
 
 -- lookup_transfer_recipient
+DROP FUNCTION IF EXISTS lookup_transfer_recipient(TEXT);
 CREATE OR REPLACE FUNCTION lookup_transfer_recipient(lookup_username TEXT)
 RETURNS TABLE(id UUID, name TEXT, email TEXT)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
@@ -850,6 +855,7 @@ END;
 $$;
 
 -- execute_transfer
+DROP FUNCTION IF EXISTS execute_transfer(UUID, UUID, NUMERIC);
 CREATE OR REPLACE FUNCTION execute_transfer(sender_id UUID, recipient_id UUID, amount NUMERIC)
 RETURNS TABLE(success BOOLEAN, sender_bal NUMERIC)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
