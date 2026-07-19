@@ -118,7 +118,12 @@
     #sidebarOverlay.open { display: block; }
     #memberSidebar { position: fixed; left: 0; top: var(--header-h); bottom: 0; z-index: 95; transform: translateX(-100%); transition: transform 0.3s; }
     #memberSidebar.open { transform: translateX(0); }
-    #memberMain { margin-left: 0 !important; }
+    @media (min-width: 1024px) {
+      .main-wrapper { display: flex; }
+      #memberSidebar { position: relative; top: 0; transform: none; z-index: 1; }
+      #sidebarOverlay { display: none !important; }
+      #memberMain { flex: 1; min-width: 0; }
+    }
 
     /* ===== MOBILE COMPACT (under 480px) ===== */
     @media (max-width: 480px) {
@@ -319,7 +324,7 @@
     </aside>
 
     <!-- ===== MAIN ===== -->
-    <main id="memberMain" class="p-4 lg:p-6" style="max-width: 860px; margin: 0 auto; width: 100%;">
+    <main id="memberMain" class="p-4 lg:p-6" style="margin: 0 auto; width: 100%;">
 
       <div class="space-y-5" style="padding-bottom: 80px;">
 
