@@ -2,9 +2,17 @@
   "framework": null,
   "rewrites": [
     { "source": "/login", "destination": "/metasbank-login.html" },
+    { "source": "/login/", "destination": "/metasbank-login.html" },
+    { "source": "/dashboard", "destination": "/metasbank-member.html" },
+    { "source": "/dashboard/", "destination": "/metasbank-member.html" },
     { "source": "/member", "destination": "/metasbank-member.html" },
+    { "source": "/member/", "destination": "/metasbank-member.html" },
     { "source": "/admin", "destination": "/metasbank-admin.html" },
+    { "source": "/admin/", "destination": "/metasbank-admin.html" },
     { "source": "/agent", "destination": "/metasbank-agent.html" },
-    { "source": "/signup", "destination": "/metasbank-signup.html" }
+    { "source": "/agent/", "destination": "/metasbank-agent.html" },
+    { "source": "/signup", "destination": "/metasbank-signup.html" },
+    { "source": "/signup/", "destination": "/metasbank-signup.html" },
+    { "source": "/admin/login.html", "destination": "/metasbank-admin-login.html" }
   ]
 }
