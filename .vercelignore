@@ -1,0 +1,10 @@
+node_modules
+sql
+supabase
+.vercel
+.git
+.gitignore
+.gitkeep
+CHECKPOINT.md
+create_callbacks.sql
+upload.ps1
