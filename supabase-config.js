@@ -101,34 +101,35 @@ async function memberLogin(identifier, accessKey) {
     if (!supabaseClient) initSupabase()
     if (!supabaseClient) return { error: 'System error: database not connected' }
 
-    const isEmail = identifier.includes('@')
     let accessKeyTrimmed = (accessKey || '').trim()
-    let query = supabaseClient.from('members').select('id, name, username, email, balance, status, access_key, created_at, last_login, auth_uid').eq('access_key', accessKeyTrimmed)
-    if (isEmail) {
-      query = query.eq('email', identifier.toLowerCase().trim())
-    } else {
-      query = query.eq('username', identifier.toLowerCase().trim())
-    }
-    let resp = await query
-    if (resp.error) { console.error('Login error:', resp.error); trackRateLimit('member_login', 10, 300000); return { error: 'Invalid credentials' } }
-    if (!resp.data || resp.data.length === 0) { trackRateLimit('member_login', 10, 300000); return { error: 'Invalid credentials' } }
-    let data = resp.data[0]
-    if (data.status !== 'active') return { error: 'Account is suspended' }
+    let identifierTrimmed = identifier.toLowerCase().trim()
 
-    // Sign in with Supabase Auth using stored password, then discard
-    let authPwd = data.auth_password
+    // Use secure login RPC — never SELECT auth_password directly
+    let { data: rpcData, error: rpcError } = await supabaseClient.rpc('rpc_member_login', {
+      p_identifier: identifierTrimmed,
+      p_access_key: accessKeyTrimmed
+    })
+
+    if (rpcError) { console.error('Login RPC error:', rpcError); trackRateLimit('member_login', 10, 300000); return { error: 'Invalid credentials' } }
+    if (!rpcData) { trackRateLimit('member_login', 10, 300000); return { error: 'Invalid credentials' } }
+
+    // rpcData is already parsed JSONB
+    let data = typeof rpcData === 'string' ? JSON.parse(rpcData) : rpcData
+    if (data.error) { trackRateLimit('member_login', 10, 300000); return { error: data.error } }
+
+    // Sign in with Supabase Auth using stored password
+    let authPwd = data.auth_password || null
     if (data.auth_uid && authPwd) {
       let authResp = await supabaseClient.auth.signInWithPassword({ email: data.email, password: authPwd })
       if (authResp.error) {
         console.error('Auth sign-in error:', authResp.error);
       }
     }
-    data.auth_password = null // clear from returned data
+    data.auth_password = null // never keep in sessionStorage
     authPwd = null
 
     sessionStorage.setItem('member_user', JSON.stringify(data))
     clearRateLimit('member_login')
-    await rpcUpdate('member', { id: data.id }, { last_login: new Date().toISOString() })
     return { data }
   } catch(ex) { console.error('Login exception:', ex); return { error: 'System error' } }
 }
@@ -437,6 +438,18 @@ async function rpc_upsert(table, data) {
   let params = {}
   for (let k in data) { params['p_' + k] = data[k] }
   return await supabaseClient.rpc('rpc_upsert_' + table, params)
+}
+
+// ===== XSS SANITIZATION =====
+// Sanitize strings before inserting into innerHTML
+function escHtml(str) {
+  if (str === null || str === undefined) return ''
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
 }
 
 // Initialize immediately
