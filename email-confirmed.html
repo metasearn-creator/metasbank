@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MetasBank — Email Verified</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; frame-ancestors 'none';">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={theme:{extend:{colors:{orange:{50:'#fff3ed',100:'#ffded3',200:'#ffbca6',300:'#ff8f6e',400:'#ff6b42',500:'#ff5c35',600:'#e84a24',700:'#c53b1b',800:'#9e321a',900:'#7f2c19'}}}}}</script>
   <style>
@@ -19,7 +18,7 @@
     .gradient-orange { background: linear-gradient(135deg, #ff5c35, #ff8f6e); }
     button:active { transform: scale(0.96); transition: transform 0.08s; }
   </style>
-  <script>const h=new Date().getHours();if(h>=6&&h<18)document.documentElement.classList.add('light-mode');</script>
+  <script>(function(){try{var t=localStorage.getItem('mb_theme');if(t==='light')document.documentElement.classList.add('light-mode');else if(t!=='dark'){var h=new Date().getHours();if(h>=6&&h<18)document.documentElement.classList.add('light-mode')}}catch(e){}})();</script>
 </head>
 <body class="min-h-screen flex flex-col" style="color: var(--text);">
   <div class="flex-1 flex items-center justify-center p-4">

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="geo-restrict.js"></script>
+  <title>MetasBank — Private Banking</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0c12;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+    }
+    .bg-glow {
+      position: fixed;
+      top: -30%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(255,92,53,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .brand { font-family: 'EB Garamond', serif; }
+    .line { width: 40px; height: 1px; background: rgba(255,255,255,0.15); }
+    .btn-signin {
+      display: inline-block;
+      padding: 14px 48px;
+      border: 1px solid rgba(255,92,53,0.3);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border-radius: 4px;
+      transition: all 0.4s ease;
+      background: transparent;
+      cursor: pointer;
+    }
+    .btn-signin:hover {
+      background: #ff5c35;
+      border-color: #ff5c35;
+      box-shadow: 0 0 30px rgba(255,92,53,0.2);
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .animate { animation: fadeIn 1.2s ease forwards; }
+    .animate-d2 { animation-delay: 0.2s; opacity: 0; }
+    .animate-d4 { animation-delay: 0.4s; opacity: 0; }
+    .animate-d6 { animation-delay: 0.6s; opacity: 0; }
+  </style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <div class="relative z-10 text-center px-6">
+    <div class="animate animate-d2 mb-6">
+      <div class="flex items-center justify-center gap-3 mb-6">
+        <div class="line"></div>
+        <span style="color: rgba(255,255,255,0.25); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 400;">Est. 2026</span>
+        <div class="line"></div>
+      </div>
+      <h1 class="brand text-5xl md:text-7xl font-extrabold tracking-[0.04em]" style="color: #e8eaf0;">MetasBank</h1>
+      <p class="text-sm md:text-base mt-4" style="color: rgba(255,255,255,0.3); letter-spacing: 0.08em; font-weight: 300;">
+        Private Banking &middot; Discretion &middot; Excellence
+      </p>
+    </div>
+
+    <div class="animate animate-d4 mt-12 flex items-center justify-center gap-4">
+      <div class="line" style="width: 60px;"></div>
+      <span style="color: rgba(255,255,255,0.12); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;">Client Access</span>
+      <div class="line" style="width: 60px;"></div>
+    </div>
+
+    <div class="animate animate-d6 mt-6">
+      <a href="/login/" class="btn-signin">Sign In</a>
+    </div>
+  </div>
+
+  <div class="absolute bottom-8 text-center w-full" style="color: rgba(255,255,255,0.08); font-size: 10px; letter-spacing: 0.1em;">
+    &copy; 2026 MetasBank. All rights reserved.
+  </div>
+</body>
+</html>
