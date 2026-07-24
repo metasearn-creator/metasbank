@@ -80,6 +80,8 @@
     .chat-msg-row .time { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
     @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .animate-slide-up { animation: slideUp 0.3s ease-out; }
+    #sidebarOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 90; display: none; }
+    #sidebarOverlay.open { display: block; }
     @media (max-width: 1023px) {
       #adminSidebar { position: fixed; left: 0; top: var(--header-h); bottom: 0; z-index: 95; transform: translateX(-100%); transition: transform 0.3s; }
       #adminSidebar.open { transform: translateX(0); }
@@ -407,12 +409,12 @@
     }
 
     function toggleSidebar() {
-      let s = document.getElementById('adminSidebar');
-      if (s) s.classList.toggle('open');
+      document.getElementById('adminSidebar').classList.toggle('open');
+      document.getElementById('sidebarOverlay').classList.toggle('open');
     }
     function closeSidebar() {
-      let s = document.getElementById('adminSidebar');
-      if (s) s.classList.remove('open');
+      document.getElementById('adminSidebar').classList.remove('open');
+      document.getElementById('sidebarOverlay').classList.remove('open');
     }
     function scrollToSection(id) {
       let sections = ['liveChatSection', 'agentPoolSection', 'callbackRequestsSection', 'agentChangePasswordSection'];
