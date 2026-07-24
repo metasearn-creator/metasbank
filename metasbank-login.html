@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="geo-restrict.js"></script>
   <title>MetasBank — Secure Login</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://pkhftlbacapcarwnrhzn.supabase.co wss://pkhftlbacapcarwnrhzn.supabase.co; frame-ancestors 'none';">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="/supabase-config.js"></script>
@@ -54,6 +54,7 @@
     button:active { transform: scale(0.96); transition: transform 0.08s; }
     .gradient-orange:active { transform: scale(0.96); }
     input, select, textarea { font-size: 16px; touch-action: manipulation; }
+    button, [data-action], a { touch-action: manipulation; }
     .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
     .main-content { padding-top: var(--header-h); flex: 1; display: flex; flex-direction: column; }
     .footer-area { margin-top: auto; }
@@ -63,19 +64,18 @@
       .text-\[10px\] { font-size: 8px !important; }
       .text-sm { font-size: 10px !important; }
       .text-xl { font-size: 15px !important; }
-      .p-6 { padding: 10px !important; }
-      .px-4 { padding-left: 6px !important; padding-right: 6px !important; }
-      .py-3 { padding-top: 6px !important; padding-bottom: 6px !important; }
+      .p-6 { padding: 12px !important; }
+      .px-4 { padding-left: 10px !important; padding-right: 10px !important; }
+      .py-3 { padding-top: 10px !important; padding-bottom: 10px !important; }
       .gap-4 { gap: 4px !important; }
       .gap-3 { gap: 3px !important; }
-      .main-content .px-4 { padding-left: 20px !important; padding-right: 20px !important; }
-      .main-content .max-w-sm { max-width: 320px !important; }
     }
   </style>
   <style>html.js-loading *{transition:none!important}</style>
   <script>
     document.documentElement.classList.add('js-loading');
-    const _h = new Date().getHours(); if (_h >= 6 && _h < 18) document.documentElement.classList.add('light-mode');
+    (function(){try{var t=localStorage.getItem('mb_theme');if(t==='light'){document.documentElement.classList.add('light-mode')}else if(t!=='dark'){var h=new Date().getHours();if(h>=6&&h<18)document.documentElement.classList.add('light-mode')}}catch(e){}})();
+    (function(){try{if(sessionStorage.getItem('member_user')){window.location.replace('/dashboard/')}}catch(e){}})();
     document.addEventListener('DOMContentLoaded', function(){ requestAnimationFrame(function(){ document.documentElement.classList.remove('js-loading') }) });
   </script>
 </head>
@@ -112,11 +112,11 @@
             <div id="loginError" class="hidden mb-4 rounded-lg px-4 py-2.5 text-[12px] font-medium" style="background: rgba(255,71,87,0.1); color: #ff4757; border: 1px solid rgba(255,71,87,0.15);"></div>
             <div class="mb-4">
               <label for="loginUsername" class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Email or Username</label>
-              <input id="loginUsername" type="text" placeholder="your@email.com or username" readonly autocomplete="new-password" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+              <input id="loginUsername" type="text" placeholder="your@email.com or username" autocomplete="off" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
             </div>
             <div class="mb-2">
               <label for="loginAccessKey" class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Password</label>
-              <input id="loginAccessKey" type="password" placeholder="e.g. A7k2&Pq4!xZ" autocomplete="new-password" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+              <input id="loginAccessKey" type="password" placeholder="e.g. A7k2&Pq4!xZ" autocomplete="off" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
             </div>
             <div class="flex items-center justify-between mb-3">
               <div></div>
@@ -189,9 +189,6 @@
     }
     clearLoginFields();
     setTimeout(clearLoginFields, 100);
-    // Remove readonly on focus so user can type (prevents browser autofill)
-    document.getElementById('loginUsername').addEventListener('focus', function() { this.readOnly = false; });
-    document.getElementById('loginAccessKey').addEventListener('focus', function() { this.readOnly = false; });
 
     function openForgotModal() { document.getElementById('forgotModal').classList.remove('hidden') }
     function closeForgotModal() { document.getElementById('forgotModal').classList.add('hidden') }

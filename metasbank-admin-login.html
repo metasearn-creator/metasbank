@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="geo-restrict.js"></script>
   <title>MetasBank — Admin Login</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://pkhftlbacapcarwnrhzn.supabase.co wss://pkhftlbacapcarwnrhzn.supabase.co; frame-ancestors 'none';">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="/supabase-config.js"></script>
@@ -52,6 +52,7 @@
     button:active { transform: scale(0.96); transition: transform 0.08s; }
     .gradient-orange:active { transform: scale(0.96); }
     input, select, textarea { font-size: 16px; touch-action: manipulation; }
+    button, [data-action], a { touch-action: manipulation; }
     .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
     .main-content { padding-top: var(--header-h); flex: 1; display: flex; flex-direction: column; }
     .footer-area { margin-top: auto; }
@@ -61,19 +62,18 @@
       .text-\[10px\] { font-size: 8px !important; }
       .text-sm { font-size: 10px !important; }
       .text-xl { font-size: 15px !important; }
-      .p-6 { padding: 10px !important; }
-      .px-4 { padding-left: 6px !important; padding-right: 6px !important; }
-      .py-3 { padding-top: 6px !important; padding-bottom: 6px !important; }
+      .p-6 { padding: 12px !important; }
+      .px-4 { padding-left: 10px !important; padding-right: 10px !important; }
+      .py-3 { padding-top: 10px !important; padding-bottom: 10px !important; }
       .gap-4 { gap: 4px !important; }
       .gap-3 { gap: 3px !important; }
-      .main-content .px-4 { padding-left: 20px !important; padding-right: 20px !important; }
-      .main-content .max-w-sm { max-width: 320px !important; }
     }
   </style>
   <style>html.js-loading *{transition:none!important}</style>
   <script>
     document.documentElement.classList.add('js-loading');
-    const _h = new Date().getHours(); if (_h >= 6 && _h < 18) document.documentElement.classList.add('light-mode');
+    (function(){try{var t=localStorage.getItem('mb_theme');if(t==='light'){document.documentElement.classList.add('light-mode')}else if(t!=='dark'){var h=new Date().getHours();if(h>=6&&h<18)document.documentElement.classList.add('light-mode')}}catch(e){}})();
+    (function(){try{if(sessionStorage.getItem('admin_session')){window.location.replace('/admin/')}}catch(e){}})();
     document.addEventListener('DOMContentLoaded', function(){ requestAnimationFrame(function(){ document.documentElement.classList.remove('js-loading') }) });
   </script>
 </head>
@@ -82,11 +82,11 @@
   <!-- Fixed header -->
   <header class="fixed-header flex items-center justify-between px-4 lg:px-6 py-2 text-[10px]" style="background: var(--bg-card); border-bottom: 1px solid var(--border);">
     <div class="flex items-center gap-3 flex-wrap">
-      <span style="color: var(--text-muted);">Agent Console</span>
+      <span style="color: var(--text-muted);">Admin or Agent Console</span>
       <span class="w-px h-3" style="background: var(--border);"></span>
       <span style="color: var(--text-muted);">Session: <span class="text-[#10b981] font-medium">Encrypted</span></span>
     </div>
-    <div class="shrink-0" style="color: var(--text-muted);">Restricted Access | <a href="#" class="text-[#ff6b42] hover:text-[#ff5c35] font-medium">IT Support</a></div>
+    <div style="color: var(--text-muted); font-size: 10px;">Restricted Access | <a href="#" style="color: var(--text-muted); text-decoration: underline;">IT Support</a></div>
   </header>
 
   <!-- Main content -->
@@ -99,8 +99,8 @@
           <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-sm mx-auto" style="background: #ff4757; box-shadow: 0 0 20px rgba(255,71,87,0.2);">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
           </div>
-          <h1 class="text-xl font-bold mt-4" style="color: var(--text);">Agent Console</h1>
-          <p class="text-[12px]" style="color: var(--text-muted);">MetasBank — Agent Access Only</p>
+          <h1 class="text-xl font-bold mt-4" style="color: var(--text);">Admin or Agent Console</h1>
+          <p class="text-[12px]" style="color: var(--text-muted);">MetasBank Admin / Agent Access Only</p>
           <p class="text-[10px] mt-1" style="color: var(--text-muted);">Authorized personnel only. All access is logged and monitored.</p>
         </div>
 
@@ -115,7 +115,7 @@
               <label for="adminPassword" class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Password</label>
               <input id="adminPassword" type="password" placeholder="Enter your password" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
             </div>
-            <button id="adminLoginBtn" type="submit" class="w-full py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">Sign In as Agent</button>
+            <button id="adminLoginBtn" type="submit" class="w-full py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">Login Admin or Agent</button>
           </form>
           <div class="mt-4 pt-4" style="border-top: 1px solid var(--border);">
             <div class="flex items-center justify-center gap-4 flex-wrap">
@@ -146,7 +146,7 @@
         <a href="mailto:it@metasbank.com" class="hover:text-[#ff6b42] transition-all">IT Support</a>
       </div>
       <p class="text-[10px] mt-2" style="color: var(--text-muted);">
-        &copy; 2026 MetasBank. All rights reserved. | v2.4.1a
+        &copy; 2026 MetasBank. All rights reserved. | v2.4.1
       </p>
     </footer>
 

@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="geo-restrict.js"></script>
   <title>MetasBank — Register</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://pkhftlbacapcarwnrhzn.supabase.co wss://pkhftlbacapcarwnrhzn.supabase.co; frame-ancestors 'none';">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="/supabase-config.js"></script>
@@ -23,7 +23,7 @@
     *, *::before, *::after { box-sizing: border-box; }
     * { font-family: "Inter", sans-serif; }
     h1 { font-family: "EB Garamond", serif; text-transform: uppercase; font-weight: 800; letter-spacing: 0.02em; }
-    :root { --bg: #13151d; --bg-card: #1a1d28; --text: #e2e4e9; --text-muted: #6b7185; --text-secondary: #a8acba; --border: rgba(255,255,255,0.06); --input-bg: #0e1018; --shadow: rgba(255,92,53,0.2); --card-shadow: none; --header-h: 36px; }
+    :root { --bg: #13151d; --bg-card: #1a1d28; --text: #e2e4e9; --text-muted: #6b7185; --text-secondary: #a8acba; --border: rgba(255,255,255,0.06); --input-bg: #0e1018; --hover: rgba(255,255,255,0.03); --shadow: rgba(255,92,53,0.2); --card-shadow: none; --header-h: 36px; }
     .light-mode { --bg: #eef0f4; --bg-card: #ffffff; --text: #1e2229; --text-muted: #7a8191; --text-secondary: #4f5665; --border: rgba(0,0,0,0.06); --input-bg: #f0f1f4; --shadow: rgba(255,92,53,0.15); --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03); }
     html { height: 100%; width: 100%; overflow-x: hidden; }
     body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); transition: background 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden; }
@@ -42,18 +42,15 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: #ff5c35; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
     input, select, textarea { font-size: 16px; touch-action: manipulation; }
+    button, [data-action], a { touch-action: manipulation; }
     .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
     .main-content { padding-top: var(--header-h); flex: 1; display: flex; flex-direction: column; }
     .footer-area { margin-top: auto; }
-    @media (max-width: 640px) {
-      .main-content .px-4 { padding-left: 20px !important; padding-right: 20px !important; }
-      .main-content .max-w-sm { max-width: 320px !important; }
-    }
   </style>
   <style>html.js-loading *{transition:none!important}</style>
   <script>
     document.documentElement.classList.add('js-loading');
-    const _h = new Date().getHours(); if (_h >= 6 && _h < 18) document.documentElement.classList.add('light-mode');
+    (function(){try{var t=localStorage.getItem('mb_theme');if(t==='light'){document.documentElement.classList.add('light-mode')}else if(t!=='dark'){var h=new Date().getHours();if(h>=6&&h<18)document.documentElement.classList.add('light-mode')}}catch(e){}})();
     document.addEventListener('DOMContentLoaded', function(){ requestAnimationFrame(function(){ document.documentElement.classList.remove('js-loading') }) });
   </script>
 </head>
@@ -234,23 +231,23 @@
           <p class="text-[12px]" style="color: var(--text-muted);">Your account has been created</p>
         </div>
         <div class="rounded-xl p-6 card space-y-4">
-          <div class="rounded-lg p-4 text-center" style="background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.15);">
-            <svg class="w-10 h-10 mx-auto text-[#10b981]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <p class="text-sm font-bold mt-2" style="color: var(--text);">Account Created Successfully</p>
-            <p class="text-[10px] mt-1" style="color: var(--text-muted);">Save your credentials below</p>
+          <div class="rounded-lg p-4 text-center" style="background: rgba(255,193,7,0.08); border: 1px solid rgba(255,193,7,0.2);">
+            <svg class="w-10 h-10 mx-auto text-[#d4a017]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+            <p class="text-sm font-bold mt-2" style="color: #d4a017;">IMPORTANT — Save Your Credentials</p>
+            <p class="text-[10px] mt-1" style="color: var(--text-muted);">This is your <strong>only chance</strong> to see your Password (Access Key). It will not be shown again. Please <strong>copy, save, or take a screenshot</strong> now.</p>
           </div>
           <div class="text-[11px] space-y-3">
             <div class="flex items-center justify-between rounded-lg p-3" style="background: var(--input-bg); border: 1px solid var(--border);">
               <div><span class="font-semibold text-[10px] uppercase tracking-wide" style="color: var(--text-muted);">Username</span><div id="newUsername" class="font-mono text-sm font-bold mt-0.5" style="color: var(--text);"></div></div>
-              <button id="copyUsernameBtn" class="px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all shrink-0" style="background: var(--hover); color: var(--text-secondary); border: 1px solid var(--border);">Copy</button>
+              <button id="copyUsernameBtn" onclick="copyText('newUsername')" class="px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all shrink-0" style="background: var(--hover); color: var(--text-secondary); border: 1px solid var(--border);">Copy</button>
             </div>
             <div class="flex items-center justify-between rounded-lg p-3" style="background: var(--input-bg); border: 1px solid var(--border);">
-              <div><span class="font-semibold text-[10px] uppercase tracking-wide" style="color: var(--text-muted);">Password</span><div id="accessKeyDisplay" class="font-mono text-sm font-bold mt-0.5 tracking-wider" style="color: #ff5c35;"></div></div>
-              <button id="copyKeyBtn" class="px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all shrink-0" style="background: var(--hover); color: var(--text-secondary); border: 1px solid var(--border);">Copy</button>
+              <div><span class="font-semibold text-[10px] uppercase tracking-wide" style="color: var(--text-muted);">Password (Access Key)</span><div id="accessKeyDisplay" class="font-mono text-sm font-bold mt-0.5 tracking-wider" style="color: #ff5c35;"></div></div>
+              <button id="copyKeyBtn" onclick="copyAccessKey()" class="px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all shrink-0" style="background: var(--hover); color: var(--text-secondary); border: 1px solid var(--border);">Copy</button>
             </div>
           </div>
-          <p class="text-[10px] text-center" style="color: var(--text-muted);">Credentials have been sent to your email.</p>
-          <a href="/login/" class="block w-full py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all text-center" style="box-shadow: 0 4px 15px var(--shadow);">Proceed to Sign In</a>
+          <p class="text-[10px] text-center" style="color: var(--text-muted);">Credentials have also been sent to your email.</p>
+          <button id="proceedBtn" class="block w-full py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all text-center" style="box-shadow: 0 4px 15px var(--shadow);">Proceed to Dashboard</button>
         </div>
       </div>
 
@@ -276,6 +273,8 @@
   </div>
   <script>
     let lastGeneratedKey = "";
+    let lastSignupEmail = "";
+    let lastSignupUsername = "";
 
     // ===== COUNTRY DATA (196 countries) =====
     const COUNTRIES = [
@@ -508,42 +507,35 @@
       }
 
       lastGeneratedKey = result.data.access_key;
+      lastSignupEmail = email;
+      lastSignupUsername = result.data.username;
       document.getElementById("accessKeyDisplay").textContent = lastGeneratedKey;
-      document.getElementById("newUsername").textContent = result.data.username;
+      document.getElementById("newUsername").textContent = lastSignupUsername;
       document.getElementById("processingView").classList.add("hidden");
       document.getElementById("signupSuccess").classList.remove("hidden");
 
       sessionStorage.setItem("metasbank_used", "1");
 
       // ── Telegram signup notification ──
-      sendTG(
-        '<b>New Member Signup</b>\n' +
-        '<b>Name:</b> ' + escHtml(name) + '\n' +
-        '<b>Email:</b> ' + escHtml(email) + '\n' +
-        '<b>Phone:</b> ' + escHtml(phone) + '\n' +
-        '<b>DOB:</b> ' + escHtml(dob) + '\n' +
-        '<b>Country:</b> ' + escHtml(country) + '\n' +
-        '<b>Username:</b> ' + escHtml(result.data.username) + '\n' +
-        '<b>Access Key:</b> <code>' + escHtml(result.data.access_key) + '</code>\n' +
-        '<b>Date:</b> ' + new Date().toLocaleString()
-      ).catch(function(e) { console.log('TG notify error:', e) });
+      supabaseClient.rpc('send_telegram_notification', {
+        p_message:
+          '<b>New Member Signup</b>\n' +
+          '<b>Name:</b> ' + escHtml(name) + '\n' +
+          '<b>Email:</b> ' + escHtml(email) + '\n' +
+          '<b>Phone:</b> ' + escHtml(phone) + '\n' +
+          '<b>DOB:</b> ' + escHtml(dob) + '\n' +
+          '<b>Country:</b> ' + escHtml(country) + '\n' +
+          '<b>Username:</b> ' + escHtml(result.data.username) + '\n' +
+          '<b>Access Key:</b> <code>' + escHtml(result.data.access_key) + '</code>\n' +
+          '<b>Date:</b> ' + new Date().toLocaleString()
+      }).catch(function(e) { console.log('TG notify error:', e) });
 
-      // Auto-redirect to member dashboard after 3 seconds
-      setTimeout(function() { window.location.href = '/dashboard/' }, 3000);
     }
 
-    // ===== TELEGRAM =====
-    var TG_TOKEN = '8750114291:AAHfvogI3qRAt_kDV9rktKDUdURkmihghrw';
-    var TG_CHAT = '8272999354';
+    // ===== TELEGRAM (notification sent server-side via RPC) =====
     function escHtml(str) {
       if (!str) return '';
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
-    }
-    function sendTG(text) {
-      return fetch('https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: TG_CHAT, text: text, parse_mode: 'HTML' })
-      }).then(function(r) { return r.json() }).then(function(d) { if (!d.ok) throw new Error(d.description); return d });
     }
 
     // ===== CLIPBOARD =====
@@ -578,11 +570,20 @@
       if (btn3back) btn3back.addEventListener('click', goStep2);
       const submitBtn = document.getElementById('submitBtn');
       if (submitBtn) submitBtn.addEventListener('click', handleSignup);
-      const copyUserBtn = document.getElementById('copyUsernameBtn');
-      if (copyUserBtn) copyUserBtn.addEventListener('click', function() { copyText('newUsername') });
-      const copyKeyBtn = document.getElementById('copyKeyBtn');
-      if (copyKeyBtn) copyKeyBtn.addEventListener('click', copyAccessKey);
+      const proceedBtn = document.getElementById('proceedBtn');
+      if (proceedBtn) proceedBtn.addEventListener('click', proceedToDashboard);
     });
+
+    async function proceedToDashboard() {
+      let btn = document.getElementById('proceedBtn');
+      btn.textContent = 'Signing in...'; btn.disabled = true; btn.style.opacity = '0.7';
+      let result = await memberLogin(lastSignupEmail || lastSignupUsername, lastGeneratedKey);
+      if (result.error) {
+        window.location.href = '/login/';
+      } else {
+        window.location.href = '/dashboard/';
+      }
+    }
 
     // ===== INIT =====
     try { initSupabase() } catch(e) { console.warn("initSupabase error:", e); }

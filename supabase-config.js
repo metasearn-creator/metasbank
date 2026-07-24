@@ -90,9 +90,6 @@ function clearRateLimit(action) {
 
 async function memberLogin(identifier, accessKey) {
   try {
-    let check = checkRateLimit('member_login', 10, 300000, 30000)
-    if (check.locked) { return { error: 'Too many failed attempts. Try again in ' + check.remaining + ' seconds.' } }
-
     let lastAttempt = rlGet('member_login_last')
     let now = Date.now()
     if (lastAttempt > 0 && (now - lastAttempt) < 1000) { return { error: 'Please wait before trying again.' } }
@@ -101,35 +98,39 @@ async function memberLogin(identifier, accessKey) {
     if (!supabaseClient) initSupabase()
     if (!supabaseClient) return { error: 'System error: database not connected' }
 
+    const isEmail = identifier.includes('@')
     let accessKeyTrimmed = (accessKey || '').trim()
-    let identifierTrimmed = identifier.toLowerCase().trim()
+    let query = supabaseClient.from('members').select('id, name, username, email, balance, status, access_key, created_at, last_login, auth_uid, auth_password').eq('access_key', accessKeyTrimmed)
+    if (isEmail) {
+      query = query.eq('email', identifier.toLowerCase().trim())
+    } else {
+      query = query.eq('username', identifier.toLowerCase().trim())
+    }
+    let resp = await query
+    let errIdentifier = identifier.toLowerCase().trim()
+    if (resp.error) { console.error('Login error:', resp.error); let r = await supabaseClient.rpc('check_rate_limit', { p_action: 'member_login', p_identifier: errIdentifier, p_max_attempts: 10, p_window_minutes: 5 }); if (r.data === false) { return { error: 'Too many failed attempts. Try again later.' } } return { error: 'Invalid credentials' } }
+    if (!resp.data || resp.data.length === 0) { let r = await supabaseClient.rpc('check_rate_limit', { p_action: 'member_login', p_identifier: errIdentifier, p_max_attempts: 10, p_window_minutes: 5 }); if (r.data === false) { return { error: 'Too many failed attempts. Try again later.' } } return { error: 'Invalid credentials' } }
+    let data = resp.data[0]
+    if (data.status !== 'active') return { error: 'Account is suspended' }
 
-    // Use secure login RPC — never SELECT auth_password directly
-    let { data: rpcData, error: rpcError } = await supabaseClient.rpc('rpc_member_login', {
-      p_identifier: identifierTrimmed,
-      p_access_key: accessKeyTrimmed
-    })
-
-    if (rpcError) { console.error('Login RPC error:', rpcError); trackRateLimit('member_login', 10, 300000); return { error: 'Invalid credentials' } }
-    if (!rpcData) { trackRateLimit('member_login', 10, 300000); return { error: 'Invalid credentials' } }
-
-    // rpcData is already parsed JSONB
-    let data = typeof rpcData === 'string' ? JSON.parse(rpcData) : rpcData
-    if (data.error) { trackRateLimit('member_login', 10, 300000); return { error: data.error } }
-
-    // Sign in with Supabase Auth using stored password
-    let authPwd = data.auth_password || null
+    // Sign in with Supabase Auth using stored password, then discard immediately
+    let authPwd = data.auth_password
     if (data.auth_uid && authPwd) {
       let authResp = await supabaseClient.auth.signInWithPassword({ email: data.email, password: authPwd })
       if (authResp.error) {
         console.error('Auth sign-in error:', authResp.error);
+        data.auth_password = null
+        let r = await supabaseClient.rpc('check_rate_limit', { p_action: 'member_login', p_identifier: errIdentifier, p_max_attempts: 10, p_window_minutes: 5 }); if (r.data === false) { return { error: 'Too many failed attempts. Try again later.' } }
+        return { error: 'Authentication failed. Please try again.' }
       }
     }
-    data.auth_password = null // never keep in sessionStorage
+    // Do NOT store auth_password in sessionStorage — re-query DB on re-auth instead
+    data.auth_password = null
     authPwd = null
 
     sessionStorage.setItem('member_user', JSON.stringify(data))
-    clearRateLimit('member_login')
+    await supabaseClient.rpc('reset_rate_limit', { p_action: 'member_login', p_identifier: errIdentifier })
+    await rpcUpdate('member', { id: data.id }, { last_login: new Date().toISOString() })
     return { data }
   } catch(ex) { console.error('Login exception:', ex); return { error: 'System error' } }
 }
@@ -160,6 +161,18 @@ async function memberLogout() {
   window.location.href = '/login/'
 }
 
+// Re-authenticate member by re-querying auth_password from DB (no sessionStorage)
+async function reauthMember() {
+  try {
+    let user = getMemberUser()
+    if (!user || !user.email) return false
+    let { data: rows } = await supabaseClient.from('members').select('auth_password').eq('id', user.id).single()
+    if (!rows || !rows.auth_password) return false
+    await supabaseClient.auth.signInWithPassword({ email: user.email, password: rows.auth_password })
+    return true
+  } catch(e) { console.error('reauthMember error:', e); return false }
+}
+
 function generateAccessKey() {
   let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
   let key = ''
@@ -168,10 +181,6 @@ function generateAccessKey() {
 }
 
 async function memberSignup(email, name, dob, phone, street, city, state, zip, country) {
-  trackRateLimit('member_signup', 3, 3600000)
-  let signupCheck = checkRateLimit('member_signup', 3, 3600000, 3600000)
-  if (signupCheck.locked) { return { error: 'Too many signup attempts. Try again later.' } }
-
   if (!supabaseClient) initSupabase()
   if (!supabaseClient) return { error: 'System error: database not connected' }
   if (!email) return { error: 'Email is required' }
@@ -180,7 +189,7 @@ async function memberSignup(email, name, dob, phone, street, city, state, zip, c
 
   // 1. Check duplicate email
   let { data: emailCheck } = await supabaseClient.from('members').select('id').eq('email', email).maybeSingle()
-  if (emailCheck) { console.error('Signup failed: email already exists in members table'); return { error: 'Registration could not be completed. Please try again later.' } }
+  if (emailCheck) { console.error('Signup failed: email already exists in members table'); await supabaseClient.rpc('check_rate_limit', { p_action: 'member_signup', p_identifier: email, p_max_attempts: 3, p_window_minutes: 60 }); return { error: 'Registration could not be completed. Please try again later.' } }
 
   // 2. Generate unique username
   let baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
@@ -302,32 +311,29 @@ let _adminPwHash = null
 
 async function loadAdminPasswordHash() {
   try {
-    let { data } = await supabaseClient.from('settings').select('value').eq('key', 'admin_password_hash').single()
-    if (data) _adminPwHash = data.value
+    let { data } = await supabaseClient.rpc('rpc_admin_get_setting', { p_key: 'admin_password_hash' })
+    if (data) _adminPwHash = data
   } catch(e) { console.error('Failed to load admin password hash:', e) }
 }
 
 async function adminLogin(email, password) {
   try {
-    let check = checkRateLimit('admin_login', 5, 60000, 60000)
-    if (check.locked) { return { error: 'Too many attempts. Try again in ' + check.remaining + ' seconds.' } }
-
     if (!password) return { error: 'Password is required' }
     if (!crypto || !crypto.subtle) return { error: 'Secure context required. Use HTTPS.' }
     let hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password))
     let hashHex = Array.from(new Uint8Array(hash)).map(function(b) { return b.toString(16).padStart(2, '0') }).join('')
 
+    let rateId = email.toLowerCase()
+
     // Try agent login first (skip for admin@secure.metasbank — that's always the super admin)
     if (email.toLowerCase() !== 'admin@secure.metasbank') {
-      let { data: agent } = await supabaseClient.from('agents').select('id, name, email, status, password_hash, role').eq('email', email.toLowerCase()).maybeSingle()
-      if (agent) {
-        if (timingSafeEqual(agent.password_hash, hashHex)) {
-          clearRateLimit('admin_login')
-          let role = agent.role || 'agent'
-          sessionStorage.setItem('admin_session', JSON.stringify({ user: { email, agent_id: agent.id, name: agent.name, role: role } }))
-          return { data: { user: { email, agent_id: agent.id, name: agent.name, role: role } } }
-        }
-        // Agent found but password wrong — fall through to legacy admin check for admin@secure.metasbank
+      let { data: agent } = await supabaseClient.rpc('rpc_verify_agent_login', { p_email: email.toLowerCase(), p_hash: hashHex })
+      let matched = agent && agent.length > 0 ? agent[0] : null
+      if (matched) {
+        await supabaseClient.rpc('reset_rate_limit', { p_action: 'admin_login', p_identifier: rateId })
+        let role = matched.role || 'agent'
+        sessionStorage.setItem('admin_session', JSON.stringify({ user: { email, agent_id: matched.id, name: matched.name, role: role } }))
+        return { data: { user: { email, agent_id: matched.id, name: matched.name, role: role } } }
       }
     }
 
@@ -338,10 +344,11 @@ async function adminLogin(email, password) {
     if (!_adminPwHash) await loadAdminPasswordHash()
     if (!_adminPwHash) return { error: 'Admin password not configured' }
     if (!timingSafeEqual(hashHex, _adminPwHash)) {
-      trackRateLimit('admin_login', 5, 60000)
+      let { data: rateOk } = await supabaseClient.rpc('check_rate_limit', { p_action: 'admin_login', p_identifier: rateId, p_max_attempts: 5, p_window_minutes: 1 })
+      if (rateOk === false) { return { error: 'Too many failed attempts. Try again later.' } }
       return { error: 'Invalid password' }
     }
-    clearRateLimit('admin_login')
+    await supabaseClient.rpc('reset_rate_limit', { p_action: 'admin_login', p_identifier: rateId })
     // Also look up admin's agent record so admin can attend chats
     let adminAgent = { agent_id: null, name: 'Admin' }
     try {
@@ -355,7 +362,8 @@ async function adminLogin(email, password) {
 
 async function updateAdminPassword(newPassword) {
   try {
-    if (!newPassword || newPassword.length < 6) return { error: 'Password must be at least 6 characters' }
+    let strengthErr = validatePasswordStrength(newPassword)
+    if (strengthErr) return { error: strengthErr }
     if (!crypto || !crypto.subtle) return { error: 'Secure context required. Use HTTPS.' }
     let hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(newPassword))
     let hashHex = Array.from(new Uint8Array(hash)).map(function(b) { return b.toString(16).padStart(2, '0') }).join('')
@@ -377,6 +385,16 @@ function getAdminSession() {
 
 // ===== SERVER-SIDE SESSION VERIFICATION =====
 // Verifies admin/agent session against the database to prevent tampering
+
+function validatePasswordStrength(pw) {
+  if (!pw || pw.length < 8) return 'Password must be at least 8 characters'
+  if (!/[A-Z]/.test(pw)) return 'Password must contain at least one uppercase letter'
+  if (!/[a-z]/.test(pw)) return 'Password must contain at least one lowercase letter'
+  if (!/[0-9]/.test(pw)) return 'Password must contain at least one number'
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pw)) return 'Password must contain at least one special character'
+  return null
+}
+
 async function verifyAdminSession(expectedRole) {
   let session = getAdminSession()
   if (!session || !session.user) return null
@@ -388,7 +406,8 @@ async function verifyAdminSession(expectedRole) {
   }
   // Agent: verify agent record still exists in DB
   try {
-    let { data: agent } = await supabaseClient.from('agents').select('id, name, email, status, role').eq('email', session.user.email.toLowerCase()).maybeSingle()
+    let { data: agents } = await supabaseClient.rpc('rpc_admin_get_agents_safe')
+    let agent = agents ? agents.find(function(a) { return a.email === session.user.email.toLowerCase() }) : null
     if (!agent || agent.status === 'disabled') return null
     if (expectedRole === 'admin' && agent.role !== 'admin') return null
     if (expectedRole === 'agent' && !agent.role) return null
@@ -438,18 +457,6 @@ async function rpc_upsert(table, data) {
   let params = {}
   for (let k in data) { params['p_' + k] = data[k] }
   return await supabaseClient.rpc('rpc_upsert_' + table, params)
-}
-
-// ===== XSS SANITIZATION =====
-// Sanitize strings before inserting into innerHTML
-function escHtml(str) {
-  if (str === null || str === undefined) return ''
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
 }
 
 // Initialize immediately

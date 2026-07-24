@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="geo-restrict.js"></script>
   <title>MetasBank — Agent Console</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://pkhftlbacapcarwnrhzn.supabase.co wss://pkhftlbacapcarwnrhzn.supabase.co; frame-ancestors 'none';">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="/supabase-config.js"></script>
@@ -60,8 +60,9 @@
     }
 
     html { height: 100%; width: 100%; overflow-x: hidden; }
-    body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); transition: background 0.4s; overflow: hidden; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden; overflow-y: auto; }
+    body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); transition: background 0.4s; overflow-x: hidden; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; }
     input, select, textarea { font-size: 16px; touch-action: manipulation; }
+    button, [data-action], a { touch-action: manipulation; }
     .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
     .main-wrapper { padding-top: var(--header-h); flex: 1; display: flex; min-height: 0; }
     .glass { background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--card-shadow); }
@@ -142,7 +143,8 @@
   <style>html.js-loading *{transition:none!important}</style>
   <script>
     document.documentElement.classList.add('js-loading');
-    const _h = new Date().getHours(); if (_h >= 6 && _h < 18) document.documentElement.classList.add('light-mode');
+    (function(){try{var t=localStorage.getItem('mb_theme');if(t==='light'){document.documentElement.classList.add('light-mode')}else if(t!=='dark'){var h=new Date().getHours();if(h>=6&&h<18)document.documentElement.classList.add('light-mode')}}catch(e){}})();
+    (function(){try{if(!sessionStorage.getItem('admin_session')){window.location.replace('/admin/login.html')}}catch(e){}})();
     document.addEventListener('DOMContentLoaded', function(){ requestAnimationFrame(function(){ document.documentElement.classList.remove('js-loading') }) });
   </script>
 </head>
@@ -219,6 +221,7 @@
                 <input id="chatReplyInput" type="text" placeholder="Type your reply..." class="flex-1 px-3 py-2 rounded-lg text-[12px]" style="background:var(--input-bg); color:var(--text); border:1px solid var(--border); outline:none;">
                 <button id="agentSendReply" class="px-4 py-2 rounded-lg text-white text-[11px] font-bold gradient-orange">Send</button>
                 <button id="claimConvBtn" class="hidden px-3 py-2 rounded-lg text-[11px] font-semibold" style="background:#10b981;color:#fff;">Claim</button>
+                <button id="agentPauseChat" class="px-3 py-2 rounded-lg text-[11px] font-semibold" style="background:var(--hover);color:var(--text-muted);" title="Pause/Resume member chat timer">Pause</button>
                 <button id="agentCloseChat" class="px-3 py-2 rounded-lg text-[11px] font-semibold" style="background:var(--hover);color:var(--text-muted);">Close</button>
               </div>
             </div>
@@ -358,6 +361,7 @@
       }
       loadAllData();
       setupAgentRealtime();
+      scrollToSection('liveChatSection');
       if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
       }
@@ -365,12 +369,13 @@
       const el = (id) => document.getElementById(id)
       el('agentToggleSidebar')?.addEventListener('click', toggleSidebar)
       el('agentNavLiveChat')?.addEventListener('click', function() { scrollToSection('liveChatSection'); loadChatConversations() })
-      el('agentNavPool')?.addEventListener('click', function() { scrollToSection('agentPoolSection') })
-      el('agentNavCallbacks')?.addEventListener('click', function() { scrollToSection('callbackRequestsSection') })
+      el('agentNavPool')?.addEventListener('click', function() { scrollToSection('agentPoolSection'); loadAgents() })
+      el('agentNavCallbacks')?.addEventListener('click', function() { scrollToSection('callbackRequestsSection'); loadCallbackRequests() })
       el('agentNavPassword')?.addEventListener('click', function() { scrollToSection('agentChangePasswordSection') })
       el('agentSendReply')?.addEventListener('click', sendChatReply)
       el('claimConvBtn')?.addEventListener('click', claimConversation)
       el('agentCloseChat')?.addEventListener('click', closeChatConversation)
+      el('agentPauseChat')?.addEventListener('click', togglePauseChat)
       el('agentStatusToggle')?.addEventListener('click', toggleMyAgentStatus)
       el('agentRefreshCallbacks')?.addEventListener('click', loadCallbackRequests)
       el('cbFilterAll')?.addEventListener('click', function() { renderCallbackRequests('all') })
@@ -410,8 +415,18 @@
       if (s) s.classList.remove('open');
     }
     function scrollToSection(id) {
-      let el = document.getElementById(id);
-      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeSidebar(); }
+      let sections = ['liveChatSection', 'agentPoolSection', 'callbackRequestsSection', 'agentChangePasswordSection'];
+      sections.forEach(function(sId) {
+        let sec = document.getElementById(sId);
+        if (sec) { sec.style.display = sId === id ? '' : 'none'; }
+      });
+      // Highlight active nav
+      document.querySelectorAll('[data-sidebar-tab]').forEach(function(nav) {
+        let isActive = nav.dataset.sidebarTab === id;
+        nav.style.background = isActive ? 'rgba(255,92,53,0.1)' : 'transparent';
+        nav.style.color = isActive ? '#ff6b42' : 'var(--text-muted)';
+      });
+      closeSidebar();
     }
 
     // ===== REALTIME SUBSCRIPTIONS =====
@@ -430,10 +445,10 @@
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_conversations' }, function() { loadChatConversations(); })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_conversations' }, function() { loadChatConversations(); })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, function(payload) {
-        if (payload.new && payload.new.sender === 'member') {
+        if (payload.new && (payload.new.sender === 'member' || payload.new.sender === 'system')) {
           if (!selectedConvId || payload.new.conversation_id !== selectedConvId) {
             loadChatConversations();
-            notifyAgent('New message from a member');
+            if (payload.new.sender === 'member') notifyAgent('New message from a member');
           } else {
             renderChatMessages(selectedConvId);
             loadChatConversations();
@@ -466,7 +481,7 @@
       if (document.visibilityState === 'hidden') {
         let session = getAdminSession();
         let agentId = session && session.user ? session.user.agent_id : null;
-        if (agentId) { rpcUpdate('agent', { id: agentId }, { status: 'offline', last_seen: new Date().toISOString() }).then(); }
+        if (agentId) { rpcUpdate('agent', { id: agentId }, { status: 'offline', last_seen: new Date().toISOString() }).catch(()=>{}); }
       }
     });
     window.addEventListener('beforeunload', function() {
@@ -481,13 +496,13 @@
       try {
         let session = getAdminSession();
         let agentId = session && session.user ? session.user.agent_id : null;
-        let { data, error } = await supabaseClient.from('chat_conversations').select('id, member_id, member_name, member_email, status, assigned_to, created_at, updated_at').order('created_at', { ascending: false }).limit(50);
+        let { data, error } = await supabaseClient.rpc('rpc_admin_get_chat_conversations');
         if (error) { console.error('load convs error:', error); return; }
         chatConversations = data || [];
         // Batch-fetch missing member names
         let missingIds = chatConversations.filter(function(c) { return !c.member_name && !c.member_email && c.member_id; }).map(function(c) { return c.member_id; });
         if (missingIds.length) {
-          let { data: members } = await supabaseClient.from('members').select('id, name, email, username').in('id', missingIds);
+          let { data: members } = await supabaseClient.rpc('rpc_admin_get_member_names', { p_ids: missingIds });
           let memberMap = {};
           if (members) { members.forEach(function(m) { memberMap[m.id] = { name: m.name || m.username, email: m.email }; }); }
           chatConversations.forEach(function(c) {
@@ -531,22 +546,35 @@
       let agentId = session && session.user ? session.user.agent_id : null;
       renderChatConversations(agentId);
       renderChatMessages(convId);
+      let btn = document.getElementById('agentPauseChat');
+      if (btn) {
+        let isPaused = chatPausedState[convId];
+        btn.textContent = isPaused ? 'Resume' : 'Pause';
+        btn.style.background = isPaused ? 'rgba(255,160,0,0.15)' : 'var(--hover)';
+        btn.style.color = isPaused ? '#ffa000' : 'var(--text-muted)';
+      }
     }
 
     async function renderChatMessages(convId) {
       let container = document.getElementById('chatMessages');
       if (!container) return;
-      let { data, error } = await supabaseClient.from('chat_messages').select('*').eq('conversation_id', convId).order('created_at', { ascending: true });
+      let { data, error } = await supabaseClient.rpc('rpc_admin_get_chat_messages', { p_conversation_id: convId });
       if (error) { container.innerHTML = '<div class="text-[11px]" style="color:#ef4444;">Error loading messages</div>'; return; }
       let msgs = data || [];
       if (!msgs.length) { container.innerHTML = '<div class="text-[11px] p-3" style="color:var(--text-muted);">No messages yet</div>'; return; }
       container.innerHTML = msgs.map(function(m) {
+        if (m.sender === 'system' && (m.message === '[TIMER_PAUSED]' || m.message === '[TIMER_RESUMED]')) return '';
         let isMember = m.sender === 'member';
         let senderLabel = isMember ? 'Member' : (m.admin_name || 'Support');
+        let msgContent = escHtml(m.message);
+        if (m.message && m.message.indexOf('[IMAGE:') === 0) {
+          let imgUrl = m.message.substring(7, m.message.length - 1);
+          msgContent = '<img src="' + escHtml(imgUrl) + '" style="max-width:240px;border-radius:8px;cursor:pointer;" onclick="window.open(this.getAttribute(\'src\'),\'_blank\')">';
+        }
         return '<div class="chat-msg-row ' + (isMember ? 'chat-msg-member' : 'chat-msg-agent') + ' rounded-lg px-3 py-2 max-w-[80%] ' + (isMember ? '' : 'ml-auto') + '">' +
-          '<div class="text-[12px] leading-relaxed" style="color:var(--text);">' + escHtml(m.message) + '</div>' +
+          '<div class="text-[12px] leading-relaxed" style="color:var(--text);">' + msgContent + '</div>' +
           '<div class="time flex justify-between"><span>' + escHtml(senderLabel) + '</span><span>' + new Date(m.created_at).toLocaleTimeString() + '</span></div></div>';
-      }).join('');
+      }).filter(function(h) { return h !== ''; }).join('');
       container.scrollTop = container.scrollHeight;
     }
 
@@ -584,16 +612,41 @@
       if (!selectedConvId) return;
       let session = getAdminSession();
       let agentId = session && session.user ? session.user.agent_id : null;
+      // Send system message first, then close
+      if (agentId) {
+        await rpcInsert('chat_message', {
+          conversation_id: selectedConvId, sender: 'system', message: 'Chat closed by support agent.'
+        });
+      }
       let { error } = await rpcUpdate('chat_conversation', { id: selectedConvId }, { status: 'closed', updated_at: new Date().toISOString() });
-      if (agentId) { rpcInsert('chat_message', {
-        conversation_id: selectedConvId, sender: 'system', message: 'Chat closed by support agent.'
-      }).then(); }
       if (error) { showToast('Error closing conversation'); return; }
       showToast('Conversation closed');
       selectedConvId = null;
       document.getElementById('chatView').classList.add('hidden');
       document.getElementById('chatEmpty').classList.remove('hidden');
       loadChatConversations();
+    }
+
+    let chatPausedState = {};
+
+    async function togglePauseChat() {
+      if (!selectedConvId) { showToast('Select a conversation first'); return; }
+      let btn = document.getElementById('agentPauseChat');
+      let isPaused = chatPausedState[selectedConvId];
+      let msg = isPaused ? '[TIMER_RESUMED]' : '[TIMER_PAUSED]';
+      let { error } = await rpcInsert('chat_message', {
+        conversation_id: selectedConvId,
+        sender: 'system',
+        message: msg
+      });
+      if (error) { showToast('Error toggling pause'); return; }
+      chatPausedState[selectedConvId] = !isPaused;
+      if (btn) {
+        btn.textContent = isPaused ? 'Pause' : 'Resume';
+        btn.style.background = isPaused ? 'var(--hover)' : 'rgba(255,160,0,0.15)';
+        btn.style.color = isPaused ? 'var(--text-muted)' : '#ffa000';
+      }
+      renderChatMessages(selectedConvId);
     }
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -616,7 +669,7 @@
     // ===== AGENT POOL =====
     async function loadAgents() {
       try {
-        let { data, error } = await supabaseClient.from('agents').select('id, name, email, status, last_seen').order('name');
+        let { data, error } = await supabaseClient.rpc('rpc_admin_get_agents_safe')
         if (error) { console.error('load agents error:', error); return; }
         renderAgentPool(data || []);
       } catch(e) { console.error('loadAgents error:', e); }
@@ -654,16 +707,17 @@
       if (!agentId) { showToast('Login required'); return; }
       let btn = document.getElementById('agentStatusToggle');
       let label = document.getElementById('agentStatusLabel');
-      let { data: agent } = await supabaseClient.from('agents').select('status').eq('id', agentId).single();
-      if (!agent) return;
-      let newStatus = agent.status === 'online' ? 'offline' : 'online';
-      await rpcUpdate('agent', { id: agentId }, { status: newStatus, last_seen: new Date().toISOString() });
-      if (btn) {
-        btn.textContent = newStatus === 'online' ? 'Online' : 'Offline';
-        btn.style.background = newStatus === 'online' ? 'rgba(16,185,129,0.15)' : 'rgba(107,114,128,0.15)';
-        btn.style.color = newStatus === 'online' ? '#10b981' : '#6b7280';
-      }
-      if (label) label.textContent = 'You are ' + (newStatus === 'online' ? 'online' : 'offline');
+      try {
+        let { data: currentStatus } = await supabaseClient.rpc('rpc_agent_get_own_status', { p_id: agentId });
+        let newStatus = currentStatus === 'online' ? 'offline' : 'online';
+        await rpcUpdate('agent', { id: agentId }, { status: newStatus, last_seen: new Date().toISOString() });
+        if (btn) {
+          btn.textContent = newStatus === 'online' ? 'Online' : 'Offline';
+          btn.style.background = newStatus === 'online' ? 'rgba(16,185,129,0.15)' : 'rgba(107,114,128,0.15)';
+          btn.style.color = newStatus === 'online' ? '#10b981' : '#6b7280';
+        }
+        if (label) label.textContent = 'You are ' + (newStatus === 'online' ? 'online' : 'offline');
+      } catch(e) { console.error('toggleMyAgentStatus error:', e); }
       loadAgents();
     }
 
@@ -673,19 +727,20 @@
       if (!agentId) return;
       let btn = document.getElementById('agentStatusToggle');
       let label = document.getElementById('agentStatusLabel');
-      // Only set online if currently offline
-      let { data: current } = await supabaseClient.from('agents').select('status').eq('id', agentId).single();
-      if (current && current.status === 'offline') {
-        await rpcUpdate('agent', { id: agentId }, { status: 'online', last_seen: new Date().toISOString() });
-      }
-      let { data: agent } = await supabaseClient.from('agents').select('status').eq('id', agentId).single();
-      if (!agent) return;
-      if (btn) {
-        btn.textContent = agent.status === 'online' ? 'Online' : agent.status === 'busy' ? 'Busy' : 'Offline';
-        btn.style.background = agent.status === 'online' ? 'rgba(16,185,129,0.15)' : agent.status === 'busy' ? 'rgba(245,158,11,0.15)' : 'rgba(107,114,128,0.15)';
-        btn.style.color = agent.status === 'online' ? '#10b981' : agent.status === 'busy' ? '#f59e0b' : '#6b7280';
-      }
-      if (label) label.textContent = 'You are ' + (agent.status || 'offline');
+      try {
+        let { data: currentStatus } = await supabaseClient.rpc('rpc_agent_get_own_status', { p_id: agentId });
+        let status = currentStatus || 'offline';
+        if (status === 'offline') {
+          await rpcUpdate('agent', { id: agentId }, { status: 'online', last_seen: new Date().toISOString() });
+          status = 'online';
+        }
+        if (btn) {
+          btn.textContent = status === 'online' ? 'Online' : status === 'busy' ? 'Busy' : 'Offline';
+          btn.style.background = status === 'online' ? 'rgba(16,185,129,0.15)' : status === 'busy' ? 'rgba(245,158,11,0.15)' : 'rgba(107,114,128,0.15)';
+          btn.style.color = status === 'online' ? '#10b981' : status === 'busy' ? '#f59e0b' : '#6b7280';
+        }
+        if (label) label.textContent = 'You are ' + (status || 'offline');
+      } catch(e) { console.error('initAgentStatus error:', e); }
     }
 
     // ===== CALLBACK REQUESTS =====
@@ -694,7 +749,7 @@
 
     async function loadCallbackRequests() {
       try {
-        let { data, error } = await supabaseClient.from('sms_callbacks').select('*').order('created_at', { ascending: false }).limit(50);
+        let { data, error } = await supabaseClient.rpc('rpc_admin_get_sms_callbacks');
         if (error) { console.error('load callbacks error:', error); return; }
         allCallbacks = data || [];
         renderCallbackRequests(callbackFilter);
@@ -781,7 +836,9 @@
 
       if (!currentPw || !newPw || !confirmPw) { showToast('Fill all fields.'); return; }
       if (newPw !== confirmPw) { showToast('New passwords do not match.'); return; }
-      if (newPw.length < 6) { showToast('Password must be at least 6 characters.'); return; }
+      if (newPw.length < 8) { showToast('Password must be at least 8 characters.'); return; }
+      let strengthErr = validatePasswordStrength(newPw)
+      if (strengthErr) { showToast(strengthErr); return; }
 
       let session = getAdminSession();
       if (!session || !session.user || !session.user.agent_id) { showToast('You must be logged in as an agent.'); return; }
@@ -790,8 +847,8 @@
       let curHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(currentPw));
       let curHashHex = Array.from(new Uint8Array(curHash)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
 
-      let { data: agentData } = await supabaseClient.from('agents').select('password_hash').eq('id', session.user.agent_id).single();
-      if (!agentData || agentData.password_hash !== curHashHex) { showToast('Current password is incorrect.'); return; }
+      let { data: pwMatch } = await supabaseClient.rpc('rpc_agent_verify_password', { p_id: session.user.agent_id, p_hash: curHashHex });
+      if (!pwMatch) { showToast('Current password is incorrect.'); return; }
 
       let newHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(newPw));
       let newHashHex = Array.from(new Uint8Array(newHash)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
@@ -844,7 +901,7 @@
 
     function escHtml(str) {
       if (!str) return '';
-      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/`/g,'&#x60;');
     }
 
   </script>

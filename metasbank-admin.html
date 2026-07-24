@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="geo-restrict.js"></script>
   <title>MetasBank — Admin Console</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://pkhftlbacapcarwnrhzn.supabase.co wss://pkhftlbacapcarwnrhzn.supabase.co; frame-ancestors 'none';">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="/supabase-config.js"></script>
@@ -62,6 +62,7 @@
     html { height: 100%; width: 100%; overflow-x: hidden; }
     body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); color: var(--text); transition: background 0.4s, color 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden; }
     input, select, textarea { font-size: 16px; touch-action: manipulation; }
+    button, [data-action], a { touch-action: manipulation; }
     .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
     .main-wrapper { padding-top: var(--header-h); flex: 1; display: flex; min-height: 0; }
     .glass { background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--card-shadow); }
@@ -159,7 +160,8 @@
   <style>html.js-loading *{transition:none!important}</style>
   <script>
     document.documentElement.classList.add('js-loading');
-    const _h = new Date().getHours(); if (_h >= 6 && _h < 18) document.documentElement.classList.add('light-mode');
+    (function(){try{var t=localStorage.getItem('mb_theme');if(t==='light'){document.documentElement.classList.add('light-mode')}else if(t!=='dark'){var h=new Date().getHours();if(h>=6&&h<18)document.documentElement.classList.add('light-mode')}}catch(e){}})();
+    (function(){try{if(!sessionStorage.getItem('admin_session')){window.location.replace('/admin/login.html')}}catch(e){}})();
     document.addEventListener('DOMContentLoaded', function(){ requestAnimationFrame(function(){ document.documentElement.classList.remove('js-loading') }) });
   </script>
 </head>
@@ -256,17 +258,17 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
           Transaction Log
         </div>
-        <div class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);" data-action="scrollToSection" data-scroll="transactionLogSection" data-role="admin">
+        <div class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);" data-action="scrollToSectionAndAudit" data-scroll="auditLogSection" data-role="admin">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
           Audit Log
         </div>
-        <div class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);" data-action="scrollToSectionAndAudit" data-scroll="auditLogSection" data-role="admin">
+        <div class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);" data-action="scrollToSection" data-scroll="permissionsSection" data-role="admin">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
           Permissions
         </div>
       </nav>
       <div class="p-3" style="border-top: 1px solid var(--border);">
-        <div class="px-3 py-2 rounded-lg text-[10px] font-semibold" style="background: var(--hover); color: var(--text-muted);">MetasBank v0.1</div>
+        <div class="px-3 py-2 rounded-lg text-[10px] font-semibold" style="background: var(--hover); color: var(--text-muted);">MetasBank v2.4.1</div>
       </div>
     </aside>
 
@@ -344,7 +346,7 @@
           </div>
           <div class="flex gap-2 flex-wrap">
             <button data-action="renderWithdrawalQueue" class="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style="color: #ff6b42; background: rgba(255,92,53,0.1);">Refresh</button>
-            <button data-action="loadCallbackRequests" class="px-3 py-1.5 rounded-lg text-white text-[11px] font-semibold" style="background: #ff5c35;">Export</button>
+            <button data-action="exportWithdrawalQueueCSV" class="px-3 py-1.5 rounded-lg text-white text-[11px] font-semibold" style="background: #ff5c35;">Export</button>
           </div>
         </div>
         <div class="overflow-x-auto">
@@ -759,7 +761,7 @@
             <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">Members requesting SMS callback — reply via phone</p>
           </div>
           <div class="flex gap-2 flex-wrap">
-            <button data-action="loadCallbackRequests" class="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style="color: #ff6b42; background: rgba(255,92,53,0.1);">Refresh</button>
+          <button data-action="renderAuditLog" class="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style="color: #ff6b42; background: rgba(255,92,53,0.1);">Refresh</button>
             <button data-action="loadCallbackRequests" class="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style="color: #ef4444; background: rgba(239,68,68,0.1);">Clear All</button>
             <div class="flex rounded-lg overflow-hidden text-[11px] font-semibold" style="border: 1px solid var(--border);">
               <button id="cbFilterAll" data-action="renderCallbackRequests" data-cbfilter="all" class="px-3 py-1.5 transition-all" style="background: rgba(255,92,53,0.1); color: #ff6b42;">All</button>
@@ -799,7 +801,7 @@
             <h2 class="text-sm font-bold" style="color: var(--text);">Chatbot Configuration</h2>
             <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">Set keyword-response pairs, agent name, and fallback message</p>
           </div>
-          <button data-action="saveDepositConfig" class="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style="color: #fff; background: #e84a24;">Save Changes</button>
+<button data-action="saveChatbotConfig" class="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style="color: #fff; background: #e84a24;">Save Changes</button>
         </div>
 
         <!-- Agent Settings -->
@@ -873,9 +875,9 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
               <div id="chatMessages" class="flex-1 overflow-y-auto mb-3 space-y-1" style="max-height: 360px; min-height: 200px;"></div>
               <div class="flex gap-2" data-role="agent">
                 <input id="chatReplyInput" type="text" placeholder="Type your reply..." class="flex-1 px-3 py-2 rounded-lg text-[12px]" style="background:var(--input-bg); color:var(--text); border:1px solid var(--border); outline:none;">
-                <button data-action="claimConversation" class="px-4 py-2 rounded-lg text-white text-[11px] font-bold gradient-orange">Send</button>
+                <button data-action="sendChatReply" class="px-4 py-2 rounded-lg text-white text-[11px] font-bold gradient-orange">Send</button>
                 <button id="claimConvBtn" data-action="claimConversation" class="hidden px-3 py-2 rounded-lg text-[11px] font-semibold" style="background:#10b981;color:#fff;">Claim</button>
-                <button data-action="claimConversation" class="px-3 py-2 rounded-lg text-[11px] font-semibold" style="background:var(--hover);color:var(--text-muted);">Close</button>
+                <button data-action="closeChatConversation" class="px-3 py-2 rounded-lg text-[11px] font-semibold" style="background:var(--hover);color:var(--text-muted);">Close</button>
               </div>
               <div class="flex gap-2 mt-2">
                 <button data-action="deleteChatConversation" data-role="admin" class="px-3 py-2 rounded-lg text-[11px] font-semibold" style="background:#7f1d1d;color:#fca5a5;">Delete</button>
@@ -1287,11 +1289,15 @@ document.addEventListener('DOMContentLoaded', async function() {
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_conversations' }, function() { loadChatConversations(); })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, function(payload) {
-          if (payload.new && payload.new.sender === 'member' && (!selectedConvId || payload.new.conversation_id !== selectedConvId)) {
-            loadChatConversations().then(function() {
-              let conv = chatConversations.find(function(c) { return c.id === payload.new.conversation_id; });
-              showAdminToast((conv ? (conv.memberName || 'A member') : 'A member') + ' sent a message');
-            });
+          if (payload.new && (payload.new.sender === 'member' || payload.new.sender === 'system') && (!selectedConvId || payload.new.conversation_id !== selectedConvId)) {
+            if (payload.new.sender === 'member') {
+              loadChatConversations().then(function() {
+                let conv = chatConversations.find(function(c) { return c.id === payload.new.conversation_id; });
+                showAdminToast((conv ? (conv.memberName || 'A member') : 'A member') + ' sent a message');
+              });
+            } else {
+              loadChatConversations();
+            }
           } else {
             if (selectedConvId && payload.new && payload.new.conversation_id === selectedConvId) renderChatMessages(selectedConvId);
             loadChatConversations();
@@ -1342,38 +1348,32 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     async function loadStats() {
       try {
-        // Total Balance — sum of all member balances
-        let { data: totals } = await supabaseClient.from('members').select('balance');
-        let totalBal = 0;
-        if (totals && totals.length) {
-          totals.forEach(function(m) { totalBal += parseFloat(m.balance) || 0; });
-        }
+        // Dashboard stats via single RPC call
+        let { data: statsArr } = await supabaseClient.rpc('rpc_admin_get_dashboard_stats');
+        let stats = Array.isArray(statsArr) && statsArr.length ? statsArr[0] : null;
+        let totalBal = stats ? parseFloat(stats.total_balance) || 0 : 0
+        let memberCountVal = stats ? parseInt(stats.total_members) || 0 : 0
         let tbEl = document.getElementById('statTotalBalance');
         if (tbEl) tbEl.textContent = formatAmount(totalBal);
 
-        // Active Banks count
-        let { data: activeBanks } = await supabaseClient.from('bank_accounts').select('id').eq('active', true);
+        // Active Banks & Wallets counts (from stats RPC which already has these)
         let abEl = document.getElementById('statActiveBanks');
-        if (abEl) abEl.textContent = (activeBanks ? activeBanks.length : 0).toString();
+        if (abEl) abEl.textContent = (stats ? parseInt(stats.active_banks) || 0 : 0).toString();
 
-        // Active Wallets count
-        let { data: wallets } = await supabaseClient.from('wallets').select('active').eq('active', true);
         let awEl = document.getElementById('statActiveWallets');
-        if (awEl) awEl.textContent = (wallets ? wallets.length : 0).toString();
+        if (awEl) awEl.textContent = (stats ? parseInt(stats.active_wallets) || 0 : 0).toString();
 
         // Registered Members count
-        let { data: allMembers } = await supabaseClient.from('members').select('id');
-        let memberCount = allMembers ? allMembers.length : 0;
         let rmEl = document.getElementById('statRegisteredMembers');
-        if (rmEl) rmEl.textContent = memberCount.toLocaleString();
+        if (rmEl) rmEl.textContent = memberCountVal.toLocaleString();
 
         // Update sidebar member count
         let sideMc = document.getElementById('sidebarMemberCount');
-        if (sideMc) sideMc.textContent = memberCount.toLocaleString();
+        if (sideMc) sideMc.textContent = memberCountVal.toLocaleString();
 
         // Update member section badge
         let msBadge = document.getElementById('memberCountBadge');
-        if (msBadge) msBadge.textContent = memberCount.toLocaleString() + ' members';
+        if (msBadge) msBadge.textContent = memberCountVal.toLocaleString() + ' members';
       } catch(e) { console.error('loadStats error:', e); }
     }
 
@@ -1397,7 +1397,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       let loading = document.getElementById('memberLoading')
       if (!tbody) return
       if (loading) loading.classList.remove('hidden')
-      let { data: members, error: membersErr } = await supabaseClient.from('members').select('*').order('created_at', { ascending: false })
+      let { data: members, error: membersErr } = await supabaseClient.rpc('rpc_admin_get_members')
       if (loading) loading.classList.add('hidden')
       if (membersErr) { console.error('renderMembers error:', membersErr); return }
       if (!members || !members.length) {
@@ -1483,14 +1483,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     let currentAgentId = null;
 
     async function loadChatConversations() {
-      let { data } = await supabaseClient.from('chat_conversations').select('id, member_id, member_name, member_email, status, assigned_to, created_at, updated_at').in('status', ['unassigned', 'active']).order('updated_at', { ascending: false });
+      let { data } = await supabaseClient.rpc('rpc_admin_get_agent_conversations');
       chatConversations = data || [];
       // Batch-fetch member names for conversations missing member_name
       let missingMemberIds = chatConversations.filter(function(c) { return !c.member_name && c.member_id; }).map(function(c) { return c.member_id; });
       let memberMap = {};
       if (missingMemberIds.length) {
         try {
-          let { data: members } = await supabaseClient.from('members').select('id, name, username').in('id', missingMemberIds);
+          let { data: members } = await supabaseClient.rpc('rpc_admin_get_member_names', { p_ids: missingMemberIds });
           if (members) { members.forEach(function(m) { memberMap[m.id] = m.name || m.username || 'Member'; }); }
         } catch(e) {}
       }
@@ -1499,7 +1499,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       let agentMap = {};
       if (assignedIds.length) {
         try {
-          let { data: agents } = await supabaseClient.from('agents').select('id, name').in('id', assignedIds);
+          let { data: agents } = await supabaseClient.rpc('rpc_admin_get_agents_safe');
           if (agents) { agents.forEach(function(a) { agentMap[a.id] = a.name; }); }
         } catch(e) {}
       }
@@ -1527,7 +1527,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         let isUnassigned = c.status === 'unassigned';
         let label = isUnassigned ? '<span class="text-[10px] font-semibold" style="color:#f59e0b;">New</span>' : '<span class="text-[10px]" style="color:#10b981;">Active</span>';
         let agentInfo = c.agentName ? '<div class="text-[9px]" style="color:var(--text-muted);">Agent: ' + escHtml(c.agentName) + '</div>' : '';
-        return '<div class="chat-conv' + (selectedConvId === c.id ? ' active' : '') + '" onclick="selectConversation(c.id)" id="conv_' + c.id + '">' +
+        return '<div class="chat-conv' + (selectedConvId === c.id ? ' active' : '') + '" onclick="selectConversation(\'' + c.id + '\')" id="conv_' + c.id + '">' +
           '<div class="flex items-center gap-2">' +
           '<div class="text-[11px] font-semibold" style="color:var(--text);">' + escHtml(c.memberName || 'Member') + '</div>' +
           label +
@@ -1563,6 +1563,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (conv.agentName) info += ' &mdash; Agent: ' + escHtml(conv.agentName);
         header.innerHTML = info;
       }
+      // Disable reply input if agent is handling this conversation
+      let session = getAdminSession();
+      let myAgentId = session && session.user && session.user.agent_id;
+      let replyInput = document.getElementById('chatReplyInput');
+      let sendBtn = document.querySelector('[data-action="sendChatReply"]');
+      if (conv && conv.assigned_to && conv.assigned_to !== myAgentId) {
+        if (replyInput) { replyInput.disabled = true; replyInput.placeholder = 'Being handled by ' + escHtml(conv.agentName || 'an agent') + '...'; }
+        if (sendBtn) sendBtn.style.opacity = '0.4';
+      } else {
+        if (replyInput) { replyInput.disabled = false; replyInput.placeholder = 'Type your reply...'; }
+        if (sendBtn) sendBtn.style.opacity = '1';
+      }
       renderChatMessages(convId);
     }
 
@@ -1584,7 +1596,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function renderChatMessages(convId) {
       let container = document.getElementById('chatMessages');
       if (!container) return;
-      let { data } = await supabaseClient.from('chat_messages').select('*').eq('conversation_id', convId).order('created_at', { ascending: true });
+      let { data } = await supabaseClient.rpc('rpc_admin_get_chat_messages', { p_conversation_id: convId });
       if (!data || !data.length) { container.innerHTML = '<div class="text-[11px] text-center py-4" style="color:var(--text-muted);">No messages yet</div>'; return; }
       container.innerHTML = data.map(function(m) {
         let side = m.sender === 'admin' ? 'admin' : m.sender === 'system' ? 'system' : 'member';
@@ -1602,9 +1614,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function sendChatReply() {
       let input = document.getElementById('chatReplyInput');
       let text = input.value.trim();
-      if (!text || !selectedConvId) { console.log('sendChatReply: no text or no selectedConvId'); return; }
-      input.value = '';
+      if (!text || !selectedConvId) { return; }
+      // Block if conversation is being handled by another agent
+      let conv = chatConversations.find(function(c) { return c.id === selectedConvId; });
       let session = getAdminSession();
+      let myAgentId = session && session.user && session.user.agent_id;
+      if (conv && conv.assigned_to && conv.assigned_to !== myAgentId) {
+        showAdminToast('This conversation is being handled by ' + escHtml(conv.agentName || 'another agent') + '. You cannot reply.');
+        return;
+      }
+      input.value = '';
       let adminName = session && session.user ? (session.user.name || 'Support Agent') : 'Support Agent';
       let { error } = await rpcInsert('chat_message', {
         conversation_id: selectedConvId,
@@ -1627,11 +1646,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('agentStatusToggle').classList.remove('hidden');
         document.getElementById('agentStatusLabel').classList.remove('hidden');
         // Set agent online only if currently offline
-        supabaseClient.from('agents').select('status').eq('id', myAgentId).single().then(function(res) {
-          if (res.data && res.data.status === 'offline') {
-            rpcUpdate('agent', { id: myAgentId }, { status: 'online', last_seen: new Date().toISOString() }).then();
+        supabaseClient.rpc('rpc_admin_get_agent_status', { p_id: myAgentId }).then(function(res) {
+          if (res.data && res.data === 'offline') {
+            rpcUpdate('agent', { id: myAgentId }, { status: 'online', last_seen: new Date().toISOString() }).catch(function(){});
           }
-        });
+        }).catch(function(){});
       } else {
         document.getElementById('agentStatusToggle').classList.add('hidden');
         document.getElementById('agentStatusLabel').classList.add('hidden');
@@ -1639,7 +1658,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function loadAgents() {
-      let { data } = await supabaseClient.from('agents').select('id, name, email, status, last_seen').order('name');
+      let { data } = await supabaseClient.rpc('rpc_admin_get_agents_safe')
       let tbody = document.getElementById('agentPoolBody');
       if (!tbody) return;
       if (!data || !data.length) {
@@ -1723,8 +1742,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     async function toggleMyAgentStatus() {
       if (!myAgentId) return;
-      let { data } = await supabaseClient.from('agents').select('status').eq('id', myAgentId).single();
-      let newStatus = data && data.status === 'online' ? 'offline' : 'online';
+      let { data: status } = await supabaseClient.rpc('rpc_admin_get_agent_status', { p_id: myAgentId });
+      let newStatus = status === 'online' ? 'offline' : 'online';
       await rpcUpdate('agent', { id: myAgentId }, { status: newStatus, last_seen: new Date().toISOString() });
       let btn = document.getElementById('agentStatusToggle');
       let label = document.getElementById('agentStatusLabel');
@@ -1857,9 +1876,8 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (amount > 1e9) { showToast('Amount exceeds maximum allowed.'); return; }
 
       let member = null;
-      let { data: m1 } = await supabaseClient.from('members').select('id, name, balance, email').eq('username', username.toLowerCase()).maybeSingle();
-      if (m1) { member = m1; }
-      else { let { data: m2 } = await supabaseClient.from('members').select('id, name, balance, email').eq('email', username.toLowerCase()).maybeSingle(); if (m2) member = m2; }
+      let { data: memberLookup } = await supabaseClient.rpc('rpc_admin_find_member', { p_identifier: username.toLowerCase() });
+      if (memberLookup && memberLookup.length) { member = memberLookup[0]; }
       if (!member) { showToast('Member not found'); return }
 
       // Use atomic RPC
@@ -1913,12 +1931,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     let defaultCoins = []
 
     async function loadDepositConfigFromDB() {
-      let { data: coins } = await supabaseClient.from('deposit_coins').select('*').order('sort_order')
+      let { data: coins } = await supabaseClient.rpc('rpc_admin_get_deposit_coins')
       if (coins && coins.length) {
         defaultCoins = coins.map(function(c) { return { coin: c.coin, label: c.label, address: c.address, qrcode: c.qrcode || '' } })
       }
       renderCoinTable()
-      let { data: wireConfig } = await supabaseClient.from('deposit_wire_config').select('*').limit(1).single()
+      let { data: wireArr } = await supabaseClient.rpc('rpc_admin_get_deposit_wire_config')
+      let wireConfig = Array.isArray(wireArr) && wireArr.length ? wireArr[0] : null
       if (wireConfig) {
         if (document.getElementById('depWireBank')) document.getElementById('depWireBank').value = wireConfig.bank_name || ''
         if (document.getElementById('depWireBeneficiary')) document.getElementById('depWireBeneficiary').value = wireConfig.beneficiary || ''
@@ -1927,7 +1946,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (document.getElementById('depWireRouting')) document.getElementById('depWireRouting').value = wireConfig.routing || ''
         if (document.getElementById('depWireBeneficiaryAddr')) document.getElementById('depWireBeneficiaryAddr').value = wireConfig.beneficiary_address || ''
       }
-      let { data: achConfig } = await supabaseClient.from('deposit_ach_config').select('*').limit(1).single()
+      let { data: achArr } = await supabaseClient.rpc('rpc_admin_get_deposit_ach_config')
+      let achConfig = Array.isArray(achArr) && achArr.length ? achArr[0] : null
       if (achConfig) {
         if (document.getElementById('depAchBank')) document.getElementById('depAchBank').value = achConfig.bank_name || ''
         if (document.getElementById('depAchBeneficiary')) document.getElementById('depAchBeneficiary').value = achConfig.beneficiary || ''
@@ -1973,10 +1993,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function saveDepositConfig() {
       if (!getAdminSession()) { showToast('Authentication required.'); return; }
       // Save coins
-      let { data: existing } = await supabaseClient.from('deposit_coins').select('id')
-      if (existing && existing.length) {
-        for (let e of existing) {
-          await supabaseClient.rpc('rpc_delete_deposit_coin', { p_id: e.id })
+      let { data: existingCoinIds } = await supabaseClient.rpc('rpc_admin_get_deposit_coin_ids')
+      if (existingCoinIds && existingCoinIds.length) {
+        for (let cid of existingCoinIds) {
+          await supabaseClient.rpc('rpc_delete_deposit_coin', { p_id: cid })
         }
       }
       for (let i = 0; i < defaultCoins.length; i++) {
@@ -1997,9 +2017,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         routing: document.getElementById('depWireRouting').value,
         beneficiary_address: document.getElementById('depWireBeneficiaryAddr').value
       }
-      let { data: existingWire } = await supabaseClient.from('deposit_wire_config').select('id').limit(1)
+      let { data: existingWire } = await supabaseClient.rpc('rpc_admin_get_deposit_wire_id')
       await supabaseClient.rpc('rpc_upsert_deposit_wire_config', {
-        p_id: existingWire && existingWire.length ? existingWire[0].id : null,
+        p_id: existingWire && existingWire.id ? existingWire.id : null,
         p_bank_name: wireObj.bank_name,
         p_beneficiary: wireObj.beneficiary,
         p_swift: wireObj.swift,
@@ -2015,9 +2035,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         account: document.getElementById('depAchAccount').value,
         account_type: document.getElementById('depAchAccountType').value
       }
-      let { data: existingAch } = await supabaseClient.from('deposit_ach_config').select('id').limit(1)
+      let { data: existingAch } = await supabaseClient.rpc('rpc_admin_get_deposit_ach_id')
       await supabaseClient.rpc('rpc_upsert_deposit_ach_config', {
-        p_id: existingAch && existingAch.length ? existingAch[0].id : null,
+        p_id: existingAch && existingAch.id ? existingAch.id : null,
         p_bank_name: achObj.bank_name,
         p_beneficiary: achObj.beneficiary,
         p_routing: achObj.routing,
@@ -2028,7 +2048,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function loadFeeConfig() {
-      let { data: fees } = await supabaseClient.from('fee_config').select('*')
+      let { data: fees } = await supabaseClient.rpc('rpc_admin_get_fee_config')
       if (fees && fees.length) {
         fees.forEach(function(f) {
           let method = f.method
@@ -2109,8 +2129,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     let chatRules = []
 
     async function loadChatbotConfigFromDB() {
-      let { data: config } = await supabaseClient.from('chatbot_config').select('*').single()
-      let { data: rules } = await supabaseClient.from('chatbot_rules').select('*').order('sort_order')
+      let { data: configArr } = await supabaseClient.rpc('rpc_admin_get_chatbot_config')
+      let config = Array.isArray(configArr) && configArr.length ? configArr[0] : null
+      let { data: rules } = await supabaseClient.rpc('rpc_admin_get_chatbot_rules')
       
       if (config) {
         document.getElementById('chatbotAgentName').value = config.agent_name || '';
@@ -2162,9 +2183,9 @@ document.addEventListener('DOMContentLoaded', async function() {
       let greetings = document.getElementById('chatbotGreetings').value.trim()
 
       // Upsert chatbot_config
-      let { data: existing } = await supabaseClient.from('chatbot_config').select('id').limit(1)
+      let { data: existing } = await supabaseClient.rpc('rpc_admin_get_chatbot_config_id')
       await supabaseClient.rpc('rpc_upsert_chatbot_config', {
-        p_id: existing && existing.length ? existing[0].id : 1,
+        p_id: existing && existing.id ? existing.id : 1,
         p_agent_name: agentName,
         p_fallback: fallback,
         p_quick_replies: quickReplies,
@@ -2172,10 +2193,10 @@ document.addEventListener('DOMContentLoaded', async function() {
       })
 
       // Delete existing rules and re-insert
-      let { data: existingRules } = await supabaseClient.from('chatbot_rules').select('id')
-      if (existingRules && existingRules.length) {
-        for (let r of existingRules) {
-          await supabaseClient.rpc('rpc_delete_chatbot_rule', { p_id: r.id })
+      let { data: existingRuleIds } = await supabaseClient.rpc('rpc_admin_get_chatbot_rule_ids')
+      if (existingRuleIds && existingRuleIds.length) {
+        for (let rid of existingRuleIds) {
+          await supabaseClient.rpc('rpc_delete_chatbot_rule', { p_id: rid })
         }
       }
       for (let i = 0; i < chatRules.length; i++) {
@@ -2259,20 +2280,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     let roleData = []
 
     async function loadWallets() {
-      let { data } = await supabaseClient.from('wallets').select('*').order('sort_order')
-      if (data) walletData = data
+      let { data } = await supabaseClient.rpc('rpc_admin_get_wallets')
+      if (data && data.length) walletData = data; else walletData = []
       renderWallets()
     }
 
     async function loadBanks() {
-      let { data } = await supabaseClient.from('bank_accounts').select('*').order('sort_order')
-      if (data) bankData = data
+      let { data } = await supabaseClient.rpc('rpc_admin_get_bank_accounts')
+      if (data && data.length) bankData = data; else bankData = []
       renderBanks()
     }
 
     async function loadRoles() {
-      let { data } = await supabaseClient.from('roles').select('*')
-      if (data) roleData = data
+      let { data } = await supabaseClient.rpc('rpc_admin_get_roles')
+      if (data && data.length) roleData = data; else roleData = []
       renderRoles()
     }
 
@@ -2512,7 +2533,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       let tbody = document.getElementById('depositRequestBody')
       let loading = document.getElementById('depositLoading')
       if (loading) loading.classList.remove('hidden')
-      let { data: deposits } = await supabaseClient.from('deposits').select('*, members(name, username)').eq('status', 'pending').order('created_at', { ascending: false })
+      let { data: deposits } = await supabaseClient.rpc('rpc_admin_get_pending_deposits')
       if (loading) loading.classList.add('hidden')
       if (!deposits || !deposits.length) {
         tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-[13px]" style="color:var(--text-muted);">No pending deposit requests</td></tr>'
@@ -2555,7 +2576,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       let tbody = document.getElementById('withdrawalQueueBody')
       let loading = document.getElementById('withdrawalLoading')
       if (loading) loading.classList.remove('hidden')
-      let { data: withdrawals } = await supabaseClient.from('withdrawals').select('*, members(name, username)').order('created_at', { ascending: false })
+      let { data: withdrawals } = await supabaseClient.rpc('rpc_admin_get_all_withdrawals')
       if (loading) loading.classList.add('hidden')
       if (!withdrawals || !withdrawals.length) {
         tbody.innerHTML = '<tr><td colspan="9" class="py-8 text-center text-[13px]" style="color:var(--text-muted);">No withdrawal requests</td></tr>'
@@ -2605,7 +2626,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function authorizeWithdrawal(id) {
-      let { data: w } = await supabaseClient.from('withdrawals').select('member_id, reference, status').eq('id', id).single();
+      if (!getAdminSession()) { showToast('Authentication required.'); return; }
+      let { data: w } = await supabaseClient.rpc('rpc_admin_get_withdrawal', { p_id: id });
       if (!w) { showToast('Withdrawal not found'); return; }
       if (w.status !== 'pending_authorization') { showToast('Withdrawal is not awaiting authorization'); return; }
       let { error } = await supabaseClient.rpc('rpc_update_withdrawal', { p_id: id, p_status: 'pending' });
@@ -2618,7 +2640,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     async function approveWithdrawal(id) {
       if (!getAdminSession()) { showToast('Authentication required.'); return; }
-      let { data: w } = await supabaseClient.from('withdrawals').select('member_id, amount, reference, method, fee_amount, status').eq('id', id).single();
+      let { data: w } = await supabaseClient.rpc('rpc_admin_get_withdrawal', { p_id: id });
       if (!w) { showToast('Withdrawal not found'); return; }
       if (w.status !== 'on_hold') { showToast('Withdrawal must be on hold before approving'); return; }
 
@@ -2627,7 +2649,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       await supabaseClient.rpc('rpc_update_transaction_status', { p_member_id: w.member_id, p_reference: w.reference, p_type: 'withdrawal', p_status: 'successful' });
 
-      let { data: member } = await supabaseClient.from('members').select('email').eq('id', w.member_id).single()
+      let { data: memberEmail } = await supabaseClient.rpc('rpc_admin_get_member_email', { p_id: w.member_id })
+      let member = memberEmail ? { email: memberEmail } : null
       createNotification(w.member_id, 'withdrawal_approved', 'Your withdrawal of ' + formatAmount(w.amount) + ' has been approved and completed.', member ? member.email : '')
       auditLog('approve_withdrawal', 'withdrawal', id, 'Withdrawal approved');
       renderWithdrawalQueue()
@@ -2635,50 +2658,93 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function confirmFee(id) {
-      let { data: w } = await supabaseClient.from('withdrawals').select('member_id, amount, fee_amount, fee_status, fee_authorized, reference, method').eq('id', id).single()
+      if (!getAdminSession()) { showToast('Authentication required.'); return; }
+      let { data: w } = await supabaseClient.rpc('rpc_admin_get_withdrawal', { p_id: id })
       if (!w) { showToast('Withdrawal not found'); return }
       if (!w.fee_authorized) { showToast('Fee not authorized by member'); return }
       if (w.fee_status === 'paid') { showToast('Fee already confirmed'); return }
 
-      // Deduct withdrawal amount atomically, add back refundable fee, move to on_hold
-      let { data: member } = await supabaseClient.from('members').select('balance, email').eq('id', w.member_id).single()
+      let { data: memberRow } = await supabaseClient.rpc('rpc_admin_get_member', { p_id: w.member_id })
+      let member = memberRow && memberRow.length ? memberRow[0] : null
       if (!member) { showToast('Member not found'); return }
-      let netDeduction = parseFloat(w.amount) - parseFloat(w.fee_amount);
-      let newBalance = parseFloat(member.balance) - netDeduction;
-      if (newBalance < 0) { showToast('Insufficient balance — cannot deduct.'); return }
 
-      let { data: deductResult, error: deductErr } = await supabaseClient.rpc('rpc_deduct_member_balance', { p_member_id: w.member_id, p_amount: netDeduction, p_expected_balance: member.balance });
-      if (deductErr || !deductResult || !deductResult.success) { showToast('Balance changed — concurrent transaction detected.'); return }
+      let withdrawalAmount = parseFloat(w.amount);
+      let feeAmount = parseFloat(w.fee_amount);
+      let currentBalance = parseFloat(member.balance);
 
+      if (currentBalance < withdrawalAmount) { showToast('Insufficient balance — cannot deduct.'); return }
+
+      // Step 1: Deduct full withdrawal amount from member balance
+      let { data: deductResult, error: deductErr } = await supabaseClient.rpc('rpc_deduct_member_balance', {
+        p_member_id: w.member_id, p_amount: withdrawalAmount, p_expected_balance: currentBalance
+      });
+      if (deductErr || !deductResult || !deductResult.success) {
+        showToast('Balance changed — concurrent transaction detected.'); return
+      }
+
+      // Step 2: Get updated balance and refund the fee back
+      let { data: updatedRow } = await supabaseClient.rpc('rpc_admin_get_member', { p_id: w.member_id })
+      let updatedMember = updatedRow && updatedRow.length ? updatedRow[0] : null
+      if (updatedMember && feeAmount > 0) {
+        let { data: refundResult, error: refundErr } = await supabaseClient.rpc('rpc_deduct_member_balance', {
+          p_member_id: w.member_id, p_amount: -feeAmount, p_expected_balance: updatedMember.balance
+        });
+        if (refundErr || !refundResult || !refundResult.success) {
+          console.error('Fee refund failed after deduction:', refundErr);
+          showToast('Fee refund failed — contact support.');
+        }
+      }
+
+      // Step 3: Update withdrawal and transaction statuses
       await supabaseClient.rpc('rpc_update_withdrawal', { p_id: id, p_fee_status: 'paid', p_status: 'on_hold' })
       await supabaseClient.rpc('rpc_update_transaction_status', { p_member_id: w.member_id, p_reference: w.reference, p_type: 'withdrawal', p_status: 'on_hold' })
 
-      auditLog('confirm_fee', 'withdrawal', id, 'Fee confirmed, $' + formatAmount(w.amount) + ' deducted (refundable fee $' + w.fee_amount + '), withdrawal on hold')
-      createNotification(w.member_id, 'fee_confirmed', 'Your withdrawal of ' + formatAmount(w.amount) + ' has been placed on hold. The processing fee of $' + w.fee_amount + ' is refundable upon account synchronization. Please review our policy for details.', member.email || '')
+      // Step 4: Insert fee refund transaction record
+      if (feeAmount > 0) {
+        let { data: balAfterRefund } = await supabaseClient.rpc('rpc_admin_get_member', { p_id: w.member_id })
+        let balAfter = balAfterRefund && balAfterRefund.length ? parseFloat(balAfterRefund[0].balance) : null
+        let balBefore = balAfter !== null ? balAfter + feeAmount : null
+        await supabaseClient.rpc('rpc_admin_insert_transaction', {
+          p_member_id: w.member_id,
+          p_type: 'fee_refund',
+          p_method: w.method,
+          p_amount: feeAmount,
+          p_status: 'successful',
+          p_reference: w.reference + '-REFUND',
+          p_balance_before: balBefore,
+          p_balance_after: balAfter,
+          p_sender_name: 'Fee Refund — ' + (w.method || '').toUpperCase()
+        });
+      }
+
+      auditLog('confirm_fee', 'withdrawal', id, 'Fee confirmed — $' + formatAmount(withdrawalAmount) + ' deducted, $' + formatAmount(feeAmount) + ' refunded, withdrawal on hold')
+      createNotification(w.member_id, 'fee_confirmed', 'Your withdrawal of ' + formatAmount(withdrawalAmount) + ' has been placed on hold. The processing fee of $' + feeAmount + ' has been refunded to your balance.', member.email || '')
       renderWithdrawalQueue()
       loadStats()
-      showToast('Fee confirmed — $' + formatAmount(netDeduction) + ' deducted (refundable fee $' + w.fee_amount + '), withdrawal on hold')
+      showToast('Fee confirmed — $' + formatAmount(withdrawalAmount) + ' deducted, $' + formatAmount(feeAmount) + ' refunded')
     }
 
     async function rejectWithdrawal(id) {
       if (!getAdminSession()) { showToast('Authentication required.'); return; }
-      let { data: w } = await supabaseClient.from('withdrawals').select('member_id, amount, fee_amount, reference, status').eq('id', id).single()
+      let { data: w } = await supabaseClient.rpc('rpc_admin_get_withdrawal', { p_id: id })
       if (!w) { showToast('Withdrawal not found'); return }
       if (w.status === 'rejected') { showToast('Already rejected'); return }
 
       // If balance was already deducted (on_hold), restore it atomically (withdrawal - fee was the net deduction)
       if (w.status === 'on_hold') {
-        let { data: member } = await supabaseClient.from('members').select('balance').eq('id', w.member_id).single()
-        if (member) {
+        let { data: memberBal } = await supabaseClient.rpc('rpc_admin_get_member_balance', { p_id: w.member_id })
+        if (memberBal !== null && memberBal !== undefined) {
           let netDeduction = parseFloat(w.amount) - parseFloat(w.fee_amount);
-          let { data: updResult, error: restoreErr } = await supabaseClient.rpc('rpc_deduct_member_balance', { p_member_id: w.member_id, p_amount: -netDeduction, p_expected_balance: member.balance });
+          let { data: updResult, error: restoreErr } = await supabaseClient.rpc('rpc_deduct_member_balance', { p_member_id: w.member_id, p_amount: -netDeduction, p_expected_balance: memberBal });
           if (restoreErr || !updResult || !updResult.success) { showToast('Balance changed — concurrent transaction detected. Refresh and retry.'); return }
         }
       }
+      // If pending_authorization, balance was never deducted — just update status
 
       await supabaseClient.rpc('rpc_update_withdrawal', { p_id: id, p_status: 'rejected' })
       await supabaseClient.rpc('rpc_update_transaction_status', { p_member_id: w.member_id, p_reference: w.reference, p_type: 'withdrawal', p_status: 'rejected' })
-      let { data: member } = await supabaseClient.from('members').select('email').eq('id', w.member_id).single()
+      let { data: memberEmail } = await supabaseClient.rpc('rpc_admin_get_member_email', { p_id: w.member_id })
+      let member = memberEmail ? { email: memberEmail } : null
       auditLog('reject_withdrawal', 'withdrawal', id, 'Withdrawal of ' + formatAmount(w.amount) + ' rejected')
       createNotification(w.member_id, 'withdrawal_rejected', 'Your withdrawal of ' + formatAmount(w.amount) + ' has been rejected. Please contact support.', member ? member.email : '')
       renderWithdrawalQueue()
@@ -2688,19 +2754,21 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     async function deleteWithdrawal(id) {
       if (!confirm('Delete this withdrawal permanently? This cannot be undone.')) return;
-      let { data: w } = await supabaseClient.from('withdrawals').select('member_id, amount, fee_amount, reference, status').eq('id', id).single()
+      let { data: w } = await supabaseClient.rpc('rpc_admin_get_withdrawal', { p_id: id })
       if (!w) { showToast('Withdrawal not found'); return }
       // If balance was deducted (on_hold), restore it before deleting (withdrawal - fee was the net deduction)
       if (w.status === 'on_hold') {
-        let { data: member } = await supabaseClient.from('members').select('balance').eq('id', w.member_id).single()
-        if (member) {
+        let { data: memberBal } = await supabaseClient.rpc('rpc_admin_get_member_balance', { p_id: w.member_id })
+        if (memberBal !== null && memberBal !== undefined) {
           let netDeduction = parseFloat(w.amount) - parseFloat(w.fee_amount);
-          let restoredBalance = parseFloat(member.balance) + netDeduction;
-          let { data: updResult, error: restoreErr } = await supabaseClient.rpc('rpc_deduct_member_balance', { p_member_id: w.member_id, p_amount: -netDeduction, p_expected_balance: member.balance });
+          let { data: updResult, error: restoreErr } = await supabaseClient.rpc('rpc_deduct_member_balance', { p_member_id: w.member_id, p_amount: -netDeduction, p_expected_balance: memberBal });
           if (restoreErr || !updResult || !updResult.success) { showToast('Balance changed — concurrent transaction detected. Refresh and retry.'); return }
         }
       }
       await supabaseClient.rpc('rpc_delete_transaction_by_ref', { p_member_id: w.member_id, p_reference: w.reference, p_type: 'withdrawal' })
+      if (w.status === 'on_hold' && parseFloat(w.fee_amount) > 0) {
+        await supabaseClient.rpc('rpc_delete_transaction_by_ref', { p_member_id: w.member_id, p_reference: w.reference + '-REFUND', p_type: 'fee_refund' })
+      }
       await supabaseClient.rpc('rpc_delete_withdrawal', { p_id: id })
       auditLog('delete_withdrawal', 'withdrawal', id, 'Withdrawal deleted')
       renderWithdrawalQueue()
@@ -2709,9 +2777,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function rejectDeposit(id) {
-      let { data: dep } = await supabaseClient.from('deposits').select('member_id, amount, reference').eq('id', id).single()
+      let { data: dep } = await supabaseClient.rpc('rpc_admin_get_deposit', { p_id: id })
       if (dep) {
-        let { data: member } = await supabaseClient.from('members').select('email').eq('id', dep.member_id).single()
+        let { data: rejDepEmail } = await supabaseClient.rpc('rpc_admin_get_member_email', { p_id: dep.member_id })
+        let member = rejDepEmail ? { email: rejDepEmail } : null
         createNotification(dep.member_id, 'deposit_rejected', 'Your deposit of ' + formatAmount(dep.amount) + ' has been rejected.', member && member.email ? member.email : '')
         // Mark pending transaction as rejected
         await supabaseClient.rpc('rpc_update_transaction_status', { p_member_id: dep.member_id, p_reference: dep.reference, p_type: 'deposit', p_status: 'rejected' })
@@ -2733,13 +2802,10 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (!tbody) return;
       if (loading) loading.classList.remove('hidden');
       let filter = document.getElementById('txMethodFilter') ? document.getElementById('txMethodFilter').value.toLowerCase() : '';
-      let countQuery = supabaseClient.from('withdrawals').select('id', { count: 'exact', head: true });
-      if (filter) countQuery = countQuery.eq('method', filter);
-      let { count } = await countQuery;
-      txTotalCount = count || 0;
-      let query = supabaseClient.from('withdrawals').select('*, members(name, username)').order('created_at', { ascending: false }).range(txPageOffset, txPageOffset + txPageLimit - 1);
-      if (filter) query = query.eq('method', filter);
-      let { data: withdrawals, error } = await query;
+      let filterParam = filter || null;
+      let { data: txCount } = await supabaseClient.rpc('rpc_admin_get_withdrawals_count', { p_method: filterParam });
+      txTotalCount = txCount || 0;
+      let { data: withdrawals, error } = await supabaseClient.rpc('rpc_admin_get_withdrawals', { p_offset: txPageOffset, p_limit: txPageLimit, p_method: filterParam });
       if (loading) loading.classList.add('hidden');
       if (error || !withdrawals || !withdrawals.length) {
         tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-[13px]" style="color:var(--text-muted);">No transactions found</td></tr>';
@@ -2786,9 +2852,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     async function downloadTransactionLogCSV() {
       let filter = document.getElementById('txMethodFilter') ? document.getElementById('txMethodFilter').value.toLowerCase() : '';
-      let query = supabaseClient.from('withdrawals').select('*, members(name, username)').order('created_at', { ascending: false });
-      if (filter) query = query.eq('method', filter);
-      let { data: withdrawals } = await query;
+      let { data: withdrawals } = await supabaseClient.rpc('rpc_admin_get_all_withdrawals');
+      if (filter) { withdrawals = (withdrawals || []).filter(function(w) { return (w.method || '').toLowerCase() === filter }) }
       if (!withdrawals || !withdrawals.length) { showToast('No transactions to export'); return; }
       let headers = ['Member', 'Method', 'Amount', 'Fee', 'Net', 'Status', 'Date', 'Reference'];
       let rows = withdrawals.map(function(w) {
@@ -2807,7 +2872,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function exportWithdrawalQueueCSV() {
-      let { data: withdrawals } = await supabaseClient.from('withdrawals').select('*, members(name, username)').order('created_at', { ascending: false });
+      let { data: withdrawals } = await supabaseClient.rpc('rpc_admin_get_all_withdrawals');
       if (!withdrawals || !withdrawals.length) { showToast('No withdrawals to export'); return; }
       let headers = ['Member', 'Method', 'Amount', 'Fee', 'Status', 'Date', 'Reference'];
       let rows = withdrawals.map(function(w) {
@@ -2861,7 +2926,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       let tbody = document.getElementById('accountRequestBody')
       let loading = document.getElementById('accountRequestLoading')
       if (loading) loading.classList.remove('hidden')
-      let { data: requests } = await supabaseClient.from('account_requests').select('*, members(name, username)').eq('status', 'pending').order('created_at', { ascending: false })
+      let { data: requests } = await supabaseClient.rpc('rpc_admin_get_pending_account_requests')
       if (loading) loading.classList.add('hidden')
       if (!requests || !requests.length) {
         tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-[13px]" style="color:var(--text-muted);">No pending requests</td></tr>'
@@ -2890,7 +2955,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function approveAccountRequest(id) {
-      let { data: req } = await supabaseClient.from('account_requests').select('*, members(id, email)').eq('id', id).single()
+      let { data: req } = await supabaseClient.rpc('rpc_admin_get_account_request', { p_id: id })
       if (!req) { showToast('Request not found'); return }
       // Generate account number
       let arr = new Uint32Array(1); crypto.getRandomValues(arr);
@@ -2912,7 +2977,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function rejectAccountRequest(id) {
-      let { data: req } = await supabaseClient.from('account_requests').select('member_id, members(id, email)').eq('id', id).single()
+      let { data: req } = await supabaseClient.rpc('rpc_admin_get_account_request', { p_id: id })
       if (req) {
         let memberEmail = req.members ? req.members.email : ''
         createNotification(req.member_id, 'account_rejected', 'Your account request has been rejected. Please contact support for details.', memberEmail)
@@ -2933,7 +2998,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       if (!currentPw || !newPw || !confirmPw) { showToast('Fill all fields.'); return }
       if (newPw !== confirmPw) { showToast('New passwords do not match.'); return }
-      if (newPw.length < 6) { showToast('Password must be at least 6 characters.'); return }
+      let strengthErr = validatePasswordStrength(newPw)
+      if (strengthErr) { showToast(strengthErr); return }
 
       // Verify current password via adminLogin
       let session = getAdminSession();
@@ -2952,6 +3018,17 @@ document.addEventListener('DOMContentLoaded', async function() {
       })
     }
 
+    async function updateAdminPassword(newPw) {
+      if (!crypto || !crypto.subtle) return { error: 'Secure context required' }
+      let hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(newPw))
+      let hashHex = Array.from(new Uint8Array(hash)).map(function(b) { return b.toString(16).padStart(2, '0') }).join('')
+      try {
+        let { error: err } = await supabaseClient.rpc('rpc_update_settings', { p_key: 'admin_password_hash', p_value: hashHex })
+        if (err) return { error: 'Failed to update settings: ' + err.message }
+        return {}
+      } catch(e) { return { error: e.message } }
+    }
+
     async function changeAgentPassword() {
       let currentPw = document.getElementById('agentCurrentPw').value
       let newPw = document.getElementById('agentNewPw').value
@@ -2961,7 +3038,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       if (!currentPw || !newPw || !confirmPw) { showToast('Fill all fields.'); return }
       if (newPw !== confirmPw) { showToast('New passwords do not match.'); return }
-      if (newPw.length < 6) { showToast('Password must be at least 6 characters.'); return }
+      let strengthErr = validatePasswordStrength(newPw)
+      if (strengthErr) { showToast(strengthErr); return }
 
       let session = getAdminSession()
       if (!session || !session.user || !session.user.agent_id) { showToast('You must be logged in as an agent.'); return }
@@ -2971,7 +3049,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       let curHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(currentPw))
       let curHashHex = Array.from(new Uint8Array(curHash)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('')
 
-      let { data: agentData } = await supabaseClient.from('agents').select('password_hash').eq('id', session.user.agent_id).single()
+      let { data: agentData } = await supabaseClient.from('agents').select('password_hash').eq('id', session.user.agent_id).maybeSingle()
       if (!agentData || agentData.password_hash !== curHashHex) { showToast('Current password is incorrect.'); return }
 
       // Update password
@@ -3028,7 +3106,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function loadCallbackRequests() {
       try {
         document.getElementById('callbackLoading').style.display = 'flex';
-        let { data, error } = await supabaseClient.from('sms_callbacks').select('*').order('created_at', { ascending: false });
+        let { data, error } = await supabaseClient.rpc('rpc_admin_get_sms_callbacks');
         if (error) { console.error('loadCallbackRequests error:', error); return; }
         allCallbacks = data || [];
         renderCallbackRequests(callbackFilter);
@@ -3181,6 +3259,9 @@ document.addEventListener('DOMContentLoaded', async function() {
           case 'loadCallbackRequests':
             loadCallbackRequests();
             break;
+          case 'renderAuditLog':
+            renderAuditLog();
+            break;
           case 'txPage':
             txPage(parseInt(el.getAttribute('data-dir')));
             break;
@@ -3241,6 +3322,15 @@ document.addEventListener('DOMContentLoaded', async function() {
           case 'downloadTransactionLogCSV':
             downloadTransactionLogCSV();
             break;
+          case 'sendChatReply':
+            sendChatReply();
+            break;
+          case 'closeChatConversation':
+            closeChatConversation();
+            break;
+          case 'saveChatbotConfig':
+            saveChatbotConfig();
+            break;
           case 'saveDepositConfig':
             saveDepositConfig();
             break;
@@ -3249,6 +3339,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             break;
           case 'renderWithdrawalQueue':
             renderWithdrawalQueue();
+            break;
+          case 'exportWithdrawalQueueCSV':
+            exportWithdrawalQueueCSV();
             break;
           case 'generateAccessKey':
             generateAccessKey(el);
