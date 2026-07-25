@@ -162,7 +162,7 @@
       #chatbot-container { max-height: 55vh !important; width: calc(100vw - 24px) !important; bottom: 0 !important; right: 12px !important; }
       #chatbot-bubble { padding: 5px !important; }
       #chatbot-bubble svg { width: 100% !important; height: 100% !important; }
-      #memberMain { padding: 4px !important; max-width: 100% !important; }
+      #memberMain { padding: 4px !important; padding-bottom: 60px !important; max-width: 100% !important; }
       #quickActionsGrid { grid-template-columns: repeat(2, 1fr); gap: 6px !important; }
       #quickActionsGrid .glass { padding: 10px !important; }
       #quickActionsGrid .w-10 { width: 32px !important; height: 32px !important; }
@@ -376,14 +376,27 @@
 
       <!-- TAB NAVIGATION -->
       <div class="flex gap-1 rounded-xl p-1 overflow-x-auto" style="background: var(--hover); border: 1px solid var(--border);">
-        <button id="tabOverview" data-action="switchTab" data-tab="overview" class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all" style="background: var(--bg-card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">Overview</button>
+        <button id="tabOverview" data-action="switchTab" data-tab="overview" class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all" style="background: var(--bg-card); color: var(--text); box-shadow: inset 0 2px 4px rgba(0,0,0,0.08); transform: translateY(1px);">Overview</button>
         <button id="tabTransfer" data-action="switchTab" data-tab="transfer" class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all" style="color: var(--text-muted);">Transfer</button>
         <button id="tabWithdraw" data-action="switchTab" data-tab="withdraw" class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all" style="color: var(--text-muted);">Withdraw</button>
-        <button id="tabSettings" data-action="switchTab" data-tab="settings" class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all" style="color: var(--text-muted);">Settings</button>
+        <div style="position: relative; flex: 1;">
+          <button id="tabSettings" data-action="toggleSettingsDropdown" class="w-full py-2 rounded-lg text-xs font-semibold transition-all" style="color: var(--text-muted);">Settings</button>
+          <div id="settingsDropdown" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; min-width: 180px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 20; overflow: hidden;">
+            <button data-action="switchTabAndScroll" data-tab="settings" data-scrollto="settingsProfile" class="w-full text-left px-3 py-2.5 text-xs font-semibold transition-all" style="color: var(--text-secondary);" onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background='transparent'">
+              <span style="color: var(--text-muted); margin-right: 6px;">👤</span> Profile
+            </button>
+            <button data-action="switchTabAndScroll" data-tab="settings" data-scrollto="settingsSecurity" class="w-full text-left px-3 py-2.5 text-xs font-semibold transition-all" style="color: var(--text-secondary); border-top: 1px solid var(--border);" onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background='transparent'">
+              <span style="color: var(--text-muted); margin-right: 6px;">🔒</span> Security
+            </button>
+            <button data-action="switchTabAndScroll" data-tab="settings" data-scrollto="settingsPreferences" class="w-full text-left px-3 py-2.5 text-xs font-semibold transition-all" style="color: var(--text-secondary); border-top: 1px solid var(--border);" onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background='transparent'">
+              <span style="color: var(--text-muted); margin-right: 6px;">⚙️</span> Preferences
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- TAB CONTENT: Overview -->
-      <div id="panelOverview">
+      <div id="panelOverview" style="flex: 1; display: flex; flex-direction: column;">
         <!-- QUICK ACTIONS -->
         <div id="quickActionsGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3">
           <button data-action="switchTab" data-tab="deposit" class="glass rounded-xl p-4 text-center transition-all cursor-pointer" style="border-color: var(--border);">
@@ -417,7 +430,7 @@
         </div>
 
         <!-- RECENT ACTIVITY -->
-        <div class="glass rounded-xl p-5">
+        <div class="glass rounded-xl p-5" style="flex: 1; display: flex; flex-direction: column;">
           <div class="flex items-start justify-between mb-4 flex-col sm:flex-row gap-2">
             <div>
               <h2 class="text-sm font-bold" style="color: var(--text);">Recent Activity</h2>
@@ -438,7 +451,7 @@
           <div id="txLoading" class="hidden flex justify-center items-center" style="min-height: 160px;">
             <div class="w-7 h-7 border-2 border-[#ff5c35] border-t-transparent rounded-full animate-spin"></div>
           </div>
-          <div id="txTableWrap" class="overflow-x-auto -mx-4 px-4">
+          <div id="txTableWrap" class="overflow-x-auto -mx-4 px-4" style="flex: 1;">
             <div>
               <h3 class="text-[11px] font-bold uppercase tracking-wide mb-2" style="color: var(--text-muted);">All Transactions</h3>
               <table class="w-full text-sm min-w-[400px]">
@@ -783,6 +796,7 @@
             Open Chat Support
           </button>
         </div>
+      </div>
 
     </main>
   </div>
@@ -1870,6 +1884,7 @@
     // ===== TAB SWITCHING =====
     function switchTab(tab) {
       closeSidebar();
+      toggleSettingsDropdown(false);
       ['overview','deposit','withdraw','transfer','statements','settings'].forEach(t => {
         const panel = document.getElementById('panel' + t.charAt(0).toUpperCase() + t.slice(1));
         if (panel) panel.classList.toggle('hidden', t !== tab);
@@ -1878,11 +1893,13 @@
           if (t === tab) {
             btn.style.background = 'var(--bg-card)';
             btn.style.color = 'var(--text)';
-            btn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+            btn.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.08)';
+            btn.style.transform = 'translateY(1px)';
           } else {
             btn.style.background = 'transparent';
             btn.style.color = 'var(--text-muted)';
             btn.style.boxShadow = 'none';
+            btn.style.transform = 'translateY(0)';
           }
         } else if (t === tab) {
           // Tab has no button (e.g. statements accessed via sidebar) — reset all tab buttons to inactive
@@ -1918,6 +1935,22 @@
       });
       if (tab === 'settings') {
         document.getElementById('panelSettings').scrollTop = 0;
+      }
+    }
+
+    function toggleSettingsDropdown(forceState) {
+      var dd = document.getElementById('settingsDropdown');
+      if (!dd) return;
+      var show = forceState !== undefined ? forceState : dd.style.display === 'none';
+      dd.style.display = show ? 'block' : 'none';
+      if (show) {
+        var closeHandler = function(e) {
+          if (!dd.contains(e.target) && e.target.id !== 'tabSettings' && !e.target.closest('[data-action="toggleSettingsDropdown"]')) {
+            dd.style.display = 'none';
+            document.removeEventListener('click', closeHandler);
+          }
+        };
+        setTimeout(function() { document.addEventListener('click', closeHandler); }, 0);
       }
     }
 
@@ -4093,7 +4126,11 @@ let chatMemberChannel = null;
           case 'switchTab':
             switchTab(el.getAttribute('data-tab'));
             break;
+          case 'toggleSettingsDropdown':
+            toggleSettingsDropdown();
+            break;
           case 'switchTabAndScroll':
+            toggleSettingsDropdown(false);
             switchTab('settings');
             setTimeout(function() {
               document.getElementById(el.getAttribute('data-scrollto')).scrollIntoView({behavior:'smooth',block:'start'});
