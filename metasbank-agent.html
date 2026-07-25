@@ -60,7 +60,7 @@
     }
 
     html { height: 100%; width: 100%; overflow-x: hidden; }
-    body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); transition: background 0.4s; overflow-x: hidden; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; }
+    body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); color: var(--text); transition: background 0.4s, color 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden; }
     input, select, textarea { font-size: 16px; touch-action: manipulation; }
     button, [data-action], a { touch-action: manipulation; }
     .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
@@ -75,9 +75,22 @@
     .badge-amber { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.15); }
     .badge-green { background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.15); }
     .badge-red { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.15); }
+    .chat-msg-row { display: flex; margin-bottom: 8px; }
+    .chat-msg-row.admin { justify-content: flex-end; }
+    .chat-msg-row .bubble { max-width: 80%; padding: 8px 12px; border-radius: 10px; font-size: 12px; line-height: 1.4; }
+    .chat-msg-row.member .bubble { background: var(--hover); color: var(--text); border-bottom-left-radius: 4px; }
+    .chat-msg-row.admin .bubble { background: linear-gradient(135deg, #e84a24, #ff5c35); color: #fff; border-bottom-right-radius: 4px; }
     .chat-msg-member { background: rgba(255,92,53,0.08); border: 1px solid rgba(255,92,53,0.12); }
     .chat-msg-agent { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.15); }
     .chat-msg-row .time { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+    .read-receipt { font-size: 8px; margin-left: 4px; }
+    .read-receipt.sent { color: var(--text-muted); }
+    .read-receipt.read { color: #10b981; }
+    .chat-timer { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; padding: 4px 10px; border-radius: 8px; }
+    .chat-timer.warning { color: #ef4444; background: rgba(239,68,68,0.1); animation: timerPulse 1s infinite; }
+    .chat-timer.normal { color: #f59e0b; background: rgba(245,158,11,0.1); }
+    .chat-timer.paused { color: var(--text-muted); background: var(--hover); }
+    @keyframes timerPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
     @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .animate-slide-up { animation: slideUp 0.3s ease-out; }
     #sidebarOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 90; display: none; }
@@ -89,9 +102,27 @@
     }
     @media (min-width: 1024px) {
       #sidebarOverlay { display: none !important; }
+      #liveChatSection .chat-back-btn { display: none !important; }
     }
 
-    /* ===== MOBILE COMPACT (under 640px) — app-like density ===== */
+    /* ===== FULL HEIGHT LAYOUT ===== */
+    #adminMain { display: flex; flex-direction: column; overflow: hidden; }
+    #liveChatSection { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding: 16px; }
+    #liveChatSection > div:first-child { flex-shrink: 0; }
+    #liveChatSection > .chat-layout { flex: 1; min-height: 0; display: flex; flex-direction: row; gap: 16px; }
+    #chatConvWrapper { height: 100%; overflow-y: auto; border-right: 1px solid var(--border); width: 224px; flex-shrink: 0; }
+    #liveChatSection .chat-right { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    #liveChatSection .chat-right #chatEmpty { flex: 1; min-height: 0; }
+    #liveChatSection .chat-right #chatView:not(.hidden) { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    #liveChatSection .chat-right #chatView.hidden { display: none !important; }
+    #chatMessages { flex: 1; overflow-y: auto; min-height: 0; }
+    .chat-input-bar { flex-shrink: 0; display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+    .chat-header-bar { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+    /* Non-chat sections fill when active */
+    #agentPoolSection, #callbackRequestsSection, #agentChangePasswordSection { flex: 1; min-height: 0; overflow-y: auto; }
+
+    /* ===== MOBILE COMPACT (under 640px) ===== */
     @media (max-width: 640px) {
       .text-\[12px\] { font-size: 10px !important; }
       .text-\[11px\] { font-size: 9px !important; }
@@ -129,18 +160,27 @@
       .w-5 { width: 14px !important; height: 14px !important; }
       .h-5 { height: 14px !important; }
       #adminMain { padding: 6px !important; }
-      #adminMain .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 10px !important; }
+      #liveChatSection { padding: 8px !important; }
       table.min-w-\[900px\] { min-width: 0 !important; }
-      #chatConvWrapper { max-height: 160px !important; }
       .rounded-xl { border-radius: 8px !important; }
       .rounded-lg { border-radius: 6px !important; }
       #adminSidebar .px-3 { padding-left: 8px !important; padding-right: 8px !important; }
       #adminSidebar .py-2 { padding-top: 4px !important; padding-bottom: 4px !important; }
       header .h-14 { height: 44px !important; }
+      #liveChatSection > .chat-layout { flex-direction: column !important; }
+      #chatConvWrapper { width: 100% !important; height: auto !important; max-height: 160px !important; border-right: none !important; border-bottom: 1px solid var(--border); }
     }
-    @media (min-width: 641px) {
-      #chatConvWrapper { max-height: 450px; border-right: 1px solid var(--border); border-bottom: none; }
+
+    /* Mobile: full-screen chat when conversation is open */
+    @media (max-width: 640px) {
+      #liveChatSection.mobile-chat-open #chatConvWrapper { display: none !important; }
+      #liveChatSection.mobile-chat-open > div:first-child { display: none !important; }
+      #liveChatSection.mobile-chat-open { position: fixed !important; inset: 0 !important; top: var(--header-h) !important; z-index: 80 !important; border-radius: 0 !important; overflow: hidden !important; display: flex !important; flex-direction: column !important; padding: 8px !important; }
+      #liveChatSection.mobile-chat-open > .chat-layout { flex-direction: column !important; min-height: 0 !important; flex: 1 !important; }
+      #liveChatSection.mobile-chat-open #chatView:not(.hidden) { flex: 1 !important; display: flex !important; flex-direction: column !important; max-height: none !important; }
+      #liveChatSection.mobile-chat-open #chatMessages { flex: 1 !important; max-height: none !important; overflow-y: auto !important; }
     }
+
   </style>
   <style>html.js-loading *{transition:none!important}</style>
   <script>
@@ -150,7 +190,7 @@
     document.addEventListener('DOMContentLoaded', function(){ requestAnimationFrame(function(){ document.documentElement.classList.remove('js-loading') }) });
   </script>
 </head>
-<body style="display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh;">
+<body style="display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; visibility: hidden;">
 
   <!-- ===== HEADER ===== -->
   <header class="fixed-header h-14 flex items-center justify-between px-4 lg:px-6" style="background: var(--bg-header); border-bottom: 1px solid var(--border);">
@@ -171,6 +211,7 @@
       </div>
       <span id="adminUserName" class="hidden sm:block text-[11px]" style="color: var(--text-muted);"></span>
       <div class="w-7 h-7 rounded-full gradient-orange flex items-center justify-center text-[10px] font-bold text-white">A</div>
+      <a href="#" id="agentSignOut" class="text-[10px] rounded-lg px-2.5 py-1.5 transition-all" style="color: var(--text-muted); background: var(--hover); border: 1px solid var(--border);">Sign Out</a>
     </div>
   </header>
 
@@ -199,6 +240,10 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
           Change Password
         </div>
+        <div class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);" id="agentNameGenerator" title="Click to generate a new display name">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          <span id="agentNameLabel">Set Name</span>
+        </div>
       </nav>
       <div class="p-3" style="border-top: 1px solid var(--border);">
         <div class="px-3 py-2 rounded-lg text-[10px] font-semibold" style="background: var(--hover); color: var(--text-muted);">MetasBank v2.4.1</div>
@@ -206,25 +251,35 @@
     </aside>
 
     <!-- ===== MAIN ===== -->
-    <main id="adminMain" class="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
+    <main id="adminMain" class="flex-1 p-4 lg:p-6">
 
       <!-- LIVE CHAT -->
-      <div id="liveChatSection" class="glass rounded-xl p-5">
-        <h2 class="text-sm font-bold mb-4" style="color:var(--text);">Live Chat</h2>
-        <div class="flex flex-col lg:flex-row gap-4" style="min-height: 400px;">
-          <div id="chatConvWrapper" class="w-full lg:w-56 shrink-0 overflow-y-auto" style="max-height: 250px; border-bottom: 1px solid var(--border);">
+      <div id="liveChatSection" class="glass rounded-xl p-5" style="display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-bottom:12px;">
+          <h2 class="text-sm font-bold" style="color:var(--text);">Live Chat</h2>
+          <span id="chatConvHeaderInfo" style="font-size:13px;font-weight:700;display:none;align-items:center;gap:8px;padding:4px 12px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid var(--border);"></span>
+        </div>
+        <div class="chat-layout" style="flex:1;min-height:0;display:flex;flex-direction:row;gap:16px;">
+          <div id="chatConvWrapper" class="overflow-y-auto" style="border-right:1px solid var(--border);width:224px;flex-shrink:0;">
             <div id="chatConvList" class="pr-2 space-y-0.5"></div>
           </div>
-          <div class="flex-1 flex flex-col">
-            <div id="chatEmpty" class="flex items-center justify-center flex-1 text-[12px]" style="color:var(--text-muted);">Select a conversation</div>
-            <div id="chatView" class="hidden flex-1 flex flex-col">
-              <div id="chatMessages" class="flex-1 overflow-y-auto mb-3 space-y-1" style="max-height: 360px; min-height: 200px;"></div>
-              <div class="flex gap-2">
+          <div class="chat-right" style="flex:1;min-width:0;display:flex;flex-direction:column;">
+            <div id="chatEmpty" class="flex-1" style="min-height:0;"></div>
+            <div id="chatView" class="hidden flex-1 flex flex-col" style="min-height:0;">
+              <div class="chat-header-bar">
+                <div class="chat-back-btn flex items-center gap-2" style="cursor:pointer;" onclick="goBackToConversations()">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                  <span class="text-[12px] font-semibold" style="color:var(--text-muted);">Back</span>
+                </div>
+                <div id="chatTimerDisplay" class="chat-timer normal hidden">10:00</div>
+              </div>
+              <div id="chatMessages" class="flex-1 overflow-y-auto mb-3 space-y-1" style="min-height:0;display:flex;flex-direction:column;"></div>
+              <div class="chat-input-bar">
                 <input id="chatReplyInput" type="text" placeholder="Type your reply..." class="flex-1 px-3 py-2 rounded-lg text-[12px]" style="background:var(--input-bg); color:var(--text); border:1px solid var(--border); outline:none;">
                 <button id="agentSendReply" class="px-4 py-2 rounded-lg text-white text-[11px] font-bold gradient-orange">Send</button>
                 <button id="claimConvBtn" class="hidden px-3 py-2 rounded-lg text-[11px] font-semibold" style="background:#10b981;color:#fff;">Claim</button>
-                <button id="agentPauseChat" class="px-3 py-2 rounded-lg text-[11px] font-semibold" style="background:var(--hover);color:var(--text-muted);" title="Pause/Resume member chat timer">Pause</button>
-                <button id="agentCloseChat" class="px-3 py-2 rounded-lg text-[11px] font-semibold" style="background:var(--hover);color:var(--text-muted);">Close</button>
+                <button id="agentPauseChat" class="px-3 py-2 rounded-lg text-[11px] font-semibold" style="background:#10b981;color:#fff;" title="Pause/Resume chat timer">Pause</button>
+                <button id="agentCloseChat" class="px-3 py-2 rounded-lg text-[11px] font-semibold" style="background:#ef4444;color:#fff;">Close</button>
               </div>
             </div>
           </div>
@@ -232,7 +287,7 @@
       </div>
 
       <!-- AGENT POOL -->
-      <div id="agentPoolSection" class="glass rounded-xl p-5">
+      <div id="agentPoolSection" class="glass rounded-xl p-5" style="display:none;">
         <div class="flex items-center justify-between mb-4 flex-wrap">
           <div>
             <h2 class="text-sm font-bold" style="color: var(--text);">Agent Pool</h2>
@@ -261,7 +316,7 @@
       </div>
 
       <!-- CALLBACK REQUESTS -->
-      <div id="callbackRequestsSection" class="glass rounded-xl p-5">
+      <div id="callbackRequestsSection" class="glass rounded-xl p-5" style="display:none;">
         <div class="flex items-center justify-between mb-4 flex-wrap">
           <div>
             <h2 class="text-sm font-bold" style="color: var(--text);">Callback Requests</h2>
@@ -301,11 +356,11 @@
       </div>
 
       <!-- CHANGE PASSWORD -->
-      <div id="agentChangePasswordSection" class="glass rounded-xl p-5">
+      <div id="agentChangePasswordSection" class="glass rounded-xl p-5" style="display:none;">
         <div class="flex items-center justify-between mb-4 flex-wrap">
           <div>
             <h2 class="text-sm font-bold" style="color: var(--text);">Change Your Password</h2>
-            <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">Update your agent login password. Admin will be able to see the new password.</p>
+            <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">Update your agent login password.</p>
           </div>
         </div>
         <div class="max-w-md space-y-3">
@@ -334,15 +389,10 @@
   <!-- Sidebar overlay -->
   <div id="sidebarOverlay"></div>
 
-  <!-- Sign Out -->
-  <div class="fixed bottom-4 right-4" style="z-index: 100;">
-    <a href="#" id="agentSignOut" class="text-[11px] rounded-lg px-3 py-2 transition-all" style="color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border);">Sign Out</a>
-  </div>
-
   <script>
     // ==== ROLE-BASED ACCESS CONTROL ====
     function applyRoleRestrictions() {
-      let session = getAdminSession();
+      var session = getAdminSession();
       if (!session || !session.user) return;
       if (session.user.role === 'admin') {
         window.location.href = '/admin/';
@@ -350,52 +400,111 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', async function() {
-      initSupabase();
-      try { await supabaseClient.auth.signOut(); } catch(e) {}
-      let session = await verifyAdminSession('agent');
-      if (!session) { window.location.href = '/admin/login.html'; return; }
-      applyRoleRestrictions();
+    var agentSession = null;
+    var agentDisplayName = null;
 
-      let userNameEl = document.getElementById('adminUserName');
-      if (userNameEl && session.user && session.user.name) {
-        userNameEl.textContent = session.user.name;
+    // Safety: reveal page after 8s even if async init hangs
+    setTimeout(function() { document.body.style.visibility = 'visible'; }, 8000);
+
+    document.addEventListener('DOMContentLoaded', async function() {
+      try {
+        initSupabase();
+        try { await supabaseClient.auth.signOut(); } catch(e) {}
+        var session = await verifyAdminSession('agent');
+        if (!session) { window.location.href = '/admin/login.html'; return; }
+        applyRoleRestrictions();
+        agentSession = session;
+
+        var userNameEl = document.getElementById('adminUserName');
+        if (userNameEl && session.user && session.user.name) {
+          userNameEl.textContent = session.user.name;
+        }
+
+        // Load display name
+        agentDisplayName = session.user.display_name || null;
+        var nameLabel = document.getElementById('agentNameLabel');
+        if (agentDisplayName && nameLabel) {
+          nameLabel.textContent = agentDisplayName;
+        }
+
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission();
+        }
+        document.body.style.visibility = 'visible';
+      } catch(e) { console.error('Agent page init error:', e); document.body.style.visibility = 'visible'; }
+
+      // Wire event listeners OUTSIDE try-catch
+      var el = function(id) { return document.getElementById(id); };
+      if (el('agentToggleSidebar')) el('agentToggleSidebar').addEventListener('click', toggleSidebar);
+      if (el('agentNavLiveChat')) el('agentNavLiveChat').addEventListener('click', function() { scrollToSection('liveChatSection'); loadChatConversations(); });
+      if (el('agentNavPool')) el('agentNavPool').addEventListener('click', function() { scrollToSection('agentPoolSection'); loadAgents(); });
+      if (el('agentNavCallbacks')) el('agentNavCallbacks').addEventListener('click', function() { scrollToSection('callbackRequestsSection'); loadCallbackRequests(); });
+      if (el('agentNavPassword')) el('agentNavPassword').addEventListener('click', function() { scrollToSection('agentChangePasswordSection'); });
+      if (el('agentSendReply')) el('agentSendReply').addEventListener('click', sendChatReply);
+      if (el('claimConvBtn')) el('claimConvBtn').addEventListener('click', claimConversation);
+      if (el('agentCloseChat')) el('agentCloseChat').addEventListener('click', closeChatConversation);
+      if (el('agentPauseChat')) el('agentPauseChat').addEventListener('click', togglePauseChat);
+      if (el('agentStatusToggle')) el('agentStatusToggle').addEventListener('click', toggleMyAgentStatus);
+      if (el('agentRefreshCallbacks')) el('agentRefreshCallbacks').addEventListener('click', loadCallbackRequests);
+      if (el('cbFilterAll')) el('cbFilterAll').addEventListener('click', function() { renderCallbackRequests('all'); });
+      if (el('cbFilterPending')) el('cbFilterPending').addEventListener('click', function() { renderCallbackRequests('pending'); });
+      if (el('cbFilterContacted')) el('cbFilterContacted').addEventListener('click', function() { renderCallbackRequests('contacted'); });
+      if (el('cbFilterCompleted')) el('cbFilterCompleted').addEventListener('click', function() { renderCallbackRequests('completed'); });
+      if (el('agentChangePw')) el('agentChangePw').addEventListener('click', changeAgentPassword);
+      if (el('sidebarOverlay')) el('sidebarOverlay').addEventListener('click', closeSidebar);
+      if (el('agentSignOut')) el('agentSignOut').addEventListener('click', function(e) { e.preventDefault(); adminLogout(); });
+      if (el('chatConvList')) el('chatConvList').addEventListener('click', function(e) {
+        var target = e.target.closest('[data-conv-id]');
+        if (target) selectConversation(target.dataset.convId);
+      });
+
+      // Name generator
+      var agentNames = ['Grace','David','Amara','Kai','Luna','Oliver','Zara','Leo','Mia','Noah','Aria','Ethan','Sage','Oscar','Ruby','Finn','Ivy','Axel','Lily','Jude','Nova','Theo','Ava','Miles','Ella','Rex','Iris','Cole','Jade','Felix','Lyra','Dean','Willow','Omar','Stella','Liam','Hazel','Jace','Aurora','Troy','Cleo','Blake','Nora','Drew','Isla','Knox','Vera','Reed','Mila'];
+      function generateRandomName() {
+        return agentNames[Math.floor(Math.random() * agentNames.length)];
       }
-      loadAllData();
-      setupAgentRealtime();
+      function updateNameGeneratorState() {
+        var btn = document.getElementById('agentNameGenerator');
+        if (!btn) return;
+        var active = selectedConvId && chatConversations.find(function(c) { return c.id === selectedConvId && c.status !== 'closed'; });
+        if (active) {
+          btn.style.opacity = '0.35';
+          btn.style.pointerEvents = 'none';
+          btn.title = 'Name change disabled during active conversation';
+        } else {
+          btn.style.opacity = '1';
+          btn.style.pointerEvents = 'auto';
+          btn.title = 'Click to generate a new display name';
+        }
+      }
+      if (el('agentNameGenerator')) el('agentNameGenerator').addEventListener('click', async function() {
+        if (selectedConvId && chatConversations.find(function(c) { return c.id === selectedConvId && c.status !== 'closed'; })) {
+          showToast('Cannot change name during an active conversation');
+          return;
+        }
+        var newName = generateRandomName();
+        var agentId = agentSession && agentSession.user ? agentSession.user.agent_id : null;
+        if (!agentId) return;
+        var { error } = await rpcUpdate('agent', { id: agentId }, { display_name: newName });
+        if (error) { showToast('Error saving name'); return; }
+        agentDisplayName = newName;
+        agentSession.user.display_name = newName;
+        sessionStorage.setItem('admin_session', JSON.stringify(agentSession));
+        var nameLabel = document.getElementById('agentNameLabel');
+        if (nameLabel) nameLabel.textContent = newName;
+        showToast('Display name set to ' + newName);
+      });
+
+      // Load data and setup realtime
+      try { loadAllData(); } catch(e) { console.error('loadAllData error:', e); }
+      try { setupAgentRealtime(); } catch(e) { console.error('setupAgentRealtime error:', e); }
       scrollToSection('liveChatSection');
-      if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-      }
-      // Wire event listeners
-      const el = (id) => document.getElementById(id)
-      el('agentToggleSidebar')?.addEventListener('click', toggleSidebar)
-      el('agentNavLiveChat')?.addEventListener('click', function() { scrollToSection('liveChatSection'); loadChatConversations() })
-      el('agentNavPool')?.addEventListener('click', function() { scrollToSection('agentPoolSection'); loadAgents() })
-      el('agentNavCallbacks')?.addEventListener('click', function() { scrollToSection('callbackRequestsSection'); loadCallbackRequests() })
-      el('agentNavPassword')?.addEventListener('click', function() { scrollToSection('agentChangePasswordSection') })
-      el('agentSendReply')?.addEventListener('click', sendChatReply)
-      el('claimConvBtn')?.addEventListener('click', claimConversation)
-      el('agentCloseChat')?.addEventListener('click', closeChatConversation)
-      el('agentPauseChat')?.addEventListener('click', togglePauseChat)
-      el('agentStatusToggle')?.addEventListener('click', toggleMyAgentStatus)
-      el('agentRefreshCallbacks')?.addEventListener('click', loadCallbackRequests)
-      el('cbFilterAll')?.addEventListener('click', function() { renderCallbackRequests('all') })
-      el('cbFilterPending')?.addEventListener('click', function() { renderCallbackRequests('pending') })
-      el('cbFilterContacted')?.addEventListener('click', function() { renderCallbackRequests('contacted') })
-      el('cbFilterCompleted')?.addEventListener('click', function() { renderCallbackRequests('completed') })
-      el('agentChangePw')?.addEventListener('click', changeAgentPassword)
-      el('sidebarOverlay')?.addEventListener('click', closeSidebar)
-      el('agentSignOut')?.addEventListener('click', function(e) { e.preventDefault(); adminLogout() })
-      // Event delegation for chat conversations
-      el('chatConvList')?.addEventListener('click', function(e) {
-        let target = e.target.closest('[data-conv-id]')
-        if (target) selectConversation(target.dataset.convId)
-      })
+      updateNameGeneratorState();
     });
 
     async function adminLogout() {
       cleanupAgentRealtime();
+      stopCountdownTimer();
       try { await supabaseClient.auth.signOut(); } catch(e) {}
       sessionStorage.removeItem('admin_session');
       window.location.href = '/admin/login.html';
@@ -417,14 +526,13 @@
       document.getElementById('sidebarOverlay').classList.remove('open');
     }
     function scrollToSection(id) {
-      let sections = ['liveChatSection', 'agentPoolSection', 'callbackRequestsSection', 'agentChangePasswordSection'];
+      var sections = ['liveChatSection', 'agentPoolSection', 'callbackRequestsSection', 'agentChangePasswordSection'];
       sections.forEach(function(sId) {
-        let sec = document.getElementById(sId);
-        if (sec) { sec.style.display = sId === id ? '' : 'none'; }
+        var sec = document.getElementById(sId);
+        if (sec) { sec.style.display = sId === id ? (sId === 'liveChatSection' ? 'flex' : 'block') : 'none'; }
       });
-      // Highlight active nav
       document.querySelectorAll('[data-sidebar-tab]').forEach(function(nav) {
-        let isActive = nav.dataset.sidebarTab === id;
+        var isActive = nav.dataset.sidebarTab === id;
         nav.style.background = isActive ? 'rgba(255,92,53,0.1)' : 'transparent';
         nav.style.color = isActive ? '#ff6b42' : 'var(--text-muted)';
       });
@@ -432,12 +540,12 @@
     }
 
     // ===== REALTIME SUBSCRIPTIONS =====
-    let agentRtChannels = [];
+    var agentRtChannels = [];
 
     function setupAgentRealtime() {
       cleanupAgentRealtime();
 
-      let cChan = supabaseClient.channel('rt-agent-chat');
+      var cChan = supabaseClient.channel('rt-agent-chat');
       cChan.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_conversations' }, function(payload) {
         loadChatConversations();
         if (payload.new && payload.new.status === 'unassigned') {
@@ -445,7 +553,17 @@
         }
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_conversations' }, function() { loadChatConversations(); })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_conversations' }, function() { loadChatConversations(); })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_conversations' }, function() {
+        loadChatConversations().then(function() {
+          if (selectedConvId && !chatConversations.find(function(c) { return c.id === selectedConvId; })) {
+            selectedConvId = null;
+            document.getElementById('chatEmpty').classList.remove('hidden');
+            document.getElementById('chatView').classList.add('hidden');
+            stopCountdownTimer();
+            updateNameGeneratorState();
+          }
+        });
+      })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, function(payload) {
         if (payload.new && (payload.new.sender === 'member' || payload.new.sender === 'system')) {
           if (!selectedConvId || payload.new.conversation_id !== selectedConvId) {
@@ -460,11 +578,11 @@
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_messages' }, function() { if (selectedConvId) renderChatMessages(selectedConvId); }).subscribe();
       agentRtChannels.push(cChan);
 
-      let agentChan = supabaseClient.channel('rt-agent-agents');
+      var agentChan = supabaseClient.channel('rt-agent-agents');
       agentChan.on('postgres_changes', { event: '*', schema: 'public', table: 'agents' }, function() { loadAgents(); }).subscribe();
       agentRtChannels.push(agentChan);
 
-      let cbChan = supabaseClient.channel('rt-agent-callbacks');
+      var cbChan = supabaseClient.channel('rt-agent-callbacks');
       cbChan.on('postgres_changes', { event: '*', schema: 'public', table: 'sms_callbacks' }, function(payload) {
         loadCallbackRequests();
         if (payload.eventType === 'INSERT') {
@@ -480,10 +598,13 @@
     }
 
     document.addEventListener('visibilitychange', function() {
+      var session = getAdminSession();
+      var agentId = session && session.user ? session.user.agent_id : null;
+      if (!agentId) return;
       if (document.visibilityState === 'hidden') {
-        let session = getAdminSession();
-        let agentId = session && session.user ? session.user.agent_id : null;
-        if (agentId) { rpcUpdate('agent', { id: agentId }, { status: 'offline', last_seen: new Date().toISOString() }).catch(()=>{}); }
+        rpcUpdate('agent', { id: agentId }, { status: 'offline', last_seen: new Date().toISOString() }).catch(function(){});
+      } else {
+        rpcUpdate('agent', { id: agentId }, { status: 'online', last_seen: new Date().toISOString() }).catch(function(){});
       }
     });
     window.addEventListener('beforeunload', function() {
@@ -491,24 +612,27 @@
     });
 
     // ===== LIVE CHAT =====
-    let chatConversations = [];
-    let selectedConvId = null;
+    var chatConversations = [];
+    var selectedConvId = null;
+
+    function getMyAgentId() {
+      return agentSession && agentSession.user ? agentSession.user.agent_id : null;
+    }
 
     async function loadChatConversations() {
       try {
-        let session = getAdminSession();
-        let agentId = session && session.user ? session.user.agent_id : null;
-        let { data, error } = await supabaseClient.rpc('rpc_admin_get_chat_conversations');
+        var agentId = getMyAgentId();
+        var { data, error } = await supabaseClient.rpc('rpc_admin_get_chat_conversations');
         if (error) { console.error('load convs error:', error); return; }
         chatConversations = data || [];
         // Batch-fetch missing member names
-        let missingIds = chatConversations.filter(function(c) { return !c.member_name && !c.member_email && c.member_id; }).map(function(c) { return c.member_id; });
+        var missingIds = chatConversations.filter(function(c) { return !c.member_name && !c.member_email && c.member_id; }).map(function(c) { return c.member_id; });
         if (missingIds.length) {
-          let { data: members } = await supabaseClient.rpc('rpc_admin_get_member_names', { p_ids: missingIds });
-          let memberMap = {};
+          var { data: members } = await supabaseClient.rpc('rpc_admin_get_member_names', { p_ids: missingIds });
+          var memberMap = {};
           if (members) { members.forEach(function(m) { memberMap[m.id] = { name: m.name || m.username, email: m.email }; }); }
           chatConversations.forEach(function(c) {
-            let m = memberMap[c.member_id];
+            var m = memberMap[c.member_id];
             if (m) { c.member_name = c.member_name || m.name; c.member_email = c.member_email || m.email; }
           });
         }
@@ -516,95 +640,246 @@
       } catch(e) { console.error('loadChatConversations error:', e); }
     }
 
+    // AGENT ISOLATION: only show unassigned + my own conversations
     function renderChatConversations(agentId) {
-      let list = document.getElementById('chatConvList');
+      var list = document.getElementById('chatConvList');
       if (!list) return;
-      if (!chatConversations.length) {
+      var myConvs = chatConversations.filter(function(c) {
+        return (c.status === 'closed' && c.assigned_to === agentId) || !c.assigned_to || c.assigned_to === agentId;
+      });
+      if (!myConvs.length) {
         list.innerHTML = '<div class="text-[11px] p-2" style="color:var(--text-muted);">No conversations</div>';
         return;
       }
-      list.innerHTML = chatConversations.map(function(c) {
-        let isActive = c.id === selectedConvId;
-        let statusColors = { unassigned: '#f59e0b', assigned: '#3b82f6', closed: '#6b7280' };
-        let statusColor = statusColors[c.status] || '#6b7280';
+      list.innerHTML = myConvs.map(function(c) {
+        var isActive = c.id === selectedConvId;
+        var statusColors = { unassigned: '#f59e0b', active: '#3b82f6', assigned: '#3b82f6', closed: '#6b7280' };
+        var statusColor = statusColors[c.status] || '#6b7280';
         return '<div data-conv-id="' + c.id + '" class="px-2 py-1.5 rounded-lg text-[11px] cursor-pointer transition-all ' + (isActive ? 'font-semibold' : '') + '" style="background:' + (isActive ? 'rgba(255,92,53,0.1)' : 'transparent') + ';color:' + (isActive ? '#ff6b42' : 'var(--text-secondary)') + ';">' +
           '<div class="flex items-center justify-between"><span class="truncate max-w-[120px]">' + escHtml(c.member_name || c.member_email || 'Unknown') + '</span><span class="w-1.5 h-1.5 rounded-full" style="background:' + statusColor + ';"></span></div>' +
-          '<div class="text-[9px] mt-0.5" style="color:var(--text-muted);">' + escHtml(c.status) + (c.assigned_to ? ' • assigned' : '') + '</div></div>';
+          '<div class="text-[9px] mt-0.5" style="color:var(--text-muted);">' + escHtml(c.status) + (c.assigned_to && c.assigned_to !== agentId ? ' \u2022 taken' : c.assigned_to === agentId ? ' \u2022 yours' : '') + '</div></div>';
       }).join('');
       updateChatBadge();
     }
 
     function updateChatBadge() {
-      let count = chatConversations.filter(function(c) { return c.status !== 'closed'; }).length;
-      let badge = document.getElementById('sidebarChatCount');
+      var agentId = getMyAgentId();
+      var count = chatConversations.filter(function(c) {
+        return c.status !== 'closed' && (!c.assigned_to || c.assigned_to === agentId);
+      }).length;
+      var badge = document.getElementById('sidebarChatCount');
       if (badge) { badge.textContent = count > 0 ? count.toString() : ''; badge.style.display = count > 0 ? 'inline' : 'none'; }
     }
 
-    async function selectConversation(convId) {
-      selectedConvId = convId;
-      document.getElementById('chatEmpty').classList.add('hidden');
-      document.getElementById('chatView').classList.remove('hidden');
-      let session = getAdminSession();
-      let agentId = session && session.user ? session.user.agent_id : null;
-      renderChatConversations(agentId);
-      renderChatMessages(convId);
-      let btn = document.getElementById('agentPauseChat');
-      if (btn) {
-        let isPaused = chatPausedState[convId];
-        btn.textContent = isPaused ? 'Resume' : 'Pause';
-        btn.style.background = isPaused ? 'rgba(255,160,0,0.15)' : 'var(--hover)';
-        btn.style.color = isPaused ? '#ffa000' : 'var(--text-muted)';
+    // ===== COUNTDOWN TIMER =====
+    var countdownInterval = null;
+    var countdownSeconds = 600; // 10 minutes
+    var countdownRemaining = 600;
+    var countdownPaused = false;
+    var countdownWarned = false;
+
+    function startCountdownTimer() {
+      stopCountdownTimer();
+      countdownRemaining = countdownSeconds;
+      countdownPaused = false;
+      countdownWarned = false;
+      updateTimerDisplay();
+      var timerEl = document.getElementById('chatTimerDisplay');
+      if (timerEl) timerEl.classList.remove('hidden');
+
+      countdownInterval = setInterval(function() {
+        if (countdownPaused) return;
+        countdownRemaining--;
+        updateTimerDisplay();
+        if (countdownRemaining <= 0) {
+          stopCountdownTimer();
+          if (timerEl) {
+            timerEl.textContent = '00:00';
+            timerEl.className = 'chat-timer warning';
+          }
+          if (!countdownWarned && selectedConvId) {
+            countdownWarned = true;
+            rpcInsert('chat_message', {
+              conversation_id: selectedConvId,
+              sender: 'system',
+              message: '\u26A0\uFE0F Your session is about to expire. Please wrap up your conversation.'
+            });
+            renderChatMessages(selectedConvId);
+          }
+        }
+      }, 1000);
+    }
+
+    function stopCountdownTimer() {
+      if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+      var timerEl = document.getElementById('chatTimerDisplay');
+      if (timerEl) timerEl.classList.add('hidden');
+    }
+
+    function updateTimerDisplay() {
+      var timerEl = document.getElementById('chatTimerDisplay');
+      if (!timerEl) return;
+      var mins = Math.floor(Math.max(0, countdownRemaining) / 60);
+      var secs = Math.max(0, countdownRemaining) % 60;
+      timerEl.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+      if (countdownPaused) {
+        timerEl.className = 'chat-timer paused';
+      } else if (countdownRemaining <= 60) {
+        timerEl.className = 'chat-timer warning';
+      } else {
+        timerEl.className = 'chat-timer normal';
       }
     }
 
+    // ===== CONVERSATION SELECTION =====
+    async function selectConversation(convId) {
+      // Check isolation: cannot select another agent's conversation
+      var agentId = getMyAgentId();
+      var conv = chatConversations.find(function(c) { return c.id === convId; });
+      if (conv && conv.assigned_to && conv.assigned_to !== agentId && conv.status !== 'closed') {
+        showToast('This conversation is being handled by another agent');
+        return;
+      }
+
+      selectedConvId = convId;
+      document.getElementById('chatEmpty').classList.add('hidden');
+      document.getElementById('chatView').classList.remove('hidden');
+      if (window.innerWidth <= 640) {
+        document.getElementById('liveChatSection').classList.add('mobile-chat-open');
+      }
+
+      renderChatConversations(agentId);
+      renderChatMessages(convId);
+      updateNameGeneratorState();
+
+      // Update member name in h2 header
+      var headerInfo = document.getElementById('chatConvHeaderInfo');
+      if (headerInfo && conv) {
+        var isOnline = conv.status === 'active' || conv.status === 'unassigned';
+        var dotColor = isOnline ? '#10b981' : '#ef4444';
+        var name = escHtml(conv.member_name || conv.member_email || 'Unknown');
+        headerInfo.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + dotColor + ';flex-shrink:0;"></span><span>' + name + '</span>';
+        headerInfo.style.display = 'flex';
+      }
+
+      // Mark messages as read
+      try { await supabaseClient.rpc('rpc_mark_chat_read', { p_conversation_id: convId, p_sender: 'admin' }); } catch(e) {}
+
+      // Show/hide claim button
+      var claimBtn = document.getElementById('claimConvBtn');
+      if (claimBtn) {
+        if (conv && !conv.assigned_to && conv.status !== 'closed') {
+          claimBtn.classList.remove('hidden');
+        } else {
+          claimBtn.classList.add('hidden');
+        }
+      }
+
+      // Pause button state
+      var btn = document.getElementById('agentPauseChat');
+      if (btn) {
+        var isPaused = chatPausedState[convId];
+        btn.textContent = isPaused ? 'Resume' : 'Pause';
+        btn.style.background = isPaused ? 'rgba(255,160,0,0.15)' : '#10b981';
+        btn.style.color = isPaused ? '#ffa000' : '#fff';
+        // Sync countdownPaused with per-conversation state
+        countdownPaused = !!isPaused;
+      }
+
+      // Start countdown timer (skip for closed conversations)
+      if (conv && conv.status !== 'closed') {
+        startCountdownTimer();
+        // Sync pause state after timer start
+        if (chatPausedState[convId]) {
+          countdownPaused = true;
+          updateTimerDisplay();
+        }
+      } else {
+        stopCountdownTimer();
+      }
+    }
+
+    function goBackToConversations() {
+      document.getElementById('liveChatSection').classList.remove('mobile-chat-open');
+      selectedConvId = null;
+      document.getElementById('chatView').classList.add('hidden');
+      document.getElementById('chatEmpty').classList.remove('hidden');
+      var headerInfo = document.getElementById('chatConvHeaderInfo');
+      if (headerInfo) headerInfo.style.display = 'none';
+      stopCountdownTimer();
+      loadChatConversations();
+      updateNameGeneratorState();
+    }
+
     async function renderChatMessages(convId) {
-      let container = document.getElementById('chatMessages');
+      var container = document.getElementById('chatMessages');
       if (!container) return;
-      let { data, error } = await supabaseClient.rpc('rpc_admin_get_chat_messages', { p_conversation_id: convId });
+      var conv = chatConversations.find(function(c) { return c.id === convId; });
+      var { data, error } = await supabaseClient.rpc('rpc_admin_get_chat_messages', { p_conversation_id: convId });
       if (error) { container.innerHTML = '<div class="text-[11px]" style="color:#ef4444;">Error loading messages</div>'; return; }
-      let msgs = data || [];
+      var msgs = data || [];
       if (!msgs.length) { container.innerHTML = '<div class="text-[11px] p-3" style="color:var(--text-muted);">No messages yet</div>'; return; }
-      container.innerHTML = msgs.map(function(m) {
+      var messagesHtml = msgs.map(function(m) {
         if (m.sender === 'system' && (m.message === '[TIMER_PAUSED]' || m.message === '[TIMER_RESUMED]')) return '';
-        let isMember = m.sender === 'member';
-        let senderLabel = isMember ? 'Member' : (m.admin_name || 'Support');
-        let msgContent = escHtml(m.message);
+        var isMember = m.sender === 'member';
+        var isSystem = m.sender === 'system';
+        var senderLabel = isSystem ? 'System' : (isMember ? 'Member' : (m.admin_name || agentDisplayName || 'Support'));
+        var msgContent = escHtml(m.message);
         if (m.message && m.message.indexOf('[IMAGE:') === 0) {
-          let imgUrl = m.message.substring(7, m.message.length - 1);
+          var imgUrl = m.message.substring(7, m.message.length - 1);
           msgContent = '<img src="' + escHtml(imgUrl) + '" style="max-width:240px;border-radius:8px;cursor:pointer;" onclick="window.open(this.getAttribute(\'src\'),\'_blank\')">';
         }
-        return '<div class="chat-msg-row ' + (isMember ? 'chat-msg-member' : 'chat-msg-agent') + ' rounded-lg px-3 py-2 max-w-[80%] ' + (isMember ? '' : 'ml-auto') + '">' +
+        // Read receipt
+        var receipt = '';
+        if (!isSystem && m.sender !== 'member') {
+          receipt = m.read_at ? '<span class="read-receipt read">\u2713\u2713</span>' : '<span class="read-receipt sent">\u2713</span>';
+        }
+        // Agent messages RIGHT, member messages LEFT
+        var msgAlign = isMember ? 'align-self:flex-start;' : 'align-self:flex-end;';
+        var timeAlign = isMember ? 'flex-start' : 'flex-end';
+        return '<div class="chat-msg-row ' + (isSystem ? '' : (isMember ? 'chat-msg-member' : 'chat-msg-agent')) + ' rounded-lg px-3 py-2" style="max-width:80%;' + msgAlign + '">' +
+          '<div style="width:100%;">' +
           '<div class="text-[12px] leading-relaxed" style="color:var(--text);">' + msgContent + '</div>' +
-          '<div class="time flex justify-between"><span>' + escHtml(senderLabel) + '</span><span>' + new Date(m.created_at).toLocaleTimeString() + '</span></div></div>';
+          '<div class="time flex" style="justify-content:' + timeAlign + ';"><span>' + escHtml(senderLabel) + ' ' + new Date(m.created_at).toLocaleTimeString() + receipt + '</span></div>' +
+          '</div></div>';
       }).filter(function(h) { return h !== ''; }).join('');
+      container.innerHTML = messagesHtml;
       container.scrollTop = container.scrollHeight;
     }
 
     async function sendChatReply() {
       if (!selectedConvId) { showToast('Select a conversation first'); return; }
-      let input = document.getElementById('chatReplyInput');
-      let msg = input.value.trim();
+      // Isolation guard
+      var agentId = getMyAgentId();
+      var conv = chatConversations.find(function(c) { return c.id === selectedConvId; });
+      if (conv && conv.assigned_to && conv.assigned_to !== agentId) {
+        showToast('This conversation belongs to another agent');
+        return;
+      }
+      var input = document.getElementById('chatReplyInput');
+      var msg = input.value.trim();
       if (!msg) return;
-      input.value = '';
-      let session = getAdminSession();
-      let senderName = session && session.user ? (session.user.name || 'Support Agent') : 'Support Agent';
-      let { error } = await rpcInsert('chat_message', {
+      var senderName = agentDisplayName || (agentSession && agentSession.user ? (agentSession.user.name || 'Support Agent') : 'Support Agent');
+      var { error } = await rpcInsert('chat_message', {
         conversation_id: selectedConvId,
         sender: 'admin',
         message: msg,
         admin_name: senderName
       });
       if (error) { showToast('Error sending message'); return; }
+      input.value = '';
+      await rpcUpdate('chat_conversation', { id: selectedConvId }, { updated_at: new Date().toISOString() });
       renderChatMessages(selectedConvId);
     }
 
     async function claimConversation() {
       if (!selectedConvId) return;
-      let session = getAdminSession();
-      let agentId = session && session.user ? session.user.agent_id : null;
+      var agentId = getMyAgentId();
       if (!agentId) { showToast('Login required to claim'); return; }
-      let { error } = await rpcUpdate('chat_conversation', { id: selectedConvId }, { assigned_to: agentId, status: 'assigned' });
+      var senderName = agentDisplayName || (agentSession && agentSession.user ? (agentSession.user.name || 'Support Agent') : 'Support Agent');
+      var { error } = await rpcUpdate('chat_conversation', { id: selectedConvId }, { assigned_to: agentId, status: 'active', updated_at: new Date().toISOString() });
       if (error) { showToast('Error claiming conversation'); return; }
+      await rpcInsert('chat_message', { conversation_id: selectedConvId, sender: 'system', message: senderName + ' joined the conversation.' });
       showToast('Conversation claimed');
       document.getElementById('claimConvBtn').classList.add('hidden');
       loadChatConversations();
@@ -612,58 +887,71 @@
 
     async function closeChatConversation() {
       if (!selectedConvId) return;
-      let session = getAdminSession();
-      let agentId = session && session.user ? session.user.agent_id : null;
-      // Send system message first, then close
+      var agentId = getMyAgentId();
+      // Isolation guard
+      var conv = chatConversations.find(function(c) { return c.id === selectedConvId; });
+      if (conv && conv.assigned_to && conv.assigned_to !== agentId) {
+        showToast('This conversation belongs to another agent');
+        return;
+      }
       if (agentId) {
         await rpcInsert('chat_message', {
           conversation_id: selectedConvId, sender: 'system', message: 'Chat closed by support agent.'
         });
       }
-      let { error } = await rpcUpdate('chat_conversation', { id: selectedConvId }, { status: 'closed', updated_at: new Date().toISOString() });
+      var { error } = await rpcUpdate('chat_conversation', { id: selectedConvId }, { status: 'closed', updated_at: new Date().toISOString() });
       if (error) { showToast('Error closing conversation'); return; }
       showToast('Conversation closed');
       selectedConvId = null;
       document.getElementById('chatView').classList.add('hidden');
       document.getElementById('chatEmpty').classList.remove('hidden');
+      document.getElementById('liveChatSection').classList.remove('mobile-chat-open');
+      stopCountdownTimer();
       loadChatConversations();
+      updateNameGeneratorState();
     }
 
-    let chatPausedState = {};
+    var chatPausedState = {};
 
     async function togglePauseChat() {
       if (!selectedConvId) { showToast('Select a conversation first'); return; }
-      let btn = document.getElementById('agentPauseChat');
-      let isPaused = chatPausedState[selectedConvId];
-      let msg = isPaused ? '[TIMER_RESUMED]' : '[TIMER_PAUSED]';
-      let { error } = await rpcInsert('chat_message', {
+      var agentId = getMyAgentId();
+      var conv = chatConversations.find(function(c) { return c.id === selectedConvId; });
+      if (conv && conv.assigned_to && conv.assigned_to !== agentId) {
+        showToast('This conversation belongs to another agent');
+        return;
+      }
+      var btn = document.getElementById('agentPauseChat');
+      var isPaused = chatPausedState[selectedConvId];
+      var msg = isPaused ? '[TIMER_RESUMED]' : '[TIMER_PAUSED]';
+      var { error } = await rpcInsert('chat_message', {
         conversation_id: selectedConvId,
         sender: 'system',
         message: msg
       });
       if (error) { showToast('Error toggling pause'); return; }
       chatPausedState[selectedConvId] = !isPaused;
+      countdownPaused = chatPausedState[selectedConvId];
+      updateTimerDisplay();
       if (btn) {
         btn.textContent = isPaused ? 'Pause' : 'Resume';
-        btn.style.background = isPaused ? 'var(--hover)' : 'rgba(255,160,0,0.15)';
-        btn.style.color = isPaused ? 'var(--text-muted)' : '#ffa000';
+        btn.style.background = isPaused ? '#10b981' : 'rgba(255,160,0,0.15)';
+        btn.style.color = isPaused ? '#fff' : '#ffa000';
       }
       renderChatMessages(selectedConvId);
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-      let input = document.getElementById('chatReplyInput');
+      var input = document.getElementById('chatReplyInput');
       if (input) input.addEventListener('keydown', function(e) { if (e.key === 'Enter') sendChatReply(); });
-      // Event delegation for callback table actions
-      const cbBody = document.getElementById('callbackRequestBody');
+      var cbBody = document.getElementById('callbackRequestBody');
       if (cbBody) cbBody.addEventListener('click', function(e) {
-        let btn = e.target.closest('[data-cb-action]');
+        var btn = e.target.closest('[data-cb-action]');
         if (!btn) return;
-        let id = btn.dataset.cbId;
-        let action = btn.dataset.cbAction;
+        var id = btn.dataset.cbId;
+        var action = btn.dataset.cbAction;
         if (action === 'contacted') updateCallbackStatus(id, 'contacted');
         else if (action === 'completed') updateCallbackStatus(id, 'completed');
-        else if (action === 'delete') deleteCallback(id);
         else if (action === 'savenote') saveCallbackNote(id);
       });
     });
@@ -671,24 +959,24 @@
     // ===== AGENT POOL =====
     async function loadAgents() {
       try {
-        let { data, error } = await supabaseClient.rpc('rpc_admin_get_agents_safe')
+        var { data, error } = await supabaseClient.rpc('rpc_admin_get_agents_safe')
         if (error) { console.error('load agents error:', error); return; }
         renderAgentPool(data || []);
       } catch(e) { console.error('loadAgents error:', e); }
     }
 
     function renderAgentPool(agents) {
-      let tbody = document.getElementById('agentPoolBody');
+      var tbody = document.getElementById('agentPoolBody');
       if (!tbody) return;
-      let session = getAdminSession();
-      let myAgentId = session && session.user ? session.user.agent_id : null;
+      var myAgentId = getMyAgentId();
       tbody.innerHTML = agents.map(function(a) {
-        let isMe = a.id === myAgentId;
-        let statusColor = a.status === 'online' ? '#10b981' : a.status === 'busy' ? '#f59e0b' : '#6b7280';
-        let statusLabel = a.status === 'online' ? 'Online' : a.status === 'busy' ? 'Busy' : 'Offline';
-        let lastSeen = a.last_seen ? new Date(a.last_seen).toLocaleString() : '-';
+        var isMe = a.id === myAgentId;
+        var statusColor = a.status === 'online' ? '#10b981' : a.status === 'busy' ? '#f59e0b' : '#6b7280';
+        var statusLabel = a.status === 'online' ? 'Online' : a.status === 'busy' ? 'Busy' : 'Offline';
+        var lastSeen = a.last_seen ? new Date(a.last_seen).toLocaleString() : '-';
+        var displayName = a.display_name || a.name;
         return '<tr>' +
-          '<td class="py-3 pr-4 text-[12px]" style="color:var(--text);">' + escHtml(a.name) + (isMe ? ' <span class="text-[10px]" style="color:#10b981;">(you)</span>' : '') + '</td>' +
+          '<td class="py-3 pr-4 text-[12px]" style="color:var(--text);">' + escHtml(displayName) + (isMe ? ' <span class="text-[10px]" style="color:#10b981;">(you)</span>' : '') + '</td>' +
           '<td class="py-3 pr-4 text-[12px]" style="color:var(--text-secondary);">' + escHtml(a.email) + '</td>' +
           '<td class="py-3 pr-4"><span class="text-[11px] font-semibold" style="color:' + statusColor + ';">' + statusLabel + '</span></td>' +
           '<td class="py-3 text-[11px]" style="color:var(--text-muted);">' + lastSeen + '</td>' +
@@ -698,20 +986,19 @@
     }
 
     function updateAgentBadge(agents) {
-      let online = agents.filter(function(a) { return a.status === 'online' || a.status === 'busy'; }).length;
-      let badge = document.getElementById('sidebarAgentCount');
+      var online = agents.filter(function(a) { return a.status === 'online' || a.status === 'busy'; }).length;
+      var badge = document.getElementById('sidebarAgentCount');
       if (badge) { badge.textContent = online > 0 ? online.toString() : ''; badge.style.display = online > 0 ? 'inline' : 'none'; }
     }
 
     async function toggleMyAgentStatus() {
-      let session = getAdminSession();
-      let agentId = session && session.user ? session.user.agent_id : null;
+      var agentId = getMyAgentId();
       if (!agentId) { showToast('Login required'); return; }
-      let btn = document.getElementById('agentStatusToggle');
-      let label = document.getElementById('agentStatusLabel');
+      var btn = document.getElementById('agentStatusToggle');
+      var label = document.getElementById('agentStatusLabel');
       try {
-        let { data: currentStatus } = await supabaseClient.rpc('rpc_agent_get_own_status', { p_id: agentId });
-        let newStatus = currentStatus === 'online' ? 'offline' : 'online';
+        var { data: currentStatus } = await supabaseClient.rpc('rpc_agent_get_own_status', { p_id: agentId });
+        var newStatus = currentStatus === 'online' ? 'offline' : 'online';
         await rpcUpdate('agent', { id: agentId }, { status: newStatus, last_seen: new Date().toISOString() });
         if (btn) {
           btn.textContent = newStatus === 'online' ? 'Online' : 'Offline';
@@ -724,14 +1011,13 @@
     }
 
     async function initAgentStatus() {
-      let session = getAdminSession();
-      let agentId = session && session.user ? session.user.agent_id : null;
+      var agentId = getMyAgentId();
       if (!agentId) return;
-      let btn = document.getElementById('agentStatusToggle');
-      let label = document.getElementById('agentStatusLabel');
+      var btn = document.getElementById('agentStatusToggle');
+      var label = document.getElementById('agentStatusLabel');
       try {
-        let { data: currentStatus } = await supabaseClient.rpc('rpc_agent_get_own_status', { p_id: agentId });
-        let status = currentStatus || 'offline';
+        var { data: currentStatus } = await supabaseClient.rpc('rpc_agent_get_own_status', { p_id: agentId });
+        var status = currentStatus || 'offline';
         if (status === 'offline') {
           await rpcUpdate('agent', { id: agentId }, { status: 'online', last_seen: new Date().toISOString() });
           status = 'online';
@@ -746,38 +1032,37 @@
     }
 
     // ===== CALLBACK REQUESTS =====
-    let allCallbacks = [];
-    let callbackFilter = 'all';
+    var allCallbacks = [];
+    var callbackFilter = 'all';
 
     async function loadCallbackRequests() {
       try {
-        let { data, error } = await supabaseClient.rpc('rpc_admin_get_sms_callbacks');
+        var { data, error } = await supabaseClient.rpc('rpc_admin_get_sms_callbacks');
         if (error) { console.error('load callbacks error:', error); return; }
         allCallbacks = data || [];
         renderCallbackRequests(callbackFilter);
         updateCallbackBadge();
       } catch(e) { console.error('loadCallbackRequests error:', e); }
-      let loading = document.getElementById('callbackLoading');
+      var loading = document.getElementById('callbackLoading');
       if (loading) loading.style.display = 'none';
     }
 
     function renderCallbackRequests(filter) {
       callbackFilter = filter || 'all';
-      let tbody = document.getElementById('callbackRequestBody');
+      var tbody = document.getElementById('callbackRequestBody');
       if (!tbody) return;
       document.querySelectorAll('[id^=cbFilter]').forEach(function(b) { b.style.background = 'transparent'; b.style.color = 'var(--text-muted)'; });
-      let activeBtn = document.getElementById('cbFilter' + (callbackFilter === 'all' ? 'All' : callbackFilter.charAt(0).toUpperCase() + callbackFilter.slice(1)));
+      var activeBtn = document.getElementById('cbFilter' + (callbackFilter === 'all' ? 'All' : callbackFilter.charAt(0).toUpperCase() + callbackFilter.slice(1)));
       if (activeBtn) { activeBtn.style.background = 'rgba(255,92,53,0.1)'; activeBtn.style.color = '#ff6b42'; }
-      let filtered = callbackFilter === 'all' ? allCallbacks : allCallbacks.filter(function(c) { return c.status === callbackFilter; });
+      var filtered = callbackFilter === 'all' ? allCallbacks : allCallbacks.filter(function(c) { return c.status === callbackFilter; });
       if (!filtered.length) {
         tbody.innerHTML = '<tr><td colspan="8" class="py-6 text-center text-[12px]" style="color:var(--text-muted);">No callback requests</td></tr>';
         return;
       }
       tbody.innerHTML = filtered.map(function(c) {
-        let statusColor = c.status === 'pending' ? '#f59e0b' : c.status === 'contacted' ? '#3b82f6' : '#10b981';
-        let actions = c.status === 'pending' ? '<button data-cb-action="contacted" data-cb-id="' + c.id + '" class="px-2 py-1 rounded text-[10px] font-semibold" style="color:#3b82f6;background:rgba(59,130,246,0.1);">Contacted</button>' : '';
+        var statusColor = c.status === 'pending' ? '#f59e0b' : c.status === 'contacted' ? '#3b82f6' : '#10b981';
+        var actions = c.status === 'pending' ? '<button data-cb-action="contacted" data-cb-id="' + c.id + '" class="px-2 py-1 rounded text-[10px] font-semibold" style="color:#3b82f6;background:rgba(59,130,246,0.1);">Contacted</button>' : '';
         actions += c.status !== 'completed' ? ' <button data-cb-action="completed" data-cb-id="' + c.id + '" class="px-2 py-1 rounded text-[10px] font-semibold" style="color:#10b981;background:rgba(16,185,129,0.1);">Complete</button>' : '';
-        actions += ' <button data-cb-action="delete" data-cb-id="' + c.id + '" class="px-2 py-1 rounded text-[10px] font-semibold" style="color:#ef4444;background:rgba(239,68,68,0.1);">Delete</button>';
         return '<tr data-cb-row="' + c.id + '">' +
           '<td class="py-3 text-[11px]" style="color:var(--text-muted);">' + new Date(c.created_at).toLocaleDateString() + '</td>' +
           '<td class="py-3 text-[12px]" style="color:var(--text);">' + escHtml(c.full_name || '') + '</td>' +
@@ -791,15 +1076,15 @@
     }
 
     function updateCallbackBadge() {
-      let pending = allCallbacks.filter(function(c) { return c.status === 'pending'; }).length;
-      let badge = document.getElementById('sidebarCallbackCount');
+      var pending = allCallbacks.filter(function(c) { return c.status === 'pending'; }).length;
+      var badge = document.getElementById('sidebarCallbackCount');
       if (badge) { badge.textContent = pending > 0 ? pending.toString() : ''; badge.style.display = pending > 0 ? 'inline' : 'none'; }
     }
 
     async function updateCallbackStatus(id, status) {
-      let { error } = await supabaseClient.rpc('rpc_update_sms_callback', { p_id: id, p_status: status, p_updated_at: new Date().toISOString() });
+      var { error } = await supabaseClient.rpc('rpc_update_sms_callback', { p_id: id, p_status: status, p_updated_at: new Date().toISOString() });
       if (error) { showToast('Error: ' + error.message); return; }
-      for (let i = 0; i < allCallbacks.length; i++) {
+      for (var i = 0; i < allCallbacks.length; i++) {
         if (allCallbacks[i].id === id) { allCallbacks[i].status = status; break; }
       }
       renderCallbackRequests(callbackFilter);
@@ -808,69 +1093,59 @@
     }
 
     async function saveCallbackNote(id) {
-      let noteEl = document.querySelector('[data-cb-note-id="' + id + '"]');
-      let note = noteEl ? noteEl.value.trim() : '';
-      let { error } = await supabaseClient.rpc('rpc_update_sms_callback', { p_id: id, p_admin_note: note, p_updated_at: new Date().toISOString() });
+      var noteEl = document.querySelector('[data-cb-note-id="' + id + '"]');
+      var note = noteEl ? noteEl.value.trim() : '';
+      var { error } = await supabaseClient.rpc('rpc_update_sms_callback', { p_id: id, p_admin_note: note, p_updated_at: new Date().toISOString() });
       if (error) { showToast('Error: ' + error.message); return; }
-      for (let i = 0; i < allCallbacks.length; i++) {
+      for (var i = 0; i < allCallbacks.length; i++) {
         if (allCallbacks[i].id === id) { allCallbacks[i].admin_note = note; break; }
       }
       showToast('Note saved.');
     }
 
-    async function deleteCallback(id) {
-      if (!confirm('Delete this callback request?')) return;
-      let { error } = await supabaseClient.rpc('rpc_delete_sms_callback', { p_id: id });
-      if (error) { showToast('Error: ' + error.message); return; }
-      allCallbacks = allCallbacks.filter(function(c) { return c.id !== id; });
-      renderCallbackRequests(callbackFilter);
-      updateCallbackBadge();
-      showToast('Callback deleted.');
-    }
-
     // ===== CHANGE PASSWORD =====
     async function changeAgentPassword() {
-      let currentPw = document.getElementById('agentCurrentPw').value;
-      let newPw = document.getElementById('agentNewPw').value;
-      let confirmPw = document.getElementById('agentConfirmPw').value;
-      let resultEl = document.getElementById('agentChangePwResult');
+      var currentPw = document.getElementById('agentCurrentPw').value;
+      var newPw = document.getElementById('agentNewPw').value;
+      var confirmPw = document.getElementById('agentConfirmPw').value;
+      var resultEl = document.getElementById('agentChangePwResult');
       resultEl.classList.add('hidden');
 
       if (!currentPw || !newPw || !confirmPw) { showToast('Fill all fields.'); return; }
       if (newPw !== confirmPw) { showToast('New passwords do not match.'); return; }
       if (newPw.length < 8) { showToast('Password must be at least 8 characters.'); return; }
-      let strengthErr = validatePasswordStrength(newPw)
+      var strengthErr = validatePasswordStrength(newPw)
       if (strengthErr) { showToast(strengthErr); return; }
 
-      let session = getAdminSession();
-      if (!session || !session.user || !session.user.agent_id) { showToast('You must be logged in as an agent.'); return; }
+      var agentId = getMyAgentId();
+      if (!agentId) { showToast('You must be logged in as an agent.'); return; }
 
       if (!crypto || !crypto.subtle) { showToast('Secure context required'); return; }
-      let curHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(currentPw));
-      let curHashHex = Array.from(new Uint8Array(curHash)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+      var curHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(currentPw));
+      var curHashHex = Array.from(new Uint8Array(curHash)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
 
-      let { data: pwMatch } = await supabaseClient.rpc('rpc_agent_verify_password', { p_id: session.user.agent_id, p_hash: curHashHex });
+      var { data: pwMatch } = await supabaseClient.rpc('rpc_agent_verify_password', { p_id: agentId, p_hash: curHashHex });
       if (!pwMatch) { showToast('Current password is incorrect.'); return; }
 
-      let newHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(newPw));
-      let newHashHex = Array.from(new Uint8Array(newHash)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
-      let { error } = await rpcUpdate('agent', { id: session.user.agent_id }, { password_hash: newHashHex });
+      var newHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(newPw));
+      var newHashHex = Array.from(new Uint8Array(newHash)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+      var { error } = await rpcUpdate('agent', { id: agentId }, { password_hash: newHashHex });
       if (error) { showToast('Error: ' + error.message); return; }
 
       document.getElementById('agentCurrentPw').value = '';
       document.getElementById('agentNewPw').value = '';
       document.getElementById('agentConfirmPw').value = '';
       resultEl.classList.remove('hidden');
-      resultEl.innerHTML = '<span class="text-[#10b981]">Password updated successfully. Admin can see the new password.</span>';
-      showToast('Agent password changed.');
+      resultEl.innerHTML = '<span class="text-[#10b981]">Password updated successfully.</span>';
+      showToast('Password changed.');
     }
 
     // ===== TOAST =====
     function showToast(msg) {
-      let container = document.getElementById('adminNotificationContainer');
+      var container = document.getElementById('adminNotificationContainer');
       if (!container) return;
       container.style.display = 'flex';
-      let toast = document.createElement('div');
+      var toast = document.createElement('div');
       toast.className = 'text-[12px] px-4 py-3 rounded-xl shadow-lg font-semibold animate-slide-up';
       toast.style.cssText = 'background:var(--bg-card);color:var(--text);border:1px solid var(--border);';
       toast.textContent = msg;
@@ -883,18 +1158,16 @@
 
     function notifyAgent(msg) {
       showToast(msg);
-      // Browser desktop notification
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('MetasBank', { body: msg, icon: '/favicon.ico' });
       } else if ('Notification' in window && Notification.permission !== 'denied') {
         Notification.requestPermission();
       }
-      // Notification sound
       try {
         if (!window._sharedAudioCtx) window._sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let ctx = window._sharedAudioCtx;
-        let osc = ctx.createOscillator();
-        let gain = ctx.createGain();
+        var ctx = window._sharedAudioCtx;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
         osc.connect(gain); gain.connect(ctx.destination);
         osc.frequency.value = 800; gain.gain.value = 0.15;
         osc.start(); osc.stop(ctx.currentTime + 0.15);

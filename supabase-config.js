@@ -166,6 +166,8 @@ async function reauthMember() {
   try {
     let user = getMemberUser()
     if (!user || !user.email) return false
+    // Sign out first to clear any stale session
+    try { await supabaseClient.auth.signOut() } catch(e) {}
     let { data: rows } = await supabaseClient.from('members').select('auth_password').eq('id', user.id).single()
     if (!rows || !rows.auth_password) return false
     await supabaseClient.auth.signInWithPassword({ email: user.email, password: rows.auth_password })
@@ -332,8 +334,8 @@ async function adminLogin(email, password) {
       if (matched) {
         await supabaseClient.rpc('reset_rate_limit', { p_action: 'admin_login', p_identifier: rateId })
         let role = matched.role || 'agent'
-        sessionStorage.setItem('admin_session', JSON.stringify({ user: { email, agent_id: matched.id, name: matched.name, role: role } }))
-        return { data: { user: { email, agent_id: matched.id, name: matched.name, role: role } } }
+        sessionStorage.setItem('admin_session', JSON.stringify({ user: { email, agent_id: matched.id, name: matched.name, role: role, display_name: matched.display_name || null } }))
+        return { data: { user: { email, agent_id: matched.id, name: matched.name, role: role, display_name: matched.display_name || null } } }
       }
     }
 
@@ -415,6 +417,7 @@ async function verifyAdminSession(expectedRole) {
     session.user.name = agent.name
     session.user.agent_id = agent.id
     session.user.role = agent.role || 'agent'
+    session.user.display_name = agent.display_name || null
     sessionStorage.setItem('admin_session', JSON.stringify(session))
     return session
   } catch(e) { console.error('Session verification error:', e); return null }

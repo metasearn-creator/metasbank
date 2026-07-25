@@ -109,7 +109,7 @@
             <!-- Dummy hidden fields to trap browser autofill -->
             <input type="text" name="fakeusername" style="display:none" tabindex="-1" aria-hidden="true">
             <input type="password" name="fakepassword" style="display:none" tabindex="-1" aria-hidden="true">
-            <div id="loginError" class="hidden mb-4 rounded-lg px-4 py-2.5 text-[12px] font-medium" style="background: rgba(255,71,87,0.1); color: #ff4757; border: 1px solid rgba(255,71,87,0.15);"></div>
+            <div id="loginError" class="hidden mb-3 rounded-md px-3 py-1.5 text-[11px] font-medium" style="background: rgba(255,71,87,0.1); color: #ff4757; border: 1px solid rgba(255,71,87,0.15);"></div>
             <div class="mb-4">
               <label for="loginUsername" class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Email or Username</label>
               <input id="loginUsername" type="text" placeholder="your@email.com or username" autocomplete="off" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
@@ -122,7 +122,7 @@
               <div></div>
               <button type="button" id="forgotAccessKeyBtn" class="text-[11px] font-medium hover:opacity-80 transition-all" style="color: #ff5c35;">Forgot Access Key?</button>
             </div>
-            <button id="loginBtn" type="submit" class="w-full py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">Sign In</button>
+            <button id="loginBtn" type="submit" class="w-full py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">Login</button>
           </form>
 
           <div class="mt-4 pt-4" style="border-top: 1px solid var(--border);">
@@ -205,19 +205,19 @@
 
       if (!username || !accessKey) { showLoginError('Please enter both email/username and Password'); return }
 
-      btn.textContent = 'Signing in...'; btn.disabled = true; btn.style.opacity = '0.7'
+      btn.textContent = 'Logging in...'; btn.disabled = true; btn.style.opacity = '0.7'
 
       memberLogin(username, accessKey).then(function(result) {
         if (result.error) {
-          showLoginError(result.error)
-          btn.textContent = 'Sign In'; btn.disabled = false; btn.style.opacity = '1'
+          showLoginError('Invalid credentials')
+          btn.textContent = 'Login'; btn.disabled = false; btn.style.opacity = '1'
         } else {
           window.location.href = '/dashboard/'
         }
       }).catch(function(err) {
         console.error('Login failed:', err)
-        showLoginError('An unexpected error occurred')
-        btn.textContent = 'Sign In'; btn.disabled = false; btn.style.opacity = '1'
+        showLoginError('Invalid credentials')
+        btn.textContent = 'Login'; btn.disabled = false; btn.style.opacity = '1'
       })
     }
 

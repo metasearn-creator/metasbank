@@ -66,7 +66,7 @@
     input, select, textarea { font-size: 16px; touch-action: manipulation; }
     button, [data-action], a { touch-action: manipulation; }
     .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
-    .main-wrapper { padding-top: var(--header-h); }
+    .main-wrapper { padding-top: var(--header-h); display: flex; min-height: calc(100vh - var(--header-h)); align-items: stretch; }
     .glass { background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--card-shadow); }
     .gradient-orange { background: linear-gradient(135deg, #e84a24, #ff5c35); }
     ::-webkit-scrollbar { width: 6px; }
@@ -88,12 +88,12 @@
     .balance-flash { animation: balanceFlash 0.6s ease-in-out 2; }
 
     /* ===== CHATBOT ===== */
-    #chatbot-container { position: fixed; bottom: 0; right: 20px; z-index: 300; width: 320px; max-width: calc(100vw - 40px); max-height: 420px; border-radius: 12px 12px 0 0; overflow: hidden; display: none; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border); box-shadow: 0 -4px 24px rgba(0,0,0,0.15); }
+    #chatbot-container { position: fixed; bottom: 0; right: 20px; z-index: 300; width: 320px; max-width: calc(100vw - 40px); max-height: 520px; border-radius: 12px 12px 0 0; overflow: hidden; display: none; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border); box-shadow: 0 -4px 24px rgba(0,0,0,0.15); }
     #chatbot-container.open { display: flex; }
     #chatbot-header { padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); cursor: pointer; }
     #chatbot-header h3 { font-size: 12px; }
-    #chatbot-messages { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-height: 120px; max-height: 220px; }
-    @media (min-height: 700px) { #chatbot-container { max-height: 480px; } #chatbot-messages { max-height: 260px; } }
+    #chatbot-messages { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-height: 160px; max-height: 300px; }
+    @media (min-height: 700px) { #chatbot-container { max-height: 560px; } #chatbot-messages { max-height: 340px; } }
     .chat-msg { max-width: 88%; padding: 10px 14px; border-radius: 12px; font-size: 12px; line-height: 1.45; }
     .chat-msg.bot { align-self: flex-start; background: var(--hover); border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 4px; }
     .chat-msg.user { align-self: flex-end; background: linear-gradient(135deg, #ff5c35, #ff8f6e); color: #fff; border-bottom-right-radius: 4px; }
@@ -189,6 +189,11 @@
       filter: blur(8px);
       user-select: none;
     }
+    [data-member-balance] {
+      display: inline-block;
+      min-width: 100px;
+      white-space: nowrap;
+    }
   </style>
   <style>
     html.js-loading * { transition: none !important; }
@@ -212,7 +217,7 @@
     });
   </script>
 </head>
-<body>
+<body style="visibility: hidden;">
 
   <!-- ===== HEADER ===== -->
   <header class="fixed-header h-14 flex items-center justify-between px-4 lg:px-6" style="background: var(--bg-header); border-bottom: 1px solid var(--border);">
@@ -325,9 +330,9 @@
     </aside>
 
     <!-- ===== MAIN ===== -->
-    <main id="memberMain" style="width: 100%;">
+    <main id="memberMain" style="width: 100%; flex: 1; min-height: 0; display: flex; flex-direction: column;">
 
-      <div class="space-y-5" style="padding-bottom: 80px;">
+      <div style="display:flex; flex-direction:column; flex: 1; min-height: 0; gap: 20px;">
 
         <!-- ACCOUNT CARDS (always visible) -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -342,7 +347,7 @@
                 </span>
               </div>
               <div class="flex items-center gap-2 mt-1">
-                <div class="text-2xl sm:text-3xl font-bold" data-member-balance style="color: var(--text);"></div>
+                <div class="text-2xl sm:text-3xl font-bold" data-member-balance style="color: var(--text); min-height: 36px; min-width: 80px;"></div>
                 <button data-action="toggleBalanceVisibility" class="flex-shrink-0" style="color: var(--text-muted);" title="Toggle balance visibility">
                   <svg id="eyeIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -357,7 +362,7 @@
             </div>
           </div>
           <div class="flex items-center gap-4 mt-4 pt-4 text-[12px] flex-wrap" style="border-top: 1px solid var(--border);">
-            <div><span style="color: var(--text-muted);">Account No:</span> <span class="font-medium" style="color: var(--text-secondary);" data-account-number></span></div>
+            <div><span style="color: var(--text-muted);">Account No:</span> <span class="font-medium" style="color: var(--text-secondary); min-width: 80px; display: inline-block;" data-account-number>&nbsp;</span></div>
             <div><span style="color: var(--text-muted);">Tag:</span> <span class="font-medium" style="color: var(--text-secondary);" data-member-tag></span></div>
             <div><span style="color: var(--text-muted);">Status:</span> <span class="text-[#10b981] font-medium">Member</span></div>
           </div>
@@ -373,7 +378,7 @@
       </div>
 
       <!-- TAB CONTENT: Overview -->
-      <div id="panelOverview" class="space-y-6">
+      <div id="panelOverview" class="space-y-6" style="flex:1;display:flex;flex-direction:column;justify-content:flex-start;">
         <!-- QUICK ACTIONS -->
         <div id="quickActionsGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           <button data-action="switchTab" data-tab="deposit" class="glass rounded-xl p-4 text-center transition-all cursor-pointer" style="border-color: var(--border);">
@@ -425,10 +430,10 @@
               </select>
             </div>
           </div>
-          <div id="txLoading" class="flex justify-center items-center py-10">
+          <div id="txLoading" class="flex justify-center items-center" style="min-height: 160px;">
             <div class="w-7 h-7 border-2 border-[#ff5c35] border-t-transparent rounded-full animate-spin"></div>
           </div>
-          <div class="overflow-x-auto -mx-4 px-4">
+          <div id="txTableWrap" class="overflow-x-auto -mx-4 px-4" style="display:none;">
             <div>
               <h3 class="text-[11px] font-bold uppercase tracking-wide mb-2" style="color: var(--text-muted);">All Transactions</h3>
               <table class="w-full text-sm min-w-[400px]">
@@ -448,9 +453,8 @@
           </div>
         </div>
 
-        <!-- BOTTOM GRID -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        </div>
+        <div style="flex:1;"></div>
+        <div style="height:50px;flex-shrink:0;"></div>
       </div>
 
       <!-- TAB CONTENT: Deposit (hidden) -->
@@ -486,7 +490,6 @@
               <div class="text-[11px] mt-1" style="color: var(--text-muted);">Domestic US • 2-3 business days</div>
             </div>
           </div>
-
           <!-- Deposit instructions (shown after method selection) -->
           <div id="depositInstructions" class="hidden mt-5 space-y-4">
             <div class="rounded-xl p-4" style="background: rgba(255,92,53,0.04); border: 1px solid rgba(255,92,53,0.12);">
@@ -768,7 +771,7 @@
         </div>
 
         <!-- Help & Support Section -->
-        <div class="glass rounded-xl p-5 text-center">
+        <div class="glass rounded-xl p-5 text-center" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
           <div class="w-12 h-12 rounded-full gradient-orange flex items-center justify-center text-white mx-auto mb-3">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
           </div>
@@ -1087,14 +1090,7 @@
         let user = getMemberUser();
         if (!user) { window.location.href = '/login/'; return; }
 
-        // Ensure Supabase Auth session exists for RPC auth.uid() checks
-        try {
-          let { data: { session } } = await supabaseClient.auth.getSession();
-          if (!session) {
-            await reauthMember();
-          }
-        } catch(e) { console.error('Auth session init:', e); }
-
+        // Populate ALL sync data from sessionStorage BEFORE showing page
         let nameEls = document.querySelectorAll('[data-member-name]');
         nameEls.forEach(function(el) { el.textContent = user.name; });
 
@@ -1142,6 +1138,12 @@
           accessKeyDisplay.textContent = maskAccessKey(key)
         }
 
+        // NOW show the page — all sync data is in DOM, no flash
+        document.body.style.visibility = 'visible';
+
+        // Auth session — MUST complete before async queries (RLS requires it)
+        try { await reauthMember(); } catch(e) {}
+
         loadPreferences();
 
         loadTransactions(user.id);
@@ -1155,6 +1157,8 @@
             var el = document.getElementById(id);
             if (el) el.classList.add('hidden');
           });
+          var tw = document.getElementById('txTableWrap');
+          if (tw && tw.style.display === 'none') tw.style.display = '';
         }, 8000);
         loadFeeConfig();
         loadDepositConfig();
@@ -1166,7 +1170,7 @@
           let u = getMemberUser();
           if (u && u.id) {
             refreshBalance();
-            loadTransactions(u.id);
+            loadTransactions(u.id, true);
             renderWithdrawals();
             loadNotifications(u.id);
           }
@@ -1182,36 +1186,41 @@
     function setupRealtimeSubscriptions(memberId) {
       if (!memberId) return;
       cleanupRealtime();
+      var _debounceTimers = {};
+      function debounce(key, fn, ms) {
+        if (_debounceTimers[key]) clearTimeout(_debounceTimers[key]);
+        _debounceTimers[key] = setTimeout(fn, ms);
+      }
 
       let wChan = supabaseClient.channel('rt-w-' + memberId);
       wChan.on('postgres_changes', { event: '*', schema: 'public', table: 'withdrawals', filter: 'member_id=eq.' + memberId }, function() {
         silentRefreshBalance(memberId);
-        renderWithdrawals();
+        debounce('w', function() { renderWithdrawals(); }, 1500);
       }).subscribe();
       rtChannels.push(wChan);
 
       let nChan = supabaseClient.channel('rt-n-' + memberId);
       nChan.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'member_id=eq.' + memberId }, function() {
-        loadNotifications(memberId);
+        debounce('n', function() { loadNotifications(memberId); }, 2000);
       }).subscribe();
       rtChannels.push(nChan);
 
       let dChan = supabaseClient.channel('rt-d-' + memberId);
       dChan.on('postgres_changes', { event: '*', schema: 'public', table: 'deposits', filter: 'member_id=eq.' + memberId }, function() {
         silentRefreshBalance(memberId);
-        loadTransactions(memberId);
+        debounce('d', function() { loadTransactions(memberId, true); }, 1500);
       }).subscribe();
       rtChannels.push(dChan);
 
       let tChan = supabaseClient.channel('rt-t-' + memberId);
       tChan.on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: 'member_id=eq.' + memberId }, function() {
-        loadTransactions(memberId);
+        debounce('d', function() { loadTransactions(memberId, true); }, 1500);
       }).subscribe();
       rtChannels.push(tChan);
 
       let aChan = supabaseClient.channel('rt-a-' + memberId);
       aChan.on('postgres_changes', { event: '*', schema: 'public', table: 'account_requests', filter: 'member_id=eq.' + memberId }, function() {
-        loadMyAccounts(memberId);
+        debounce('a', function() { loadMyAccounts(memberId); }, 2000);
       }).subscribe();
       rtChannels.push(aChan);
     }
@@ -1372,7 +1381,7 @@
       let netAmount = parseFloat(tx.amount) - parseFloat(tx.fee_amount || 0);
       let fullDate = tx.created_at ? new Date(tx.created_at).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
       let txTimestamp = tx.created_at ? new Date(tx.created_at).getTime() : 0;
-      return '<tr class="transition-all text-[12px] cursor-pointer tx-data-row" data-type="' + tx.type + '" data-tx-date="' + txTimestamp + '" onclick="toggleTxDetail(\'' + tx.id + '\')">' +
+      return '<tr class="transition-all text-[12px] cursor-pointer tx-data-row" data-tx-id="' + tx.id + '" data-type="' + tx.type + '" data-tx-date="' + txTimestamp + '" onclick="toggleTxDetail(\'' + tx.id + '\')">' +
         '<td data-label="Description" class="py-3.5"><div class="font-medium" style="color: var(--text);">' + escHtml(desc) + '</div><div class="text-[10px] font-mono" style="color: var(--text-muted);">' + escHtml(txNo) + '</div></td>' +
         '<td data-label="Method" class="py-3.5">' + methodBadge + '</td>' +
         '<td data-label="Amount" class="py-3.5 text-right font-medium" style="color: var(--text);">' + amountPrefix + formatAmount(tx.amount) + '</td>' +
@@ -1417,12 +1426,17 @@
       '</tr>';
     }
 
-    async function loadTransactions(memberId) {
+    let _txLoaded = false;
+    let _txRefreshBusy = false;
+    async function loadTransactions(memberId, isBackground) {
       let txBody = document.getElementById('txBody');
       let txEmpty = document.getElementById('txEmpty');
       let txLoading = document.getElementById('txLoading');
+      let txTableWrap = document.getElementById('txTableWrap');
       if (!txBody) return;
-      if (txLoading) txLoading.classList.remove('hidden');
+      if (_txRefreshBusy) return;
+      _txRefreshBusy = true;
+      if (txLoading && !_txLoaded) txLoading.classList.remove('hidden');
       let settled;
       try {
         settled = await Promise.allSettled([
@@ -1431,6 +1445,7 @@
         ]);
       } catch(e) { settled = [{ status: 'fulfilled', value: { data: [] } }, { status: 'fulfilled', value: { data: [] } }]; }
       if (txLoading) txLoading.classList.add('hidden');
+      if (txTableWrap) txTableWrap.style.display = '';
       let txRes = settled[0].status === 'fulfilled' ? settled[0].value : { data: [] };
       let wRes = settled[1].status === 'fulfilled' ? settled[1].value : { data: [] };
       let txData = txRes.data || [];
@@ -1456,16 +1471,33 @@
       txData.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
       txData = txData.slice(0, 20);
       if (!txData.length) {
-        txBody.innerHTML = '';
+        if (txTableWrap) txTableWrap.style.display = 'none';
         if (txEmpty) txEmpty.classList.remove('hidden');
+        _txRefreshBusy = false;
+        _txLoaded = true;
         return;
       }
+      var oldIds = new Set();
+      if (isBackground && _txLoaded) {
+        txBody.querySelectorAll('tr[data-tx-id]').forEach(function(r) { oldIds.add(r.getAttribute('data-tx-id')); });
+      }
       txBody.innerHTML = txData.map(renderTxRow).join('');
-      txBody.querySelectorAll('tr[data-type="deposit"]').forEach(function(row) {
-        row.classList.add('tx-flash-credit');
-        setTimeout(function() { row.classList.remove('tx-flash-credit'); }, 3000);
-      });
+      if (isBackground && _txLoaded) {
+        txBody.querySelectorAll('tr[data-tx-id]').forEach(function(row) {
+          if (!oldIds.has(row.getAttribute('data-tx-id')) && row.getAttribute('data-type') === 'deposit') {
+            row.classList.add('tx-flash-credit');
+            setTimeout(function() { row.classList.remove('tx-flash-credit'); }, 3000);
+          }
+        });
+      } else if (!isBackground) {
+        txBody.querySelectorAll('tr[data-type="deposit"]').forEach(function(row) {
+          row.classList.add('tx-flash-credit');
+          setTimeout(function() { row.classList.remove('tx-flash-credit'); }, 3000);
+        });
+      }
       if (txEmpty) txEmpty.classList.add('hidden');
+      _txRefreshBusy = false;
+      _txLoaded = true;
     }
 
     function filterTransactions() {
@@ -1485,11 +1517,12 @@
       });
     }
 
+    var _wdLoaded = false;
     async function renderWithdrawals() {
       let list = document.getElementById('withdrawalList');
       let loading = document.getElementById('withdrawalLoading');
       if (!list) return;
-      if (loading) loading.classList.remove('hidden');
+      if (loading && !_wdLoaded) loading.classList.remove('hidden');
       let user = getMemberUser();
       if (!user) { if (loading) loading.classList.add('hidden'); return; }
       let data, error;
@@ -1510,16 +1543,21 @@
           '<div class="text-right"><div class="text-[12px] font-bold" style="color:var(--text);">' + formatAmount(w.amount) + '</div>' +
           '<span class="badge ' + statusClass + ' text-[10px]">' + escHtml(statusText) + '</span></div></div>';
       }).join('');
+      _wdLoaded = true;
     }
-
-    let _hasAccount = null;
 
     async function hasAccountNumber() {
       if (_hasAccount !== null) return _hasAccount;
       let user = getMemberUser();
       if (!user) return false;
-      let { data } = await supabaseClient.from('accounts').select('account_number').eq('member_id', user.id).neq('status', 'rejected').limit(1);
-      _hasAccount = data && data.length > 0 && data[0].account_number ? true : false;
+      try {
+        let { data, error } = await supabaseClient.rpc('rpc_member_has_account', { p_member_id: user.id });
+        if (error) { console.warn('hasAccount RPC error:', error.message); _hasAccount = false; return false; }
+        _hasAccount = !!data;
+      } catch(e) {
+        console.warn('hasAccountNumber catch:', e.message);
+        _hasAccount = false;
+      }
       return _hasAccount;
     }
 
@@ -1571,7 +1609,8 @@
     async function loadMyAccounts(memberId) {
       let container = document.getElementById('myAccountsList');
       if (!container) return;
-      let { data: accounts } = await supabaseClient.from('accounts').select('*').eq('member_id', memberId).order('created_at', { ascending: false });
+      let accounts = null;
+      try { let r = await supabaseClient.rpc('rpc_member_get_accounts', { p_member_id: memberId }); accounts = r.data; } catch(e) { accounts = null; }
       let accountNumberEl = document.querySelector('[data-account-number]');
       if (!accounts || !accounts.length) {
         container.innerHTML = '<p class="text-[11px]" style="color: var(--text-muted);">No accounts yet. <button data-action="showRequestAccountModal" class="font-semibold" style="color: #ff5c35;">Request one</button></p>';
@@ -1836,8 +1875,8 @@
         }
         if (t === 'deposit' && tab === 'deposit') {
           let u = getMemberUser();
-          if (u) supabaseClient.from('accounts').select('id').eq('member_id', u.id).in('status', ['active', 'live']).limit(1).then(function(r) {
-            let hasAccount = r.data && r.data.length > 0;
+          if (u) supabaseClient.rpc('rpc_member_check_sender_account', { p_member_id: u.id }).then(function(r) {
+            let hasAccount = !!r.data;
             let noAcct = document.getElementById('depositNoAccount');
             let withAcct = document.getElementById('depositWithAccount');
             if (noAcct) noAcct.classList.toggle('hidden', hasAccount);
@@ -2266,7 +2305,7 @@
         status: 'pending_authorization',
         sender_name: 'Withdrawal — ' + method.toUpperCase()
       });
-      loadTransactions(user.id);
+      loadTransactions(user.id, true);
       renderWithdrawals();
       // Poll for admin authorization or auto-authorize after timeout
       pollWithdrawalAuthorization(currentWithdrawalId, ref, amount, method, fee);
@@ -2657,8 +2696,9 @@
       if (amount <= 0) { showToast('Enter a valid amount.'); return; }
 
       // Check sender has an active account
-      let { data: senderAccts } = await supabaseClient.from('accounts').select('id').eq('member_id', user.id).in('status', ['active', 'live']).limit(1);
-      if (!senderAccts || !senderAccts.length) { showToast('You need an active bank account to transfer.'); return; }
+      let senderHasAcct = false;
+      try { let r = await supabaseClient.rpc('rpc_member_check_sender_account', { p_member_id: user.id }); senderHasAcct = !!r.data; } catch(e) { senderHasAcct = false; }
+      if (!senderHasAcct) { showToast('You need an active bank account to transfer.'); return; }
 
       // Check sufficient balance
       if (amount > parseFloat(user.balance)) { showToast('Insufficient balance.'); return; }
@@ -2735,7 +2775,7 @@
       btn.classList.add('hidden');
 
       // Refresh transaction list
-      loadTransactions(user.id);
+      loadTransactions(user.id, true);
       showToast('Transfer sent to ' + recipient.name);
     }
 
@@ -3012,7 +3052,7 @@
     let chatResponses = defaultChatResponses.slice();
     let chatbotAgentName = 'Support Agent';
     let chatbotFallback = 'I&#39;m sorry, I didn&#39;t quite understand. Please try asking about <b>withdrawals</b>, <b>deposits</b>, <b>fees</b>, or <b>balance</b>. You may also type <b>agent</b> to speak with a representative.';
-    let chatbotQuickReplies = ['Withdraw help', 'Deposit info', 'Fee schedule', 'My balance', 'Speak to agent'];
+    let chatbotQuickReplies = ['Withdraw help', 'Deposit info', 'Fee schedule', 'My balance', 'Talk to agent'];
     let chatbotGreetings = [
       'Welcome to MetasBank. How may I assist you with your banking today?',
       'Good day. I am a MetasBank assistant. How may I help you?',
@@ -3054,6 +3094,10 @@ let chatMemberChannel = null;
     let chatInactivityWarning = null;
     let chatEndedForRating = null; // stores conv info when chat ends to show rating
     let chatTimerPaused = false;
+    let chatbotState = 'idle'; // idle, awaiting_name, connecting, form_email, form_phone
+    let chatbotUserName = '';
+    let chatbotFormEmail = '';
+    let chatbotFormPhone = '';
 
     async function getOrCreateConversation() {
       if (chatConversationId) return chatConversationId;
@@ -3081,6 +3125,8 @@ let chatMemberChannel = null;
           resetInactivityTimer();
           let name = payload.new.admin_name ? '<b>' + escHtml(payload.new.admin_name) + '</b>: ' : '';
           addChatMsg('bot', name + escHtml(payload.new.message));
+          // Mark member messages as read when agent replies
+          try { supabaseClient.rpc('rpc_mark_chat_read', { p_conversation_id: chatConversationId, p_sender: 'member' }); } catch(e) {}
         } else if (payload.new && payload.new.sender === 'system') {
           let msg = payload.new.message;
           if (msg === '[TIMER_PAUSED]') {
@@ -3105,9 +3151,15 @@ let chatMemberChannel = null;
               let closedConvId = chatConversationId;
               agentChatOpen = false;
               chatConversationId = null;
+              chatbotState = 'idle';
+              chatbotUserName = '';
+              chatbotFormEmail = '';
+              chatbotFormPhone = '';
               if (chatInactivityWarning) { clearTimeout(chatInactivityWarning); chatInactivityWarning = null; }
       if (chatInactivityTimer) { clearTimeout(chatInactivityTimer); chatInactivityTimer = null; }
-              cleanupChatChannel();
+      if (typingTimeout) { clearTimeout(typingTimeout); typingTimeout = null; }
+      hideTyping();
+      cleanupChatChannel();
               hideTyping();
               if (typingTimeout) { clearTimeout(typingTimeout); typingTimeout = null; }
               chatEndedForRating = { conversationId: closedConvId };
@@ -3144,6 +3196,10 @@ let chatMemberChannel = null;
       agentChatOpen = false;
       chatConversationId = null;
       chatTimerPaused = false;
+      chatbotState = 'idle';
+      chatbotUserName = '';
+      chatbotFormEmail = '';
+      chatbotFormPhone = '';
       if (chatInactivityWarning) { clearTimeout(chatInactivityWarning); chatInactivityWarning = null; }
       if (chatInactivityTimer) { clearTimeout(chatInactivityTimer); chatInactivityTimer = null; }
       cleanupChatChannel();
@@ -3256,7 +3312,11 @@ let chatMemberChannel = null;
     function bootstrapChat() {
       const msgs = document.getElementById('chatbot-messages');
       addChatMsg('bot', chatbotGreetings[Math.floor(Math.random() * chatbotGreetings.length)]);
-      renderQuickReplies(chatbotQuickReplies);
+      setTimeout(function() {
+        addChatMsg('bot', 'Before I assist you, could you please share your <b>full name</b>?');
+        chatbotState = 'awaiting_name';
+      }, 600);
+      renderQuickReplies(null);
     }
 
     function addChatMsg(type, text) {
@@ -3324,16 +3384,30 @@ let chatMemberChannel = null;
     }
 
     async function escalateToAgent(input) {
-      getOrCreateConversation().then(function(convId) {
-        if (convId) {
-          agentChatOpen = true;
-          tryAssignAgent(convId, input, 0);
+      showTyping();
+      try {
+        let { data } = await supabaseClient.rpc('rpc_get_agent_availability');
+        let count = (data && data[0]) ? Number(data[0].available_count) : 0;
+        hideTyping();
+        if (count > 0) {
+          getOrCreateConversation().then(function(convId) {
+            if (convId) {
+              agentChatOpen = true;
+              tryAssignAgent(convId, input, 0);
+            } else {
+              addChatMsg('bot', 'Sorry, we could not connect you to an agent right now. Please try again later.');
+              renderQuickReplies(['Talk to agent']);
+            }
+          });
         } else {
-          hideTyping();
-          addChatMsg('bot', 'Sorry, we could not connect you to an agent right now. Please try again later.');
-          renderQuickReplies(['Talk to agent']);
+          addChatMsg('bot', 'All our agents are currently <b>offline</b>. Please leave your details and our team will reach out to you shortly.');
+          addChatMsg('bot', 'Your email address please:');
+          chatbotState = 'form_email';
         }
-      });
+      } catch(e) {
+        hideTyping();
+        addChatMsg('bot', 'Sorry, something went wrong. Please try again later.');
+      }
     }
 
     let agentRetryTimer = null;
@@ -3345,7 +3419,6 @@ let chatMemberChannel = null;
             addChatMsg('system', 'A support representative will be with you shortly.');
             sendSystemMessage('A support representative will be with you shortly.');
             sendChatMessage('User requested agent assistance');
-            if (input) sendChatMessage(input);
             resetInactivityTimer();
             renderQuickReplies(null);
           });
@@ -3353,7 +3426,6 @@ let chatMemberChannel = null;
           addChatMsg('system', 'Your request has been submitted. A support representative will be with you shortly.');
           sendSystemMessage('Your request has been submitted. A support representative will be with you shortly.');
           sendChatMessage('User requested agent assistance');
-          if (input) sendChatMessage(input);
           renderQuickReplies(null);
           agentRetryTimer = setTimeout(function() { tryAssignAgent(convId, input, 1); }, 5000);
         } else if (attempt < 24) {
@@ -3395,7 +3467,6 @@ let chatMemberChannel = null;
           sendBotMessage(response);
           if (response.includes('transfer you') || input.toLowerCase().includes('agent') || input.toLowerCase().includes('human') || input.toLowerCase().includes('representative') || input.toLowerCase().includes('escalate')) {
             setTimeout(function() {
-              showTyping();
               escalateToAgent(input);
             }, 800);
           } else {
@@ -3435,6 +3506,53 @@ let chatMemberChannel = null;
       addChatMsg('user', text);
       input.value = '';
       renderQuickReplies(null);
+
+      // Block input while connecting
+      if (chatbotState === 'connecting') {
+        return;
+      }
+
+      // Name collection state
+      if (chatbotState === 'awaiting_name') {
+        chatbotUserName = text;
+        chatbotState = 'idle';
+        showTyping();
+        getOrCreateConversation().then(function(convId) {
+          hideTyping();
+          if (!convId) {
+            addChatMsg('bot', 'Nice to meet you, ' + escHtml(text) + '. How can I help you today?');
+          } else {
+            addChatMsg('bot', 'Nice to meet you, <b>' + escHtml(text) + '</b>. How can I help you today?');
+          }
+          renderQuickReplies(chatbotQuickReplies);
+        });
+        return;
+      }
+
+      // Form states
+      if (chatbotState === 'form_email') {
+        if (!text.includes('@') || text.length < 5) {
+          addChatMsg('bot', 'Please enter a valid email address.');
+          return;
+        }
+        chatbotFormEmail = text;
+        chatbotState = 'form_phone';
+        addChatMsg('bot', 'Great. Now please share your <b>phone number</b>.');
+        renderQuickReplies(null);
+        return;
+      }
+      if (chatbotState === 'form_phone') {
+        if (text.replace(/\D/g, '').length < 5) {
+          addChatMsg('bot', 'Please enter a valid phone number (at least 5 digits).');
+          return;
+        }
+        chatbotFormPhone = text;
+        chatbotState = 'idle';
+        submitCallbackForm();
+        return;
+      }
+
+      // Normal flow
       if (agentChatOpen && chatConversationId) {
         resetInactivityTimer();
         showTyping();
@@ -3447,6 +3565,38 @@ let chatMemberChannel = null;
           }
           botReply(text);
         });
+      }
+    }
+
+    async function checkAgentAvailabilityAndConnect(userName) {
+      escalateToAgent(userName);
+    }
+
+    async function submitCallbackForm() {
+      showTyping();
+      let user = getMemberUser();
+      try {
+        let { error } = await rpcInsert('sms_callback', {
+          full_name: chatbotUserName,
+          email: chatbotFormEmail,
+          phone: chatbotFormPhone,
+          message: 'Missed chat - no agents available. Member requested agent assistance.',
+          member_id: user ? user.id : null
+        });
+        hideTyping();
+        if (error) {
+          addChatMsg('bot', 'Sorry, there was an error. Please try again later.');
+        } else {
+          addChatMsg('bot', 'Thank you! Our team will contact you shortly at <b>' + escHtml(chatbotFormEmail) + '</b>.');
+          sendBotMessage('Callback form submitted successfully.');
+        }
+        renderQuickReplies(chatbotQuickReplies);
+        chatbotUserName = '';
+        chatbotFormEmail = '';
+        chatbotFormPhone = '';
+      } catch(e) {
+        hideTyping();
+        addChatMsg('bot', 'Sorry, there was an error. Please try again later.');
       }
     }
 
@@ -3489,17 +3639,12 @@ let chatMemberChannel = null;
       addChatMsg('user', text);
 
       if (text === 'Talk to agent') {
-        showTyping();
-        getOrCreateConversation().then(function(convId) {
-          if (convId) {
-            agentChatOpen = true;
-            tryAssignAgent(convId, null, 0);
-          } else {
-            hideTyping();
-            addChatMsg('bot', 'Sorry, we could not connect you to an agent right now. Please try again later.');
-            renderQuickReplies(null);
-          }
-        });
+        if (chatbotState === 'awaiting_name' || chatbotState === 'connecting') {
+          addChatMsg('bot', 'Please share your full name first so I can assist you.');
+          renderQuickReplies(null);
+          return;
+        }
+        escalateToAgent(text);
         return;
       }
 
@@ -3633,6 +3778,10 @@ let chatMemberChannel = null;
       chatConversationId = null;
       agentChatOpen = false;
       chatTimerPaused = false;
+      chatbotState = 'idle';
+      chatbotUserName = '';
+      chatbotFormEmail = '';
+      chatbotFormPhone = '';
       chatEndedForRating = null;
       if (chatInactivityWarning) { clearTimeout(chatInactivityWarning); chatInactivityWarning = null; }
       if (chatInactivityTimer) { clearTimeout(chatInactivityTimer); chatInactivityTimer = null; }

@@ -146,7 +146,7 @@
       #adminMain { padding: 6px !important; }
       #adminMain .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 10px !important; }
       table.min-w-\[700px\], table.min-w-\[800px\], table.min-w-\[900px\], table.min-w-\[600px\] { min-width: 0 !important; }
-      #chatConvWrapper { max-height: 160px !important; }
+      #chatConvWrapper { max-height: 160px !important; border-bottom: 1px solid var(--border) !important; border-right: none !important; }
       .rounded-xl { border-radius: 8px !important; }
       .rounded-lg { border-radius: 6px !important; }
       #adminSidebar .px-3 { padding-left: 8px !important; padding-right: 8px !important; }
@@ -165,7 +165,7 @@
     document.addEventListener('DOMContentLoaded', function(){ requestAnimationFrame(function(){ document.documentElement.classList.remove('js-loading') }) });
   </script>
 </head>
-<body style="display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh;">
+<body style="display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; visibility: hidden;">
 
   <!-- ===== HEADER ===== -->
   <header class="fixed-header h-14 flex items-center justify-between px-4 lg:px-6" style="background: var(--bg-header); border-bottom: 1px solid var(--border);">
@@ -762,7 +762,7 @@
           </div>
           <div class="flex gap-2 flex-wrap">
           <button data-action="renderAuditLog" class="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style="color: #ff6b42; background: rgba(255,92,53,0.1);">Refresh</button>
-            <button data-action="loadCallbackRequests" class="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style="color: #ef4444; background: rgba(239,68,68,0.1);">Clear All</button>
+            <button data-action="clearAllCallbacks" class="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style="color: #ef4444; background: rgba(239,68,68,0.1);">Clear All</button>
             <div class="flex rounded-lg overflow-hidden text-[11px] font-semibold" style="border: 1px solid var(--border);">
               <button id="cbFilterAll" data-action="renderCallbackRequests" data-cbfilter="all" class="px-3 py-1.5 transition-all" style="background: rgba(255,92,53,0.1); color: #ff6b42;">All</button>
               <button id="cbFilterPending" data-action="renderCallbackRequests" data-cbfilter="pending" class="px-3 py-1.5 transition-all" style="color: var(--text-muted); background: transparent;">Pending</button>
@@ -864,7 +864,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         <h2 class="text-sm font-bold mb-4" style="color:var(--text);">Live Chat</h2>
         <div class="flex flex-col lg:flex-row gap-4" style="min-height: 400px;">
           <!-- Conversation list -->
-          <div id="chatConvWrapper" class="w-full lg:w-56 shrink-0 overflow-y-auto" style="max-height: 250px; border-bottom: 1px solid var(--border);">
+          <div id="chatConvWrapper" class="w-full lg:w-56 shrink-0 overflow-y-auto">
             <div id="chatConvList" class="pr-2 space-y-0.5"></div>
           </div>
           <!-- Chat view -->
@@ -872,7 +872,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
             <div id="chatEmpty" class="flex items-center justify-center flex-1 text-[12px]" style="color:var(--text-muted);">Select a conversation</div>
             <div id="chatView" class="hidden flex-1 flex flex-col">
               <div id="chatConvHeader" class="text-[11px] font-semibold mb-2" style="color:var(--text-secondary);"></div>
-              <div id="chatMessages" class="flex-1 overflow-y-auto mb-3 space-y-1" style="max-height: 360px; min-height: 200px;"></div>
+              <div id="chatMessages" class="flex-1 overflow-y-auto mb-3 space-y-1" style="max-height: 360px; min-height: 200px; display:flex; flex-direction:column;"></div>
               <div class="flex gap-2" data-role="agent">
                 <input id="chatReplyInput" type="text" placeholder="Type your reply..." class="flex-1 px-3 py-2 rounded-lg text-[12px]" style="background:var(--input-bg); color:var(--text); border:1px solid var(--border); outline:none;">
                 <button data-action="sendChatReply" class="px-4 py-2 rounded-lg text-white text-[11px] font-bold gradient-orange">Send</button>
@@ -1185,13 +1185,17 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       let headerLabel = document.querySelector('header span:last-child');
       if (headerLabel) headerLabel.textContent = 'Admin';
     }
-document.addEventListener('DOMContentLoaded', async function() {
+// Safety: reveal page after 8s even if async init hangs
+    setTimeout(function() { document.body.style.visibility = 'visible'; }, 8000);
+
+    document.addEventListener('DOMContentLoaded', async function() {
       initSupabase();
       // Clear stale auth sessions (e.g. from member login) so RLS SELECT policies match auth.uid() IS NULL
       try { await supabaseClient.auth.signOut(); } catch(e) {}
       let session = await verifyAdminSession('admin');
       if (!session) { window.location.href = '/admin/login.html'; return; }
       applyRoleRestrictions(); // This will redirect agents to /agent/
+      document.body.style.visibility = 'visible';
       let userNameEl = document.getElementById('adminUserName');
       if (userNameEl && session.user && session.user.name) {
         userNameEl.textContent = session.user.name;
@@ -1441,9 +1445,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function toggleMemberStatus(id, newStatus) {
+      if (!getAdminSession()) { showToast('Authentication required.'); return; }
       await rpcUpdate('member', { id: id }, { status: newStatus })
       auditLog('toggle_member_status', 'member', id, 'Status changed to ' + newStatus)
       renderMembers()
+      loadStats()
       showToast('Member status updated')
     }
 
@@ -1678,8 +1684,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         let actionsHtml = '';
         if (isAdmin) {
           let pwDisplay = '••••••••';
-          actionsHtml = '<span class="text-[11px] font-mono" style="color:var(--text-muted);cursor:pointer;" onclick="revealKey(this)">🔑</span>' +
-            '<span style="display:none;color:var(--text-secondary);font-size:11px;font-family:monospace;" class="ml-1">' + pwDisplay + '</span>';
+          actionsHtml = '<span style="display:none;color:var(--text-secondary);font-size:11px;font-family:monospace;" class="ml-1 pw-hidden">' + pwDisplay + '</span>' +
+            '<span class="text-[11px] font-mono" style="color:var(--text-muted);cursor:pointer;" data-akey="' + escHtml(a.password_hash || '') + '" onclick="revealKey(this)">🔑</span>';
           actionsHtml += '<button onclick="editAgentName(\'' + a.id + '\', \'' + escHtml(a.name) + '\')" class="agent-edit-btn text-[11px] font-semibold px-2 py-1 rounded transition-all ml-1" style="color:#3b82f6;background:rgba(59,130,246,0.1);">Edit</button>';
           if (!isMe) {
             actionsHtml += '<button onclick="removeAgent(\'' + a.id + '\')" class="agent-remove-btn text-[11px] font-semibold px-2 py-1 rounded transition-all ml-1" style="color:#ef4444;background:rgba(239,68,68,0.1);">Remove</button>';
@@ -1794,11 +1800,17 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function revealKey(btn) {
       if (!btn) return;
-      let span = btn.previousElementSibling;
-      if (!span) return;
       let key = btn.getAttribute('data-akey');
       if (!key) return;
-      if (span.textContent === key) {
+      // Find the password display span (sibling before or after)
+      let span = btn.previousElementSibling || btn.nextElementSibling;
+      if (!span) return;
+      // Toggle display if hidden
+      if (span.style.display === 'none') {
+        span.style.display = '';
+        span.textContent = key;
+        btn.textContent = 'Hide';
+      } else if (span.textContent === key) {
         span.textContent = '••••••••';
         btn.textContent = 'Show';
       } else {
@@ -2753,6 +2765,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function deleteWithdrawal(id) {
+      if (!getAdminSession()) { showToast('Authentication required.'); return; }
       if (!confirm('Delete this withdrawal permanently? This cannot be undone.')) return;
       let { data: w } = await supabaseClient.rpc('rpc_admin_get_withdrawal', { p_id: id })
       if (!w) { showToast('Withdrawal not found'); return }
@@ -2777,6 +2790,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function rejectDeposit(id) {
+      if (!getAdminSession()) { showToast('Authentication required.'); return; }
       let { data: dep } = await supabaseClient.rpc('rpc_admin_get_deposit', { p_id: id })
       if (dep) {
         let { data: rejDepEmail } = await supabaseClient.rpc('rpc_admin_get_member_email', { p_id: dep.member_id })
@@ -2914,6 +2928,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function deleteAuditLog(id) {
+      if (!getAdminSession()) { showToast('Authentication required.'); return; }
       if (!confirm('Delete this audit entry?')) return;
       let { error } = await supabaseClient.rpc('rpc_delete_audit_log_entry', { p_id: id });
       if (error) { showToast('Error deleting: ' + error.message); return; }
@@ -2955,6 +2970,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function approveAccountRequest(id) {
+      if (!getAdminSession()) { showToast('Authentication required.'); return; }
       let { data: req } = await supabaseClient.rpc('rpc_admin_get_account_request', { p_id: id })
       if (!req) { showToast('Request not found'); return }
       // Generate account number
@@ -2977,6 +2993,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function rejectAccountRequest(id) {
+      if (!getAdminSession()) { showToast('Authentication required.'); return; }
       let { data: req } = await supabaseClient.rpc('rpc_admin_get_account_request', { p_id: id })
       if (req) {
         let memberEmail = req.members ? req.members.email : ''
@@ -3258,6 +3275,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             break;
           case 'loadCallbackRequests':
             loadCallbackRequests();
+            break;
+          case 'clearAllCallbacks':
+            clearAllCallbacks();
             break;
           case 'renderAuditLog':
             renderAuditLog();

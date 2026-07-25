@@ -106,7 +106,7 @@
 
         <div class="rounded-xl p-6 card">
           <form id="adminLoginForm">
-            <div id="adminLoginError" class="hidden mb-4 rounded-lg px-4 py-2.5 text-[12px] font-medium" style="background: rgba(255,71,87,0.1); color: #ff4757; border: 1px solid rgba(255,71,87,0.15);"></div>
+            <div id="adminLoginError" class="hidden mb-3 rounded-md px-3 py-1.5 text-[11px] font-medium" style="background: rgba(255,71,87,0.1); color: #ff4757; border: 1px solid rgba(255,71,87,0.15);"></div>
             <div class="mb-4">
               <label for="adminEmail" class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Agent Username</label>
               <input id="adminEmail" type="text" placeholder="Enter your agent email" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
@@ -115,7 +115,7 @@
               <label for="adminPassword" class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Password</label>
               <input id="adminPassword" type="password" placeholder="Enter your password" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
             </div>
-            <button id="adminLoginBtn" type="submit" class="w-full py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">Login Admin or Agent</button>
+            <button id="adminLoginBtn" type="submit" class="w-full py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">Login</button>
           </form>
           <div class="mt-4 pt-4" style="border-top: 1px solid var(--border);">
             <div class="flex items-center justify-center gap-4 flex-wrap">
@@ -171,13 +171,13 @@
       if (!email) { showAdminError('Please enter your email'); return }
       if (!password) { showAdminError('Please enter your password'); return }
 
-      btn.textContent = 'Signing in...'; btn.disabled = true; btn.style.opacity = '0.7'
+      btn.textContent = 'Logging in...'; btn.disabled = true; btn.style.opacity = '0.7'
 
       adminLogin(email, password).then(function(result) {
         const user = result && result.data && result.data.user
         if (!user) {
-          showAdminError((result && result.error) || 'Login failed: unexpected response')
-          btn.textContent = 'Sign In'; btn.disabled = false; btn.style.opacity = '1'
+          showAdminError('Invalid credentials')
+          btn.textContent = 'Login'; btn.disabled = false; btn.style.opacity = '1'
         } else if (user.role === 'admin') {
           window.location.href = '/admin/'
         } else {
@@ -185,8 +185,8 @@
         }
       }).catch(function(err) {
         console.error('Admin login failed:', err);
-        showAdminError('An unexpected error occurred');
-        btn.textContent = 'Sign In'; btn.disabled = false; btn.style.opacity = '1'
+        showAdminError('Invalid credentials');
+        btn.textContent = 'Login'; btn.disabled = false; btn.style.opacity = '1'
       })
     }
 
