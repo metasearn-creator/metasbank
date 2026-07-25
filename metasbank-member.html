@@ -127,9 +127,9 @@
     #sidebarOverlay.open { display: block; }
     #memberSidebar { position: fixed; left: 0; top: var(--header-h); bottom: 0; z-index: 95; transform: translateX(-100%); transition: transform 0.3s; }
     #memberSidebar.open { transform: translateX(0); }
-    #memberMain { width: 100%; padding: 5px; }
+    #memberMain { width: 100%; padding: 1px 5px 5px 5px; }
     @media (min-width: 1024px) {
-      #memberMain { padding: 5px; }
+      #memberMain { padding: 1px 5px 5px 5px; }
     }
 
     @media (max-width: 480px) {
@@ -336,7 +336,7 @@
     </aside>
 
     <!-- ===== MAIN ===== -->
-    <main id="memberMain" class="main-col" style="width: 100%; padding: 5px;">
+    <main id="memberMain" class="main-col" style="width: 100%; padding: 1px 5px 5px 5px;">
 
         <!-- ACCOUNT CARDS (always visible) -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4" style="margin-bottom: 4px;">
