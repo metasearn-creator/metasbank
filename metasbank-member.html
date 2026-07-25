@@ -66,7 +66,9 @@
     input, select, textarea { font-size: 16px; touch-action: manipulation; }
     button, [data-action], a { touch-action: manipulation; }
     .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
-    .main-wrapper { padding-top: var(--header-h); display: flex; min-height: calc(100vh - var(--header-h)); align-items: stretch; }
+    .main-wrapper { padding-top: var(--header-h); display: flex; height: calc(100vh - var(--header-h)); overflow: hidden; }
+    .main-wrapper .sidebar-col { flex-shrink: 0; overflow-y: auto; height: 100%; }
+    .main-wrapper .main-col { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
     .glass { background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--card-shadow); }
     .gradient-orange { background: linear-gradient(135deg, #e84a24, #ff5c35); }
     ::-webkit-scrollbar { width: 6px; }
@@ -270,7 +272,7 @@
   <div class="main-wrapper">
 
     <!-- ===== SIDEBAR ===== -->
-    <aside id="memberSidebar" class="w-56 flex flex-col shrink-0 overflow-y-auto" style="background: var(--bg-sidebar); border-right: 1px solid var(--border);">
+    <aside id="memberSidebar" class="w-56 flex flex-col shrink-0 sidebar-col" style="background: var(--bg-sidebar); border-right: 1px solid var(--border);">
       <nav class="flex-1 p-3 space-y-0.5">
         <div data-action="switchTab" data-tab="overview" data-sidebar-tab="overview" class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="background: rgba(255,92,53,0.1); color: #ff6b42;">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -330,9 +332,9 @@
     </aside>
 
     <!-- ===== MAIN ===== -->
-    <main id="memberMain" style="width: 100%; flex: 1; min-height: 0; display: flex; flex-direction: column;">
+    <main id="memberMain" class="main-col" style="width: 100%; padding: 16px;">
 
-      <div style="display:flex; flex-direction:column; flex: 1; min-height: 0; gap: 20px;">
+      <div style="display:flex; flex-direction:column; flex: 1; gap: 20px;">
 
         <!-- ACCOUNT CARDS (always visible) -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -378,7 +380,7 @@
       </div>
 
       <!-- TAB CONTENT: Overview -->
-      <div id="panelOverview" class="space-y-6" style="flex:1;display:flex;flex-direction:column;justify-content:flex-start;">
+      <div id="panelOverview" style="flex:1;display:flex;flex-direction:column;gap:20px;overflow:hidden;">
         <!-- QUICK ACTIONS -->
         <div id="quickActionsGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           <button data-action="switchTab" data-tab="deposit" class="glass rounded-xl p-4 text-center transition-all cursor-pointer" style="border-color: var(--border);">
@@ -1141,16 +1143,45 @@
         // NOW show the page — all sync data is in DOM, no flash
         document.body.style.visibility = 'visible';
 
-        // Auth session — MUST complete before async queries (RLS requires it)
-        try { await reauthMember(); } catch(e) {}
+        // Check if Supabase session is still valid before blocking on reauth
+        var sessionOk = false;
+        try {
+          var sessResult = await supabaseClient.auth.getSession();
+          var sess = sessResult && sessResult.data && sessResult.data.session;
+          if (sess && sess.access_token && sess.expires_at > Math.floor(Date.now() / 1000)) {
+            sessionOk = true;
+          }
+        } catch(e) {}
 
-        loadPreferences();
+        if (sessionOk) {
+          // Session valid — load data immediately, no reauth needed
+          loadPreferences();
+          loadTransactions(user.id);
+          renderWithdrawals();
+          renderStatements();
+          loadMyAccounts(user.id);
+          loadChatbotConfigFromSupabase();
+          loadFeeConfig();
+          loadDepositConfig();
+          loadNotifications(user.id);
+          setupRealtimeSubscriptions(user.id);
+          refreshBalance();
+        } else {
+          // Session invalid — reauth first, then load everything
+          try { await reauthMember(); } catch(e) {}
+          loadPreferences();
+          loadTransactions(user.id);
+          renderWithdrawals();
+          renderStatements();
+          loadMyAccounts(user.id);
+          loadChatbotConfigFromSupabase();
+          loadFeeConfig();
+          loadDepositConfig();
+          loadNotifications(user.id);
+          setupRealtimeSubscriptions(user.id);
+          refreshBalance();
+        }
 
-        loadTransactions(user.id);
-        renderWithdrawals();
-        renderStatements();
-        loadMyAccounts(user.id);
-        loadChatbotConfigFromSupabase();
         // Safety timeout: hide all spinners after 8s regardless
         setTimeout(function() {
           ['txLoading','withdrawalLoading','statementsLoading'].forEach(function(id) {
@@ -1160,11 +1191,7 @@
           var tw = document.getElementById('txTableWrap');
           if (tw && tw.style.display === 'none') tw.style.display = '';
         }, 8000);
-        loadFeeConfig();
-        loadDepositConfig();
-        loadNotifications(user.id);
-        setupRealtimeSubscriptions(user.id);
-        refreshBalance();
+
         window._activeIntervals = window._activeIntervals || [];
         window._activeIntervals.push(setInterval(function() {
           let u = getMemberUser();
@@ -1471,6 +1498,11 @@
       txData.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
       txData = txData.slice(0, 20);
       if (!txData.length) {
+        if (isBackground && _txLoaded) {
+          // Background refresh got empty data — keep existing table visible
+          _txRefreshBusy = false;
+          return;
+        }
         if (txTableWrap) txTableWrap.style.display = 'none';
         if (txEmpty) txEmpty.classList.remove('hidden');
         _txRefreshBusy = false;
@@ -1529,6 +1561,7 @@
       try { var r = await supabaseClient.from('withdrawals').select('*').eq('member_id', user.id).order('created_at', { ascending: false }).limit(20); data = r.data; error = r.error; } catch(e) { data = null; error = e; }
       if (loading) loading.classList.add('hidden');
       if (error || !data || !data.length) {
+        if (_wdLoaded) return;
         list.innerHTML = '<div class="text-center py-6"><p class="text-[12px]" style="color:var(--text-muted);">No withdrawal requests yet.</p></div>';
         return;
       }
