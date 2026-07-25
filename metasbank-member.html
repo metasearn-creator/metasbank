@@ -380,7 +380,7 @@
       </div>
 
       <!-- TAB CONTENT: Overview -->
-      <div id="panelOverview" style="flex:1;display:flex;flex-direction:column;gap:20px;overflow:hidden;padding-bottom:50px;">
+      <div id="panelOverview" style="padding-bottom:50px;">
         <!-- QUICK ACTIONS -->
         <div id="quickActionsGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           <button data-action="switchTab" data-tab="deposit" class="glass rounded-xl p-4 text-center transition-all cursor-pointer" style="border-color: var(--border);">
@@ -432,10 +432,10 @@
               </select>
             </div>
           </div>
-          <div id="txLoading" class="flex justify-center items-center" style="min-height: 160px;">
+          <div id="txLoading" class="hidden flex justify-center items-center" style="min-height: 160px;">
             <div class="w-7 h-7 border-2 border-[#ff5c35] border-t-transparent rounded-full animate-spin"></div>
           </div>
-          <div id="txTableWrap" class="overflow-x-auto -mx-4 px-4" style="display:none;">
+          <div id="txTableWrap" class="overflow-x-auto -mx-4 px-4">
             <div>
               <h3 class="text-[11px] font-bold uppercase tracking-wide mb-2" style="color: var(--text-muted);">All Transactions</h3>
               <table class="w-full text-sm min-w-[400px]">
@@ -1181,12 +1181,10 @@
 
         // Safety timeout: hide all spinners after 8s regardless
         setTimeout(function() {
-          ['txLoading','withdrawalLoading','statementsLoading'].forEach(function(id) {
+          ['withdrawalLoading','statementsLoading'].forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.classList.add('hidden');
           });
-          var tw = document.getElementById('txTableWrap');
-          if (tw && tw.style.display === 'none') tw.style.display = '';
         }, 8000);
 
         window._activeIntervals = window._activeIntervals || [];
@@ -1460,7 +1458,6 @@
       if (!txBody) return;
       if (_txRefreshBusy) return;
       _txRefreshBusy = true;
-      if (txLoading && !_txLoaded) txLoading.classList.remove('hidden');
       let settled;
       try {
         settled = await Promise.allSettled([
@@ -1468,8 +1465,6 @@
           supabaseClient.from('withdrawals').select('*').eq('member_id', memberId).order('created_at', { ascending: false }).limit(20)
         ]);
       } catch(e) { settled = [{ status: 'fulfilled', value: { data: [] } }, { status: 'fulfilled', value: { data: [] } }]; }
-      if (txLoading) txLoading.classList.add('hidden');
-      if (txTableWrap) txTableWrap.style.display = '';
       let txRes = settled[0].status === 'fulfilled' ? settled[0].value : { data: [] };
       let wRes = settled[1].status === 'fulfilled' ? settled[1].value : { data: [] };
       let txData = txRes.data || [];
@@ -1496,11 +1491,9 @@
       txData = txData.slice(0, 20);
       if (!txData.length) {
         if (isBackground && _txLoaded) {
-          // Background refresh got empty data — keep existing table visible
           _txRefreshBusy = false;
           return;
         }
-        if (txTableWrap) txTableWrap.style.display = 'none';
         if (txEmpty) txEmpty.classList.remove('hidden');
         _txRefreshBusy = false;
         _txLoaded = true;
