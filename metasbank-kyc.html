@@ -158,7 +158,7 @@ textarea.form-field { resize: vertical; min-height: 80px; }
 }
 </style>
 <script>
-(function(){try{var t=localStorage.getItem('mb_theme');if(t==='light'){document.documentElement.classList.add('light-mode')}else if(t!=='dark'){var h=new Date().getHours();if(h>=6&&h<18)document.documentElement.classList.add('light-mode')}}catch(e){}})();
+(function(){try{var t=localStorage.getItem('mb_theme');if(t==='light')document.documentElement.classList.add('light-mode');else if(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme:light)').matches)document.documentElement.classList.add('light-mode')}catch(e){}})();
 </script>
 </head>
 <body style="color: var(--text); min-height: 100vh;">
