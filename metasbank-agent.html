@@ -407,7 +407,7 @@
             <div class="text-2xl font-bold mt-1" style="color: var(--text);" id="kycTotalLinks">0</div>
           </div>
           <div class="rounded-xl p-4" style="background: var(--input-bg); border: 1px solid var(--border);">
-            <div class="text-[11px] font-semibold uppercase tracking-wide" style="color: var(--text-muted);">Completed</div>
+              <div class="text-[11px] font-semibold uppercase tracking-wide" style="color: var(--text-muted);">Expired</div>
             <div class="text-2xl font-bold mt-1" style="color: #10b981;" id="kycCompletedLinks">0</div>
           </div>
         </div>
@@ -1209,17 +1209,17 @@
     function renderKycLinks() {
       var tbody = document.getElementById('kycLinksBody');
       tbody.innerHTML = '';
-      var completed = allKycLinks.filter(function(l) { return l.status === 'used'; }).length;
+      var expired = allKycLinks.filter(function(l) { return l.status === 'used'; }).length;
       document.getElementById('kycTotalLinks').textContent = allKycLinks.length;
-      document.getElementById('kycCompletedLinks').textContent = completed;
+      document.getElementById('kycCompletedLinks').textContent = expired;
       if (!allKycLinks.length) {
         document.getElementById('kycLinksEmpty').classList.remove('hidden');
         return;
       }
       allKycLinks.forEach(function(link) {
         var isExpired = new Date(link.expires_at) < new Date();
-        var statusColor = link.status === 'used' ? '#10b981' : (isExpired ? '#ef4444' : '#f59e0b');
-        var statusLabel = link.status === 'used' ? 'Completed' : (isExpired ? 'Expired' : 'Pending');
+        var statusColor = link.status === 'used' ? '#ef4444' : (isExpired ? '#ef4444' : '#f59e0b');
+        var statusLabel = link.status === 'used' ? 'Expired' : (isExpired ? 'Expired' : 'Pending');
         var expiryStr = new Date(link.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         var createdStr = new Date(link.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         var kycUrl = window.location.origin + '/kyc?ref=' + link.ref_code;
