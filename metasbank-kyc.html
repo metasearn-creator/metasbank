@@ -499,7 +499,7 @@ if (document.readyState === 'loading') {
 }
 
 // Form submit
-document.getElementById('kycForm').addEventListener('submit', function(e) {
+document.getElementById('kycForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   var btn = document.getElementById('kycSubmitBtn');
   btn.disabled = true;
