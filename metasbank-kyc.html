@@ -9,10 +9,11 @@
 <meta name="description" content="Complete your KYC verification to activate your MetasBank account.">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=EB+Garamond:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="/supabase-config.js"></script>
-  <script src="geo-restrict.js"></script>
-  <script src="/validation.js"></script>
+<script src="geo-restrict.js"></script>
+<script src="/validation.js"></script>
 <style>
 :root {
   --bg: #13151d; --bg-card: #1a1d28; --text: #e2e4e9; --text-muted: #6b7185; --text-secondary: #a8acba;
@@ -423,21 +424,23 @@ textarea.form-field { resize: vertical; min-height: 80px; }
 </div>
 
 <script>
-// Supabase init
-initSupabase();
+try { initSupabase(); } catch(e) {}
 
-const params = new URLSearchParams(window.location.search);
-const refCode = params.get('ref');
+var params = new URLSearchParams(window.location.search);
+var refCode = params.get('ref');
 
 function showState(state) {
-  document.getElementById('stateLoading').classList.toggle('active', state === 'loading');
-  document.getElementById('stateError').classList.toggle('active', state === 'error');
-  var formWrap = document.getElementById('stateForm');
-  formWrap.style.display = state === 'form' ? '' : 'none';
+  var elL = document.getElementById('stateLoading');
+  var elE = document.getElementById('stateError');
+  var elF = document.getElementById('stateForm');
+  if (elL) { state === 'loading' ? elL.classList.add('active') : elL.classList.remove('active'); }
+  if (elE) { state === 'error' ? elE.classList.add('active') : elE.classList.remove('active'); }
+  if (elF) { elF.style.display = state === 'form' ? '' : 'none'; }
 }
 
 function showFileName(input, displayId) {
   var display = document.getElementById(displayId);
+  if (!display) return;
   if (input.files && input.files.length > 0) {
     display.textContent = '\u2713 ' + input.files[0].name;
     display.style.display = 'block';
@@ -452,7 +455,7 @@ function previewUpload(input, areaId, nameId) {
   var areaEl = document.getElementById(areaId);
   if (!file) { nameEl.style.display = 'none'; return; }
   if (file.size > 10 * 1024 * 1024) { alert('File too large. Max 10MB.'); input.value = ''; return; }
-  nameEl.textContent = '📎 ' + file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+  nameEl.textContent = '\uD83D\uDCCE ' + file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
   nameEl.style.display = 'block';
   areaEl.style.borderColor = '#ff5c35';
   areaEl.style.background = 'rgba(255,92,53,0.05)';
@@ -463,14 +466,13 @@ function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
 }
 
-// Validate link on load
-document.addEventListener('DOMContentLoaded', function() {
+function validateKycLink() {
   if (!refCode || !supabaseClient || !/^[A-Za-z0-9]{3,20}$/.test(refCode)) {
     showState('error');
     return;
   }
 
-  var safetyTimer = setTimeout(function() { showState('error'); }, 10000);
+  var safetyTimer = setTimeout(function() { showState('error'); }, 8000);
 
   supabaseClient.rpc('rpc_check_kyc_link', { p_ref_code: refCode }).then(function(resp) {
     clearTimeout(safetyTimer);
@@ -488,7 +490,13 @@ document.addEventListener('DOMContentLoaded', function() {
     clearTimeout(safetyTimer);
     showState('error');
   });
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', validateKycLink);
+} else {
+  validateKycLink();
+}
 
 // Form submit
 document.getElementById('kycForm').addEventListener('submit', function(e) {
