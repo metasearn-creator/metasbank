@@ -1,1 +1,0 @@
-﻿{"query":"CREATE OR REPLACE FUNCTION public.rpc_delete_kyc_link(p_link_id uuid) RETURNS void LANGUAGE sql SECURITY DEFINER AS $$ DELETE FROM kyc_links WHERE id = p_link_id; $$"}
