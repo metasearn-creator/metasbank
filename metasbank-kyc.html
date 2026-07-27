@@ -470,7 +470,10 @@ document.addEventListener('DOMContentLoaded', function() {
     return;
   }
 
+  var safetyTimer = setTimeout(function() { showState('error'); }, 10000);
+
   supabaseClient.rpc('rpc_check_kyc_link', { p_ref_code: refCode }).then(function(resp) {
+    clearTimeout(safetyTimer);
     if (resp.error || !resp.data || resp.data.length === 0) {
       showState('error');
       return;
@@ -481,7 +484,8 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     showState('form');
-  }).catch(function() {
+  }).catch(function(err) {
+    clearTimeout(safetyTimer);
     showState('error');
   });
 });
