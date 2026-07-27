@@ -1,5 +1,8 @@
 // MetasBank Geo-Restriction Script
 // Blocks access from restricted countries
+// NOTE: This is defense-in-depth only. It runs client-side and can be bypassed
+// by disabling JS or using a VPN. Real enforcement requires server-side checks
+// (e.g. Vercel Edge Functions or Supabase RPC validation).
 (function() {
   var BLOCKED = ['NG','IN','GH','CM','GN','SN','ML','BF','NE','TD','SL','LR','GM','GW'];
   var CACHE_KEY = 'mb_geo';

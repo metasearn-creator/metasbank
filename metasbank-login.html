@@ -1,8 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none';">
   <script src="geo-restrict.js"></script>
   <title>MetasBank — Secure Login</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -69,6 +70,7 @@
       .py-3 { padding-top: 10px !important; padding-bottom: 10px !important; }
       .gap-4 { gap: 4px !important; }
       .gap-3 { gap: 3px !important; }
+      input, select, textarea { font-size: 16px !important; }
     }
   </style>
   <style>html.js-loading *{transition:none!important}</style>
@@ -88,7 +90,7 @@
       <span class="w-px h-3" style="background: var(--border);"></span>
       <span style="color: var(--text-muted);">Session: <span class="text-[#10b981] font-medium">Encrypted</span></span>
     </div>
-    <div class="shrink-0" style="color: var(--text-muted);">Need help? <a href="#" id="contactSupportLink" class="text-[#ff6b42] hover:text-[#ff5c35] font-medium">Contact Support</a></div>
+    <div class="shrink-0" style="color: var(--text-muted);">Need help? <a href="#" id="contactSupportLink" class="text-[#ff6b42] hover:text-[#ff5c35] font-medium" style="min-height: 44px; display: inline-flex; align-items: center;">Contact Support</a></div>
   </header>
 
   <!-- Main content -->
@@ -112,17 +114,17 @@
             <div id="loginError" class="hidden mb-3 rounded-md px-3 py-1.5 text-[11px] font-medium" style="background: rgba(255,71,87,0.1); color: #ff4757; border: 1px solid rgba(255,71,87,0.15);"></div>
             <div class="mb-4">
               <label for="loginUsername" class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Email or Username</label>
-              <input id="loginUsername" type="text" placeholder="your@email.com or username" autocomplete="off" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+              <input id="loginUsername" type="text" placeholder="your@email.com or username" autocomplete="off" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
             </div>
             <div class="mb-2">
               <label for="loginAccessKey" class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Password</label>
-              <input id="loginAccessKey" type="password" placeholder="e.g. A7k2&Pq4!xZ" autocomplete="off" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+              <input id="loginAccessKey" type="password" placeholder="e.g. A7k2&Pq4!xZ" autocomplete="off" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
             </div>
             <div class="flex items-center justify-between mb-3">
               <div></div>
-              <button type="button" id="forgotAccessKeyBtn" class="text-[11px] font-medium hover:opacity-80 transition-all" style="color: #ff5c35;">Forgot Access Key?</button>
+              <button type="button" id="forgotAccessKeyBtn" class="text-[11px] font-medium hover:opacity-80 transition-all" style="color: #ff5c35; min-height: 44px; padding: 10px 8px;">Forgot Access Key?</button>
             </div>
-            <button id="loginBtn" type="submit" class="w-full py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">Login</button>
+            <button id="loginBtn" type="submit" class="w-full py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow); min-height: 44px;">Login</button>
           </form>
 
           <div class="mt-4 pt-4" style="border-top: 1px solid var(--border);">
@@ -147,11 +149,11 @@
     <!-- Footer (outside flex-1 centering so it sticks to bottom) -->
     <footer class="footer-area px-4 py-4 text-center">
       <div class="flex items-center justify-center gap-2 sm:gap-4 text-[10px] flex-wrap" style="color: var(--text-muted);">
-        <a href="#" class="hover:text-[#ff6b42] transition-all">Privacy Policy</a>
+        <a href="#" class="hover:text-[#ff6b42] transition-all" style="min-height: 44px; display: inline-flex; align-items: center;">Privacy Policy</a>
         <span>|</span>
-        <a href="#" class="hover:text-[#ff6b42] transition-all">Terms of Service</a>
+        <a href="#" class="hover:text-[#ff6b42] transition-all" style="min-height: 44px; display: inline-flex; align-items: center;">Terms of Service</a>
         <span>|</span>
-        <a href="#" class="hover:text-[#ff6b42] transition-all">Cookie Policy</a>
+        <a href="#" class="hover:text-[#ff6b42] transition-all" style="min-height: 44px; display: inline-flex; align-items: center;">Cookie Policy</a>
       </div>
       <p class="text-[10px] mt-2" style="color: var(--text-muted);">
         &copy; 2026 MetasBank. All rights reserved. | v2.4.1
@@ -163,7 +165,7 @@
   <!-- Premium Support Modal -->
   <div id="forgotModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden" style="background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);">
     <div class="relative w-full max-w-sm rounded-xl p-6 card" style="border-color: rgba(255,92,53,0.2);">
-      <button type="button" id="closeForgotModalBtn" class="absolute top-4 right-4 text-[18px] leading-none hover:opacity-70 transition-all" style="color: var(--text-muted);">&times;</button>
+      <button type="button" id="closeForgotModalBtn" class="absolute top-4 right-4 text-[18px] leading-none hover:opacity-70 transition-all" style="color: var(--text-muted); min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;">&times;</button>
       <div class="text-center mb-5">
         <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto" style="background: rgba(255,92,53,0.12);">
           <svg class="w-6 h-6" fill="none" stroke="#ff5c35" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 5.636a9 9 0 11-12.728 0 9 9 0 0112.728 0zM12 8v4m0 4h.01"/></svg>
@@ -182,7 +184,7 @@
   </div>
 
   <script>
-    initSupabase()
+    try { initSupabase() } catch(e) {  }
     function clearLoginFields() {
       document.getElementById('loginUsername').value = '';
       document.getElementById('loginAccessKey').value = '';
@@ -215,7 +217,7 @@
           window.location.href = '/dashboard/'
         }
       }).catch(function(err) {
-        console.error('Login failed:', err)
+        
         showLoginError('Invalid credentials')
         btn.textContent = 'Login'; btn.disabled = false; btn.style.opacity = '1'
       })
@@ -227,13 +229,7 @@
       el.classList.remove('hidden')
     }
 
-    // Enter key support
-    document.getElementById('loginUsername').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') handleLogin()
-    })
-    document.getElementById('loginAccessKey').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') handleLogin()
-    })
+    // Enter key handled by form submit — no keydown needed
   </script>
 
 </body>

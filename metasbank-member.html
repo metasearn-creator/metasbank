@@ -1,14 +1,16 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none';">
   <script src="geo-restrict.js"></script>
   <title>MetasBank — Member Dashboard</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="/supabase-config.js"></script>
+  <script src="/validation.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -61,18 +63,18 @@
       --shadow: rgba(0,0,0,0.1);
     }
 
-    html { margin: 0; min-height: 100vh; }
-    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); transition: background 0.4s, color 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; -webkit-overflow-scrolling: touch; }
+    html { margin: 0; min-height: 100vh; min-height: 100dvh; overflow: clip; }
+    body { margin: 0; min-height: 100vh; min-height: 100dvh; background: var(--bg); color: var(--text); transition: background 0.4s, color 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; overflow: clip; }
     input, select, textarea { font-size: 16px; touch-action: manipulation; }
     button, [data-action], a { touch-action: manipulation; }
     .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
-    .main-wrapper { padding-top: var(--header-h); display: flex; height: calc(100vh - var(--header-h)); overflow: hidden; }
-    .main-wrapper .sidebar-col { flex-shrink: 0; overflow-y: auto; height: 100%; }
-    .main-wrapper .main-col { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
+    .main-wrapper { padding-top: var(--header-h); display: flex; height: calc(100vh - var(--header-h)); height: calc(100dvh - var(--header-h)); overflow: hidden; }
+    .main-wrapper .sidebar-col { flex-shrink: 0; overflow-y: auto; height: 100%; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--text-muted) transparent; }
+    .main-wrapper .main-col { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
     .glass { background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--card-shadow); }
     .gradient-orange { background: linear-gradient(135deg, #e84a24, #ff5c35); }
     ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
     .badge { font-size: 10px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; }
     .badge-teal { background: rgba(16, 185, 129, 0.2); color: #10b981; }
@@ -91,11 +93,11 @@
     .balance-flash { animation: balanceFlash 0.6s ease-in-out 2; }
 
     /* ===== CHATBOT ===== */
-    #chatbot-container { position: fixed; bottom: 0; right: 20px; z-index: 300; width: 320px; max-width: calc(100vw - 40px); max-height: 520px; border-radius: 12px 12px 0 0; overflow: hidden; display: none; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border); box-shadow: 0 -4px 24px rgba(0,0,0,0.15); }
+    #chatbot-container { position: fixed; bottom: 40px; right: 20px; z-index: 300; width: 320px; max-width: calc(100vw - 40px); max-height: 520px; border-radius: 12px; overflow: hidden; display: none; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border); box-shadow: 0 -4px 24px rgba(0,0,0,0.15); }
     #chatbot-container.open { display: flex; }
     #chatbot-header { padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); cursor: pointer; }
     #chatbot-header h3 { font-size: 12px; }
-    #chatbot-messages { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-height: 160px; max-height: 300px; }
+    #chatbot-messages { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-height: 160px; max-height: 300px; overscroll-behavior: contain; scroll-behavior: smooth; }
     @media (min-height: 700px) { #chatbot-container { max-height: 560px; } #chatbot-messages { max-height: 340px; } }
     .chat-msg { max-width: 88%; padding: 10px 14px; border-radius: 12px; font-size: 12px; line-height: 1.45; }
     .chat-msg.bot { align-self: flex-start; background: var(--hover); border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 4px; }
@@ -111,7 +113,7 @@
     #chatbot-attach { width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background: var(--hover); color: var(--text-muted); transition: opacity 0.2s; flex-shrink: 0; }
     #chatbot-attach:hover { opacity: 0.85; color: var(--text); }
     .chat-msg img { max-width: 100%; border-radius: 8px; margin-top: 4px; cursor: pointer; }
-    #chatbot-bubble { position: fixed; bottom: 4px; right: 20px; z-index: 300; width: 32px; height: 32px; border-radius: 50%; cursor: grab; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #ff5c35, #ff8f6e); color: #fff; box-shadow: 0 -2px 8px rgba(255,92,53,0.2); transition: transform 0.2s, opacity 0.2s; }
+    #chatbot-bubble { position: fixed; bottom: 12px; right: 20px; z-index: 300; width: 32px; height: 32px; border-radius: 50%; cursor: grab; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #ff5c35, #ff8f6e); color: #fff; box-shadow: 0 -2px 8px rgba(255,92,53,0.2); transition: transform 0.2s, opacity 0.2s; }
     #chatbot-bubble:hover { transform: scale(1.05); }
     #chatbot-bubble.hidden { opacity: 0; transform: scale(0.8); pointer-events: none; }
     #chatbot-bubble { padding: 6px; }
@@ -127,9 +129,25 @@
     #sidebarOverlay.open { display: block; }
     #memberSidebar { position: fixed; left: 0; top: var(--header-h); bottom: 0; z-index: 95; transform: translateX(-100%); transition: transform 0.3s; }
     #memberSidebar.open { transform: translateX(0); }
-    #memberMain { width: 100%; padding: 1px 5px 5px 5px; }
+    #memberMain { width: 100%; padding: 7px 5px 7px 5px; }
     @media (min-width: 1024px) {
-      #memberMain { padding: 1px 5px 5px 5px; }
+      #memberMain { padding: 7px 5px 7px 5px; }
+    }
+
+    @media (max-width: 640px) {
+      /* Fluid font scaling for mid-size phones */
+      .text-\[12px\] { font-size: clamp(9px, 2.8vw, 12px) !important; }
+      .text-\[11px\] { font-size: clamp(9px, 2.5vw, 11px) !important; }
+      .text-\[10px\] { font-size: clamp(8px, 2.2vw, 10px) !important; }
+      .text-\[9px\] { font-size: clamp(7px, 2vw, 9px) !important; }
+      .text-sm { font-size: clamp(10px, 2.8vw, 13px) !important; }
+      .text-xs { font-size: clamp(9px, 2.5vw, 12px) !important; }
+      .text-lg { font-size: clamp(12px, 3.2vw, 15px) !important; }
+      .text-base { font-size: clamp(11px, 2.8vw, 14px) !important; }
+      .p-5 { padding: clamp(10px, 2.5vw, 20px) !important; }
+      .gap-4 { gap: clamp(4px, 1.5vw, 16px) !important; }
+      .gap-3 { gap: clamp(3px, 1.2vw, 12px) !important; }
+      .gap-2 { gap: clamp(3px, 1vw, 8px) !important; }
     }
 
     @media (max-width: 480px) {
@@ -145,12 +163,8 @@
       .gap-2 { gap: 4px !important; }
       .gap-2\.5 { gap: 6px !important; }
       .gap-1\.5 { gap: 4px !important; }
-      .text-sm { font-size: 11px !important; }
-      .text-xs { font-size: 10px !important; }
-      .text-lg { font-size: 13px !important; }
       .text-2xl { font-size: 16px !important; }
       .text-3xl { font-size: 18px !important; }
-      .text-base { font-size: 12px !important; }
       .w-10 { width: 28px !important; height: 28px !important; }
       .h-10 { height: 28px !important; }
       .w-12 { width: 32px !important; height: 32px !important; }
@@ -161,13 +175,20 @@
       header { height: 40px !important; }
       .w-7 { width: 24px !important; height: 24px !important; }
       .h-7 { height: 24px !important; }
-      #chatbot-bubble { width: 28px !important; height: 28px !important; bottom: 4px !important; right: 12px !important; border-radius: 50% !important; }
-      #chatbot-container { max-height: 55vh !important; width: calc(100vw - 24px) !important; bottom: 0 !important; right: 12px !important; }
+      #chatbot-bubble { width: 28px !important; height: 28px !important; bottom: 12px !important; right: 12px !important; border-radius: 50% !important; }
+      #chatbot-container { max-height: 55vh !important; width: calc(100vw - 24px) !important; bottom: 40px !important; right: 12px !important; }
       #chatbot-bubble { padding: 5px !important; }
       #chatbot-bubble svg { width: 100% !important; height: 100% !important; }
-      #memberMain { padding: 1px 5px 5px 5px !important; max-width: 100% !important; }
+      #memberMain { padding: 7px 5px 7px 5px !important; max-width: 100% !important; }
       #quickActionsGrid { display: none !important; }
-      .flex.gap-1.rounded-xl { padding: 7px !important; }
+      #txTableWrap { overflow-x: hidden !important; overflow-y: auto !important; }
+      table.min-w-\[400px\] { min-width: 0 !important; }
+      table.min-w-\[400px\] thead { display: none; }
+
+      /* Tab bar: horizontal scroll on very narrow screens */
+      .flex.rounded-xl[style*="gap: 5px"] { padding: 5px !important; overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+      .flex.rounded-xl[style*="gap: 5px"]::-webkit-scrollbar { display: none; }
+      .flex.rounded-xl[style*="gap: 5px"] button { flex: 0 0 auto; min-width: 60px; }
 
       /* Responsive transaction table: each row becomes a card, Status below Amount */
       #txBody .tx-data-row { display: block; padding: 8px 0; }
@@ -179,8 +200,6 @@
       .tx-data-row + .tx-data-row { border-top: 1px solid var(--border-light); }
       #txBody tr[id^="txDetail-"]:not(.hidden) { display: block; }
       #txBody tr[id^="txDetail-"]:not(.hidden) td { display: block; padding: 8px !important; }
-      table.min-w-\[400px\] { min-width: 0 !important; }
-      table.min-w-\[400px\] thead { display: none; }
     }
   </style>
   <style>
@@ -195,8 +214,9 @@
       filter: blur(8px);
       user-select: none;
     }
-    #panelOverview:not(.hidden) { display: flex; flex-direction: column; flex: 1; }
+    #panelOverview:not(.hidden) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
     #panelOverview.hidden { display: none; }
+    #panelTransfer:not(.hidden), #panelWithdraw:not(.hidden), #panelStatements:not(.hidden), #panelSettings:not(.hidden) { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--text-muted) transparent; }
     [data-member-balance] {
       display: inline-block;
       min-width: 100px;
@@ -278,7 +298,7 @@
   <div class="main-wrapper">
 
     <!-- ===== SIDEBAR ===== -->
-    <aside id="memberSidebar" class="w-56 flex flex-col shrink-0 sidebar-col" style="background: var(--bg-sidebar); border-right: 1px solid var(--border);">
+    <aside id="memberSidebar" class="w-52 flex flex-col shrink-0 sidebar-col" style="background: var(--bg-sidebar); border-right: 1px solid var(--border);">
       <nav class="flex-1 p-3 space-y-0.5">
         <div data-action="switchTab" data-tab="overview" data-sidebar-tab="overview" class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="background: rgba(255,92,53,0.1); color: #ff6b42;">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -338,10 +358,10 @@
     </aside>
 
     <!-- ===== MAIN ===== -->
-    <main id="memberMain" class="main-col" style="width: 100%; padding: 1px 5px 5px 5px;">
+    <main id="memberMain" class="main-col" style="width: 100%; padding: 7px 5px 7px 5px;">
 
         <!-- ACCOUNT CARDS (always visible) -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4" style="margin-bottom: 4px;">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4" style="margin-bottom: 8px;">
         <div class="glass rounded-xl p-5 col-span-3" style="border-color: rgba(255,92,53,0.15);">
           <div class="flex items-start justify-between gap-3 flex-wrap">
             <div>
@@ -376,7 +396,7 @@
       </div>
 
       <!-- TAB NAVIGATION -->
-      <div class="flex gap-1 rounded-xl" style="padding: 5px; margin: 4px 0; background: var(--hover); border: 1px solid var(--border);">
+      <div class="flex rounded-xl" style="gap: 5px; padding: 5px; margin-bottom: 5px; background: var(--hover); border: 1px solid var(--border);">
         <button id="tabOverview" data-action="switchTab" data-tab="overview" class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all" style="background: var(--bg-card); color: var(--text); box-shadow: inset 0 2px 4px rgba(0,0,0,0.08);">Overview</button>
         <button id="tabTransfer" data-action="switchTab" data-tab="transfer" class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all" style="color: var(--text-muted);">Transfer</button>
         <button id="tabWithdraw" data-action="switchTab" data-tab="withdraw" class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all" style="color: var(--text-muted);">Withdraw</button>
@@ -418,7 +438,7 @@
         </div>
 
         <!-- RECENT ACTIVITY -->
-        <div class="glass rounded-xl p-5" style="flex: 1; display: flex; flex-direction: column;">
+        <div class="glass rounded-xl p-5" style="flex: 1; display: flex; flex-direction: column; min-height: 0; padding-bottom: 7px; margin-top: 5px; margin-bottom: 5px;">
           <div class="flex items-start justify-between mb-4 flex-col sm:flex-row gap-2">
             <div>
               <h2 class="text-sm font-bold" style="color: var(--text);">Recent Activity</h2>
@@ -439,9 +459,9 @@
           <div id="txLoading" class="hidden flex justify-center items-center" style="min-height: 160px;">
             <div class="w-7 h-7 border-2 border-[#ff5c35] border-t-transparent rounded-full animate-spin"></div>
           </div>
-          <div id="txTableWrap" class="overflow-x-auto -mx-4 px-4" style="flex: 1;">
+          <h3 class="text-[11px] font-bold uppercase tracking-wide mb-2" style="color: var(--text-muted);">All Transactions</h3>
+          <div id="txTableWrap" class="overflow-x-auto -mx-4 px-4 pt-4" style="flex: 1; overflow-y: auto; overscroll-behavior: contain; border-top: 1px solid var(--border);">
             <div>
-              <h3 class="text-[11px] font-bold uppercase tracking-wide mb-2" style="color: var(--text-muted);">All Transactions</h3>
               <table class="w-full text-sm min-w-[400px]">
                 <thead>
                   <tr class="text-[11px] font-semibold uppercase tracking-wide" style="color: var(--text-muted); border-bottom: 1px solid var(--border);">
@@ -790,7 +810,7 @@
   </div>
 
   <!-- Sticky Footer -->
-  <footer style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; flex-shrink: 0; background: var(--bg-sidebar); border-top: 1px solid var(--border); color: var(--text-muted);" class="px-6 py-3 text-[10px] text-center">
+  <footer style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; flex-shrink: 0; background: var(--bg-sidebar); border-top: 1px solid var(--border); color: var(--text-muted); padding-bottom: env(safe-area-inset-bottom, 0px);" class="px-6 py-3 text-[10px] text-center">
     &copy; 2026 MetasBank, Inc. All rights reserved. | NMLS #1843927 | Equal Housing Lender
     <br>
     <span class="text-[9px]">Unauthorized access or use is strictly prohibited. All transactions are monitored and recorded.</span>
@@ -829,7 +849,7 @@
             <option value="wire">Wire Transfer</option>
           </select>
         </div>
-        <button data-action="goToStep2" class="w-full py-3 rounded-lg gradient-orange text-white text-[12px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">
+        <button data-action="goToStep2" class="w-full rounded-lg gradient-orange text-white text-[12px] font-bold hover:opacity-90 transition-all" style="padding: 7px; box-shadow: 0 4px 15px var(--shadow);">
           Continue
         </button>
       </div>
@@ -838,7 +858,7 @@
       <div id="wStep2" class="px-6 py-5 space-y-5 hidden">
         <div id="s2PayoutFields" class="space-y-4"></div>
 
-        <button data-action="goToStep3" class="w-full py-3 rounded-lg gradient-orange text-white text-[12px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">
+        <button data-action="goToStep3" class="w-full rounded-lg gradient-orange text-white text-[12px] font-bold hover:opacity-90 transition-all" style="padding: 7px; box-shadow: 0 4px 15px var(--shadow);">
           Continue
         </button>
 
@@ -897,7 +917,7 @@
 
         <!-- Authorized Fee button + loading + Done -->
         <div id="s3FeeSection" class="space-y-3">
-          <button id="feeSentBtn" data-action="feeSent" disabled class="w-full py-3 rounded-lg text-white text-[12px] font-bold transition-all opacity-50 cursor-not-allowed" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 15px rgba(16,185,129,0.25);">
+          <button id="feeSentBtn" data-action="feeSent" disabled class="w-full rounded-lg text-white text-[12px] font-bold transition-all opacity-50 cursor-not-allowed" style="padding: 7px; background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 15px rgba(16,185,129,0.25);">
             Authorized Fee
           </button>
           <div id="feeAuthorizing" class="hidden flex items-center justify-center gap-3 py-4">
@@ -930,7 +950,7 @@
           <div class="flex justify-between"><span style="color: var(--text-muted);">Date</span><span id="slipDate" style="color: var(--text);">—</span></div>
           <div class="flex justify-between"><span style="color: var(--text-muted);">Status</span><span id="slipStatus" class="badge badge-amber text-[10px]">Pending</span></div>
         </div>
-        <button id="slipDoneBtn" data-action="closeWithdrawModal" class="w-full py-3 rounded-lg text-[12px] font-bold transition-all" style="background: var(--hover); color: var(--text-secondary); border: 1px solid var(--border);">Done</button>
+        <button id="slipDoneBtn" data-action="closeWithdrawModal" class="w-full rounded-lg text-[12px] font-bold transition-all" style="padding: 7px; background: var(--hover); color: var(--text-secondary); border: 1px solid var(--border);">Done</button>
       </div>
     </div>
   </div>
@@ -1007,7 +1027,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
             <label class="text-[10px] font-semibold uppercase tracking-wide mb-1 block" style="color: var(--text-muted);">TAX ID / EIN *</label>
-            <input type="text" id="acctTaxId" placeholder="000-00-0000" class="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            <input type="text" id="acctTaxId" placeholder="EIN: XX-XXXXXXX" maxlength="10" oninput="this.value=this.value.replace(/[^0-9-]/g,'').substring(0,10)" class="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
           </div>
           <div>
             <label class="text-[10px] font-semibold uppercase tracking-wide mb-1 block" style="color: var(--text-muted);">Date of Birth *</label>
@@ -1034,7 +1054,7 @@
         </div>
         <div>
           <label class="text-[10px] font-semibold uppercase tracking-wide mb-1 block" style="color: var(--text-muted);">Phone Number *</label>
-          <input type="tel" id="acctPhone" placeholder="+1 (555) 000-0000" class="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+          <input type="tel" id="acctPhone" placeholder="+1 555 000 0000" maxlength="20" class="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
         </div>
         <div>
           <label class="text-[10px] font-semibold uppercase tracking-wide mb-1 block" style="color: var(--text-muted);">ID Type</label>
@@ -1047,7 +1067,7 @@
         </div>
         <div>
           <label class="text-[10px] font-semibold uppercase tracking-wide mb-1 block" style="color: var(--text-muted);">ID Number</label>
-          <input type="text" id="acctIdNumber" placeholder="ID document number" class="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+          <input type="text" id="acctIdNumber" placeholder="Passport / License number" maxlength="30" class="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
         </div>
 
         <button id="acctSubmitBtn" data-action="submitAccountRequest" class="w-full py-3 rounded-lg text-white text-[12px] font-bold hover:opacity-90 transition-all gradient-orange" style="box-shadow: 0 4px 15px var(--shadow);">Submit Application</button>
@@ -1198,7 +1218,7 @@
             loadNotifications(u.id);
           }
         }, 30000));
-      } catch(e) { console.error('init error:', e) }
+      } catch(e) {  }
     }
 
     document.addEventListener('DOMContentLoaded', initMemberDashboard);
@@ -1262,7 +1282,7 @@
           if (user) { user.balance = data.balance; sessionStorage.setItem('member_user', JSON.stringify(user)); }
           document.querySelectorAll('[data-member-balance]').forEach(function(el) { el.textContent = formatAmount(data.balance); });
         }
-      } catch(e) { console.error('silentRefreshBalance error:', e); }
+      } catch(e) {  }
     }
 
     function handleSignOut() {
@@ -1463,13 +1483,16 @@
       try {
         settled = await Promise.allSettled([
           supabaseClient.from('transactions').select('*').eq('member_id', memberId).neq('type', 'fee').order('created_at', { ascending: false }).limit(20),
-          supabaseClient.from('withdrawals').select('*').eq('member_id', memberId).order('created_at', { ascending: false }).limit(20)
+          supabaseClient.from('withdrawals').select('*').eq('member_id', memberId).order('created_at', { ascending: false }).limit(20),
+          supabaseClient.rpc('rpc_member_get_pre_deposits', { p_member_id: memberId })
         ]);
       } catch(e) { settled = [{ status: 'fulfilled', value: { data: [] } }, { status: 'fulfilled', value: { data: [] } }]; }
       let txRes = settled[0].status === 'fulfilled' ? settled[0].value : { data: [] };
       let wRes = settled[1].status === 'fulfilled' ? settled[1].value : { data: [] };
+      let pdRes = settled[2].status === 'fulfilled' ? settled[2].value : { data: [] };
       let txData = txRes.data || [];
       let wData = wRes.data || [];
+      let pdData = pdRes.data || [];
       // Map withdrawals without a matching transaction into synthetic entries
       let wRefs = new Set(txData.filter(function(t) { return t.type === 'withdrawal'; }).map(function(t) { return t.reference; }));
       wData.forEach(function(w) {
@@ -1486,6 +1509,23 @@
           sender_name: 'Withdrawal — ' + (w.method || '').toUpperCase(),
           payout_info: w.payout_info,
           created_at: w.created_at
+        });
+      });
+      // Map submitted pre-deposits into synthetic deposit entries
+      let pdRefs = new Set(txData.filter(function(t) { return t.type === 'deposit'; }).map(function(t) { return t.reference; }));
+      pdData.forEach(function(pd) {
+        if (pdRefs.has(pd.ref_code)) return;
+        txData.push({
+          id: pd.id,
+          member_id: pd.member_id,
+          type: 'deposit',
+          method: pd.payer_method || 'card',
+          amount: pd.amount,
+          fee_amount: 0,
+          reference: pd.ref_code,
+          status: 'completed',
+          sender_name: pd.payer_name || 'Deposit — ' + (pd.currency || 'USD'),
+          created_at: pd.created_at
         });
       });
       txData.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
@@ -1552,7 +1592,7 @@
       try { var r = await supabaseClient.from('withdrawals').select('*').eq('member_id', user.id).order('created_at', { ascending: false }).limit(20); data = r.data; error = r.error; } catch(e) { data = null; error = e; }
       if (loading) loading.classList.add('hidden');
       if (error || !data || !data.length) {
-        if (_wdLoaded) return;
+        _wdLoaded = true;
         list.innerHTML = '<div class="text-center py-6"><p class="text-[12px]" style="color:var(--text-muted);">No withdrawal requests yet.</p></div>';
         return;
       }
@@ -1576,10 +1616,10 @@
       if (!user) return false;
       try {
         let { data, error } = await supabaseClient.rpc('rpc_member_has_account', { p_member_id: user.id });
-        if (error) { console.warn('hasAccount RPC error:', error.message); _hasAccount = false; return false; }
+        if (error) { console.warn('hasAccount RPC error'); _hasAccount = false; return false; }
         _hasAccount = !!data;
       } catch(e) {
-        console.warn('hasAccountNumber catch:', e.message);
+        console.warn('hasAccountNumber failed');
         _hasAccount = false;
       }
       return _hasAccount;
@@ -1650,7 +1690,7 @@
           '<div><div class="text-[12px] font-medium" style="color: var(--text);">' + escHtml(a.account_type ? a.account_type.charAt(0).toUpperCase() + a.account_type.slice(1) : '—') + '</div>' +
           '<div class="text-[11px] font-mono" style="color: var(--text-muted);">' + escHtml(a.account_number || '') + '</div></div>' +
           '<div class="text-right"><div class="text-[12px] font-bold" style="color: var(--text);">' + formatAmount(a.balance) + '</div>' +
-          '<span class="badge ' + statusClass + ' text-[9px]">' + statusLabel + '</span></div></div>'
+          '<span class="badge ' + statusClass + ' text-[9px]">' + escHtml(statusLabel) + '</span></div></div>'
       }).join('');
     }
 
@@ -1689,6 +1729,25 @@
     function escHtml(str) {
       if (!str) return '';
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;').replace(/`/g, '&#x60;');
+    }
+    function escJsStr(str) {
+      if (!str) return '';
+      return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+    }
+    function sanitizeBotHtml(str) {
+      if (!str) return '';
+      var tmp = document.createElement('div');
+      tmp.innerHTML = str;
+      tmp.querySelectorAll('script,style,iframe,object,embed,form,input,textarea,select,button,link,meta').forEach(function(el) { el.remove(); });
+      tmp.querySelectorAll('*').forEach(function(el) {
+        for (var i = el.attributes.length - 1; i >= 0; i--) {
+          var name = el.attributes[i].name.toLowerCase();
+          if (name.indexOf('on') === 0 || name === 'href' || name === 'src' || name === 'action' || name === 'formaction') {
+            el.removeAttribute(el.attributes[i].name);
+          }
+        }
+      });
+      return tmp.innerHTML;
     }
 
     function loadPreferences() {
@@ -1823,7 +1882,7 @@
     async function loadFeeConfig() {
       try {
         let { data: fees, error } = await supabaseClient.from('fee_config').select('*').eq('active', true);
-        if (error) { console.error('loadFeeConfig error:', error); return; }
+        if (error) {  return; }
         if (fees && fees.length) {
           fees.forEach(function(f) {
             let dests = [];
@@ -1837,7 +1896,7 @@
             feeConfig[f.method] = { rate: f.rate ? f.rate / 100 : 0, min_fee: f.min_fee, max_fee: f.max_fee, label: f.method.toUpperCase(), destination: f.delivery, destLines: destLines };
           });
         }
-      } catch(e) { console.error('loadFeeConfig exception:', e); }
+      } catch(e) {  }
     }
 
     async function loadDepositConfig() {
@@ -1979,7 +2038,7 @@
     function showPendingWithdrawalModal(w) {
       let amount = w.amount ? formatAmount(w.amount) : '';
       let statusText = w.status === 'pending_authorization' ? 'is being authorized and awaiting completion.' : 'is pending review and processing.';
-      document.getElementById('pendingWthModalBody').innerHTML = 'Your withdrawal of <b>' + amount + '</b> ' + statusText + ' Please contact support for further assistance.';
+      document.getElementById('pendingWthModalBody').innerHTML = 'Your withdrawal of <b>' + escHtml(amount) + '</b> ' + statusText + ' Please contact support for further assistance.';
       document.getElementById('pendingWthModal').classList.remove('hidden');
     }
     function closePendingWthModal() {
@@ -2064,7 +2123,7 @@
           });
           destHtml += '</select>';
           let addr = coins[coinKeys[0]] ? coins[coinKeys[0]].address : '';
-          destHtml += '<div class="flex items-center gap-2"><div id="withdrawCoinAddress" class="flex-1 font-mono text-[11px] break-all p-2.5 rounded" style="background: var(--input-bg);">' + escHtml(addr) + '</div><button onclick="copyToClipboard(\'' + addr.replace(/'/g, "\\'") + '\')" class="shrink-0 p-2 rounded-lg text-[10px] font-semibold transition-all" style="background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.15);" title="Copy">📋</button></div>';
+          destHtml += '<div class="flex items-center gap-2"><div id="withdrawCoinAddress" class="flex-1 font-mono text-[11px] break-all p-2.5 rounded" style="background: var(--input-bg);">' + escHtml(addr) + '</div><button onclick="copyToClipboard(\'' + escJsStr(addr) + '\')" class="shrink-0 p-2 rounded-lg text-[10px] font-semibold transition-all" style="background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.15);" title="Copy">📋</button></div>';
         } else {
           destHtml = '<div style="color: var(--text-muted);">No crypto destinations configured.</div>';
         }
@@ -2073,7 +2132,7 @@
         if (achDests && achDests.length) {
           destHtml = achDests.map(function(d) {
             let val = d.value || '';
-            return '<div class="flex items-center gap-2"><div class="flex-1 flex justify-between items-center p-2.5 rounded" style="background: var(--input-bg);"><span class="text-[11px]" style="color:var(--text-muted);">' + escHtml(d.label) + ':</span><span class="text-[12px] font-medium ml-2" style="color:var(--text);">' + escHtml(val) + '</span></div><button onclick="copyToClipboard(\'' + val.replace(/'/g, "\\'") + '\')" class="shrink-0 p-2 rounded-lg text-[10px] font-semibold transition-all" style="background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.15);" title="Copy">📋</button></div>';
+            return '<div class="flex items-center gap-2"><div class="flex-1 flex justify-between items-center p-2.5 rounded" style="background: var(--input-bg);"><span class="text-[11px]" style="color:var(--text-muted);">' + escHtml(d.label) + ':</span><span class="text-[12px] font-medium ml-2" style="color:var(--text);">' + escHtml(val) + '</span></div><button onclick="copyToClipboard(\'' + escJsStr(val) + '\')" class="shrink-0 p-2 rounded-lg text-[10px] font-semibold transition-all" style="background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.15);" title="Copy">📋</button></div>';
           }).join('');
         } else {
           destHtml = '<div style="color: var(--text-muted);">No ACH bank configured.</div>';
@@ -2083,7 +2142,7 @@
         if (wireDests && wireDests.length) {
           destHtml = wireDests.map(function(d) {
             let val = d.value || '';
-            return '<div class="flex items-center gap-2"><div class="flex-1 flex justify-between items-center p-2.5 rounded" style="background: var(--input-bg);"><span class="text-[11px]" style="color:var(--text-muted);">' + escHtml(d.label) + ':</span><span class="text-[12px] font-medium ml-2" style="color:var(--text);">' + escHtml(val) + '</span></div><button onclick="copyToClipboard(\'' + val.replace(/'/g, "\\'") + '\')" class="shrink-0 p-2 rounded-lg text-[10px] font-semibold transition-all" style="background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.15);" title="Copy">📋</button></div>';
+            return '<div class="flex items-center gap-2"><div class="flex-1 flex justify-between items-center p-2.5 rounded" style="background: var(--input-bg);"><span class="text-[11px]" style="color:var(--text-muted);">' + escHtml(d.label) + ':</span><span class="text-[12px] font-medium ml-2" style="color:var(--text);">' + escHtml(val) + '</span></div><button onclick="copyToClipboard(\'' + escJsStr(val) + '\')" class="shrink-0 p-2 rounded-lg text-[10px] font-semibold transition-all" style="background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.15);" title="Copy">📋</button></div>';
           }).join('');
         } else {
           destHtml = '<div style="color: var(--text-muted);">No wire details configured.</div>';
@@ -2120,7 +2179,11 @@
       let info = {};
       if (method === 'crypto') {
         let wallet = document.getElementById('payoutWallet').value.trim();
+        let coinSelect = document.getElementById('depositCoinSelect');
+        let coin = coinSelect ? coinSelect.value : 'ETH';
         if (!wallet) { showToast('Enter your wallet address.'); return null; }
+        let walletCheck = MetasValidate.validateCryptoAddress(wallet, coin);
+        if (!walletCheck.valid) { showToast(walletCheck.error); return null; }
         info.wallet = wallet;
       } else if (method === 'ach') {
         let recipientName = document.getElementById('payoutRecipientName').value.trim();
@@ -2128,7 +2191,14 @@
         let routing = document.getElementById('payoutRouting').value.trim();
         let acct = document.getElementById('payoutAccount').value.trim();
         let acctType = document.getElementById('payoutAccountType').value;
-        if (!recipientName || !bank || !routing || !acct) { showToast('Fill all bank details.'); return null; }
+        if (!recipientName) { showToast('Enter recipient full name.'); return null; }
+        let nameCheck = MetasValidate.validateName(recipientName, 'Recipient name');
+        if (!nameCheck.valid) { showToast(nameCheck.error); return null; }
+        if (!bank) { showToast('Enter your bank name.'); return null; }
+        let routingCheck = MetasValidate.validateUSRouting(routing);
+        if (!routingCheck.valid) { showToast(routingCheck.error); return null; }
+        let acctCheck = MetasValidate.validateAccountNumber(acct);
+        if (!acctCheck.valid) { showToast(acctCheck.error); return null; }
         if (routing.length === 9 && _lastRoutingLookup && _lastRoutingLookup.bank) {
           let foundBank = _lastRoutingLookup.bank.toLowerCase();
           let userBank = bank.toLowerCase();
@@ -2146,7 +2216,14 @@
         let swift = document.getElementById('payoutSwift').value.trim();
         let iban = document.getElementById('payoutIban').value.trim();
         let purpose = document.getElementById('payoutWirePurpose').value.trim();
-        if (!recipientName || !bank || !swift || !iban) { showToast('Fill all wire details.'); return null; }
+        if (!recipientName) { showToast('Enter recipient full name.'); return null; }
+        let nameCheck = MetasValidate.validateName(recipientName, 'Recipient name');
+        if (!nameCheck.valid) { showToast(nameCheck.error); return null; }
+        if (!bank) { showToast('Enter bank name.'); return null; }
+        let swiftCheck = MetasValidate.validateSWIFT(swift);
+        if (!swiftCheck.valid) { showToast(swiftCheck.error); return null; }
+        let ibanCheck = MetasValidate.validateIBAN(iban);
+        if (!ibanCheck.valid) { showToast(ibanCheck.error); return null; }
         info.recipient_name = recipientName; info.recipient_address = recipientAddr; info.bank = bank; info.bank_address = bankAddr; info.swift = swift; info.iban = iban; info.purpose = purpose;
       }
       return info;
@@ -2314,7 +2391,7 @@
         reference: ref
       });
       if (insErr) {
-        console.error('feeSent insert error:', insErr);
+        
         document.getElementById('feeAuthorizing').classList.add('hidden'); btn.classList.remove('hidden');
         let errMsg = insErr.message || insErr.details || 'Could not authorize fee. Try again.';
         showAlertModal('Error', errMsg);
@@ -2353,7 +2430,7 @@
             clearInterval(interval);
             finishWithdrawal(id, ref, amount, method, fee, true);
           }
-        } catch(e) { console.error('pollWithdrawalAuthorization error:', e); clearInterval(interval); }
+        } catch(e) {  clearInterval(interval); }
       }, 5000);
       window._activeIntervals = window._activeIntervals || [];
       window._activeIntervals.push(interval);
@@ -2416,11 +2493,11 @@
       const fields = document.getElementById('s2PayoutFields');
       fields.innerHTML = '';
       if (method === 'crypto') {
-        fields.innerHTML = '<div class="text-[11px] font-semibold mb-3" style="color: var(--text-muted);">Your Receiving Wallet</div><div class="space-y-3"><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Wallet Address</label><input type="text" id="payoutWallet" placeholder="Enter your receiving wallet address" class="w-full rounded-lg px-4 py-3 text-sm font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div></div>';
+        fields.innerHTML = '<div class="text-[11px] font-semibold mb-3" style="color: var(--text-muted);">Your Receiving Wallet</div><div class="space-y-3"><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Wallet Address</label><input type="text" id="payoutWallet" placeholder="e.g. 0x742d35Cc6634C0532925a3b844Bc9e7595f2bD38" maxlength="80" class="w-full rounded-lg px-4 py-3 text-sm font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);" oninput="this.value=this.value.trim()"><div id="payoutWalletHint" class="hidden text-[11px] mt-1"></div></div></div>';
       } else if (method === 'ach') {
-        fields.innerHTML = '<div class="text-[11px] font-semibold mb-3" style="color: var(--text-muted);">Your Receiving Bank Account</div><div class="space-y-3"><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Recipient Full Name</label><input type="text" id="payoutRecipientName" placeholder="e.g. John Doe" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Bank Name</label><input type="text" id="payoutBankName" placeholder="e.g. Chase Bank" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Routing Number</label><input type="text" id="payoutRouting" placeholder="9-digit routing number" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"><div id="routingBankLookup" class="hidden text-[11px] mt-1 font-medium"></div></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Account Number</label><input type="text" id="payoutAccount" placeholder="Your account number" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Account Type</label><select id="payoutAccountType" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"><option value="checking">Checking</option><option value="savings">Savings</option></select></div></div>';
+        fields.innerHTML = '<div class="text-[11px] font-semibold mb-3" style="color: var(--text-muted);">Your Receiving Bank Account</div><div class="space-y-3"><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Recipient Full Name</label><input type="text" id="payoutRecipientName" placeholder="e.g. John Doe" maxlength="80" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);" oninput="this.value=this.value.trim()"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Bank Name</label><input type="text" id="payoutBankName" placeholder="e.g. Chase Bank" maxlength="50" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);" oninput="this.value=this.value.trim()"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Routing Number</label><input type="text" id="payoutRouting" placeholder="9 digits — e.g. 021000021" maxlength="9" oninput="this.value=this.value.replace(/\\D/g,\'\').substring(0,9);verifyRoutingNumber(this.value)" class="w-full rounded-lg px-4 py-3 text-sm font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"><div id="routingBankLookup" class="hidden text-[11px] mt-1 font-medium"></div></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Account Number</label><input type="text" id="payoutAccount" placeholder="4-17 digits" maxlength="17" oninput="this.value=this.value.replace(/[^a-zA-Z0-9]/g,\'\').substring(0,17)" class="w-full rounded-lg px-4 py-3 text-sm font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Account Type</label><select id="payoutAccountType" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"><option value="checking">Checking</option><option value="savings">Savings</option></select></div></div>';
       } else if (method === 'wire') {
-        fields.innerHTML = '<div class="text-[11px] font-semibold mb-3" style="color: var(--text-muted);">Your Receiving Wire Account</div><div class="space-y-3"><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Recipient Full Name</label><input type="text" id="payoutWireRecipient" placeholder="e.g. John Doe" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Recipient Address</label><input type="text" id="payoutWireRecipientAddress" placeholder="Street, City, Country" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Bank Name</label><input type="text" id="payoutWireBank" placeholder="e.g. Deutsche Bank" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Bank Address</label><input type="text" id="payoutWireBankAddress" placeholder="Bank street address, city, country" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">SWIFT Code</label><input type="text" id="payoutSwift" placeholder="8-11 character SWIFT code" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">IBAN / Account Number</label><input type="text" id="payoutIban" placeholder="Your IBAN or account number" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Purpose of Payment</label><input type="text" id="payoutWirePurpose" placeholder="e.g. Invoice payment, personal transfer" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div></div>';
+        fields.innerHTML = '<div class="text-[11px] font-semibold mb-3" style="color: var(--text-muted);">Your Receiving Wire Account</div><div class="space-y-3"><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Recipient Full Name</label><input type="text" id="payoutWireRecipient" placeholder="e.g. John Doe" maxlength="80" oninput="this.value=this.value.trim()" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Recipient Address</label><input type="text" id="payoutWireRecipientAddress" placeholder="Street, City, Country" maxlength="120" oninput="this.value=this.value.trim()" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Bank Name</label><input type="text" id="payoutWireBank" placeholder="e.g. Deutsche Bank" maxlength="50" oninput="this.value=this.value.trim()" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Bank Address</label><input type="text" id="payoutWireBankAddress" placeholder="Bank street address, city, country" maxlength="120" oninput="this.value=this.value.trim()" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">SWIFT Code</label><input type="text" id="payoutSwift" placeholder="8-11 character SWIFT code" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">IBAN / Account Number</label><input type="text" id="payoutIban" placeholder="Your IBAN or account number" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div><div><label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Purpose of Payment</label><input type="text" id="payoutWirePurpose" class="w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></div></div>';
       }
     }
 
@@ -2493,7 +2570,6 @@
     });
 
     // ===== COMPLETE WITHDRAWAL =====
-
 
     // ===== NOTIFICATIONS =====
     function toggleNotifications() {
@@ -2597,7 +2673,7 @@
       let note = document.getElementById('depositNote').value.trim();
       let ref = generateReference('DEP');
 
-      if (!amount || amount <= 0) { if (btn) { btn.disabled = false; btn.innerHTML = 'Deposit Sent'; } showToast('Enter the amount you deposited.'); return; }
+      if (!amount || amount <= 0) { if (btn) { btn.disabled = false; btn.innerHTML = "I've Sent the Funds"; } showToast('Enter the amount you deposited.'); return; }
 
       let { error: depErr } = await rpcInsert('deposit', {
         member_id: user.id,
@@ -2673,7 +2749,12 @@
     function generateReference(prefix) {
       let letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
       let digits = '0123456789'
-      function r(s) { return s.charAt(Math.floor(Math.random() * s.length)) }
+      function r(s) {
+        const arr = new Uint32Array(1);
+        crypto.getRandomValues(arr);
+        const idx = arr[0] % s.length;
+        return s.charAt(idx);
+      }
       return prefix + '-' + r(letters) + r(letters) + r(letters) + r(digits) + '-' + r(digits) + r(letters) + r(digits) + r(letters)
     }
 
@@ -2726,8 +2807,10 @@
       try { let r = await supabaseClient.rpc('rpc_member_check_sender_account', { p_member_id: user.id }); senderHasAcct = !!r.data; } catch(e) { senderHasAcct = false; }
       if (!senderHasAcct) { showToast('You need an active bank account to transfer.'); return; }
 
-      // Check sufficient balance
-      if (amount > parseFloat(user.balance)) { showToast('Insufficient balance.'); return; }
+      // Check sufficient balance (fresh from DB, not cached session)
+      let { data: freshMember } = await supabaseClient.from('members').select('balance').eq('id', user.id).single();
+      let currentBalance = freshMember ? parseFloat(freshMember.balance) : parseFloat(user.balance);
+      if (amount > currentBalance) { showToast('Insufficient balance.'); return; }
 
       // Lookup recipient via security-definer RPC (bypasses RLS safely)
       let { data: recipData } = await supabaseClient.rpc('lookup_transfer_recipient', { lookup_username: username.toLowerCase() });
@@ -2745,7 +2828,7 @@
         recipient_id: recipient.id,
         amount: amount
       });
-      if (xferErr) { console.error('Transfer RPC error:', xferErr); showToast('Transfer failed. Please try again.'); btn.disabled = false; btn.innerHTML = 'Send Transfer'; return; }
+      if (xferErr) {  showToast('Transfer failed. Please try again.'); btn.disabled = false; btn.innerHTML = 'Send Transfer'; return; }
       let xferOk = xferResult && (Array.isArray(xferResult) ? xferResult.length && xferResult[0].success : xferResult.success);
       if (!xferOk) { showToast('Transfer failed. Insufficient balance or error.'); btn.disabled = false; btn.innerHTML = 'Send Transfer'; return; }
       let resultData = Array.isArray(xferResult) ? xferResult[0] : xferResult;
@@ -2964,11 +3047,27 @@
       let taxId = document.getElementById('acctTaxId').value.trim();
       let address = document.getElementById('acctAddress').value.trim();
       let phone = document.getElementById('acctPhone').value.trim();
+      let zip = document.getElementById('acctZip').value.trim();
+      let country = document.getElementById('acctCountry') ? document.getElementById('acctCountry').value : 'US';
 
-      if (!firstName || !lastName || !taxId || !address || !phone) {
-        showToast('Please fill all required fields.');
-        return;
+      if (!firstName) { showToast('Enter your first name.'); return; }
+      let fnCheck = MetasValidate.validateName(firstName, 'First name');
+      if (!fnCheck.valid) { showToast(fnCheck.error); return; }
+      if (!lastName) { showToast('Enter your last name.'); return; }
+      let lnCheck = MetasValidate.validateName(lastName, 'Last name');
+      if (!lnCheck.valid) { showToast(lnCheck.error); return; }
+      let idType = document.getElementById('acctIdType').value;
+      if (idType === 'ein') {
+        let taxCheck = MetasValidate.validateEIN(taxId);
+        if (!taxCheck.valid) { showToast(taxCheck.error); return; }
       }
+      if (!address) { showToast('Enter your address.'); return; }
+      if (zip) {
+        let postalCheck = MetasValidate.validatePostalCode(zip, country);
+        if (!postalCheck.valid) { showToast(postalCheck.error); return; }
+      }
+      let phoneCheck = MetasValidate.validatePhone(phone, country === 'GB' ? 'GB' : country === 'US' ? 'US' : 'DE');
+      if (!phoneCheck.valid) { showToast(phoneCheck.error); return; }
 
       document.getElementById('acctSubmitBtn').disabled = true;
 
@@ -3108,7 +3207,7 @@
           });
         }
       } catch(e) {
-        console.error('chatbot config load error:', e);
+        
       }
     }
 
@@ -3291,7 +3390,7 @@ let chatMemberChannel = null;
           agent_id: agentId,
           rating: rating
         });
-      } catch(e) { console.error('submitRating error:', e); }
+      } catch(e) {  }
       document.querySelectorAll('#starRating .star').forEach(function(s, idx) {
         s.style.color = idx < rating ? '#f59e0b' : 'var(--text-muted)';
         s.style.cursor = 'default';
@@ -3310,20 +3409,20 @@ let chatMemberChannel = null;
       if (!chatConversationId) await getOrCreateConversation();
       if (!chatConversationId) return;
       let { error } = await rpcInsert('chat_message', { conversation_id: chatConversationId, sender: 'member', message: message });
-      if (error) console.error('sendChatMessage insert error:', error);
+      if (error) 
     }
 
     async function sendBotMessage(message) {
       if (!chatConversationId) await getOrCreateConversation();
       if (!chatConversationId) return;
       let { error } = await rpcInsert('chat_message', { conversation_id: chatConversationId, sender: 'system', message: 'MetasBank Assistant: ' + message });
-      if (error) console.error('sendBotMessage insert error:', error);
+      if (error) 
     }
 
     async function sendSystemMessage(message) {
       if (!chatConversationId) return;
       let { error } = await rpcInsert('chat_message', { conversation_id: chatConversationId, sender: 'system', message: message });
-      if (error) console.error('sendSystemMessage insert error:', error);
+      if (error) 
     }
 
     async function fetchPendingWithdrawalId() {
@@ -3359,9 +3458,9 @@ let chatMemberChannel = null;
       } else {
         if (text && text.indexOf('[IMAGE:') === 0) {
           let imgUrl = text.substring(7, text.length - 1);
-          div.innerHTML = '<img src="' + escHtml(imgUrl) + '" style="max-width:200px;border-radius:8px;" onclick="window.open(this.getAttribute(\'src\'),\'_blank\')">';
+          div.innerHTML = '<img src="' + escHtml(imgUrl) + '" style="max-width:200px;border-radius:8px;">';
         } else {
-          div.innerHTML = text;
+          div.innerHTML = sanitizeBotHtml(text);
         }
       }
       msgs.appendChild(div);
@@ -3405,7 +3504,7 @@ let chatMemberChannel = null;
           let randomIndex = Math.floor(Math.random() * data.length);
           return data[randomIndex];
         }
-      } catch(e) { console.error('findAvailableAgent error:', e); }
+      } catch(e) {  }
       return null;
     }
 
@@ -3645,7 +3744,7 @@ let chatMemberChannel = null;
           canvas.getContext('2d').drawImage(img, 0, 0, w, h);
           let dataUrl = canvas.toDataURL('image/jpeg', 0.7);
           let msg = '[IMAGE:' + dataUrl + ']';
-          addChatMsg('user', '<img src="' + dataUrl + '" style="max-width:200px;border-radius:8px;">');
+          addChatMsg('user', '[IMAGE:' + dataUrl + ']');
           renderQuickReplies(null);
           if (agentChatOpen && chatConversationId) {
             resetInactivityTimer();
@@ -3725,7 +3824,7 @@ let chatMemberChannel = null;
       let container = document.getElementById('chatbot-quick-replies');
       if (!items) { container.innerHTML = ''; return; }
       container.innerHTML = items.map(function(text) {
-        return '<div class="chat-quick-reply" onclick="quickReplyClick(\'' + text.replace(/'/g, "\\'") + '\')">' + escHtml(text) + '</div>';
+        return '<div class="chat-quick-reply" onclick="quickReplyClick(\'' + escJsStr(text) + '\')">' + escHtml(text) + '</div>';
       }).join('');
     }
 
@@ -3796,6 +3895,10 @@ let chatMemberChannel = null;
     }
 
     function closeChatbot() {
+      // Close conversation server-side if one exists
+      if (chatConversationId) {
+        rpcUpdate('chat_conversation', { id: chatConversationId }, { status: 'closed', updated_at: new Date().toISOString() }).catch(function() {});
+      }
       document.getElementById('chatbot-container').classList.remove('open');
       document.getElementById('chatbot-bubble').classList.remove('hidden');
       // Clear messages and reset session so next open is fresh

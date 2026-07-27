@@ -1,14 +1,16 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none';">
   <script src="geo-restrict.js"></script>
   <title>MetasBank — Admin Console</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="/supabase-config.js"></script>
+  <script src="/validation.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -152,6 +154,9 @@
       #adminSidebar .px-3 { padding-left: 8px !important; padding-right: 8px !important; }
       #adminSidebar .py-2 { padding-top: 4px !important; padding-bottom: 4px !important; }
       header .h-14 { height: 44px !important; }
+      :root { --header-h: 44px; }
+      .text-\[10px\].rounded, .text-\[10px\].rounded-md { min-height: 44px; display: inline-flex; align-items: center; padding: 10px 8px; }
+      button[style*="text-[10px]"] { min-height: 44px; }
     }
     @media (min-width: 641px) {
       #chatConvWrapper { max-height: 450px; border-right: 1px solid var(--border); border-bottom: none; }
@@ -227,6 +232,10 @@
           Members
           <span id="sidebarMemberCount" class="ml-auto text-[10px]" style="color: var(--text-muted);">0</span>
         </div>
+        <div class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);" data-action="scrollToSection" data-scroll="depositLinksSection" data-sidebar-tab="depositLinksSection" data-role="admin">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+          Deposit Links
+        </div>
         <div class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);" data-action="scrollToSection" data-scroll="depositConfigSection" data-sidebar-tab="depositConfigSection" data-role="admin">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
           Deposit Config
@@ -265,6 +274,10 @@
         <div class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);" data-action="scrollToSection" data-scroll="permissionsSection" data-role="admin">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
           Permissions
+        </div>
+        <div class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);" data-action="scrollToSection" data-scroll="kycSubmissionsSection" data-role="admin">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          KYC Submissions
         </div>
       </nav>
       <div class="p-3" style="border-top: 1px solid var(--border);">
@@ -643,6 +656,73 @@
               <tbody id="coinTableBody" class="divide-y" style="border-color: var(--border);">
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEPOSIT LINKS -->
+      <div id="depositLinksSection" data-role="admin" class="glass rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4 flex-wrap">
+          <div>
+            <h2 class="text-sm font-bold" style="color: var(--text);">Deposit Links</h2>
+            <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">Generate payment request links to send to prospective members before registration</p>
+          </div>
+        </div>
+
+        <!-- Create link form -->
+        <div class="rounded-xl p-4 mb-4" style="background: var(--hover); border: 1px solid var(--border);">
+          <h3 class="text-[12px] font-bold mb-3" style="color: var(--text);">Create Deposit Link</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+            <div>
+              <label class="text-[10px] font-semibold uppercase tracking-wide mb-1 block" style="color: var(--text-muted);">Amount ($)</label>
+              <input type="number" id="depLinkAmount" placeholder="500.00" min="1" step="0.01" class="w-full rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            </div>
+            <div>
+              <label class="text-[10px] font-semibold uppercase tracking-wide mb-1 block" style="color: var(--text-muted);">Currency</label>
+              <select id="depLinkCurrency" class="w-full rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); cursor: pointer;">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="NGN">NGN</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[10px] font-semibold uppercase tracking-wide mb-1 block" style="color: var(--text-muted);">Note (optional)</label>
+              <input type="text" id="depLinkNote" placeholder="e.g. First deposit bonus" class="w-full rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            </div>
+          </div>
+          <button data-action="createDepositLink" class="px-4 py-2 rounded-lg text-[12px] font-bold transition-all" style="color: #fff; background: #e84a24;">Generate Link</button>
+        </div>
+
+        <!-- Generated link display -->
+        <div id="depLinkGenerated" class="hidden rounded-xl p-4 mb-4" style="background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2);">
+          <p class="text-[11px] font-semibold mb-2" style="color: #10b981;">Link Generated Successfully</p>
+          <div class="flex items-center gap-2">
+            <input type="text" id="depLinkUrl" readonly class="flex-1 rounded-lg px-3 py-2 text-[12px] font-mono" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            <button data-action="copyDepositLink" class="px-3 py-2 rounded-lg text-[11px] font-semibold transition-all shrink-0" style="background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border);">Copy</button>
+          </div>
+          <p class="text-[10px] mt-2" style="color: var(--text-muted);">Ref: <span id="depLinkRef" class="font-mono">---</span></p>
+        </div>
+
+        <!-- Recent links table -->
+        <div class="rounded-xl p-4" style="background: var(--hover); border: 1px solid var(--border);">
+          <h3 class="text-[12px] font-bold mb-3" style="color: var(--text);">Recent Deposit Links</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm min-w-[700px]">
+              <thead>
+                <tr class="text-[10px] font-semibold uppercase tracking-wide" style="color: var(--text-muted); border-bottom: 1px solid var(--border);">
+                  <th class="text-left pb-2 font-medium">Ref</th>
+                  <th class="text-left pb-2 font-medium">Amount</th>
+                  <th class="text-left pb-2 font-medium">Status</th>
+                  <th class="text-left pb-2 font-medium">Payer</th>
+                  <th class="text-left pb-2 font-medium">Method</th>
+                  <th class="text-left pb-2 font-medium">Created</th>
+                  <th class="text-right pb-2 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody id="depLinkTableBody" class="divide-y" style="border-color: var(--border);"></tbody>
+            </table>
+            <p id="depLinkEmpty" class="text-center text-[12px] py-6" style="color: var(--text-muted);">No deposit links created yet</p>
           </div>
         </div>
       </div>
@@ -1083,6 +1163,40 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         </div>
       </div>
 
+      <!-- KYC SUBMISSIONS -->
+      <div id="kycSubmissionsSection" data-role="admin" class="glass rounded-xl p-5" style="display:none;">
+        <div class="flex items-center justify-between mb-4 flex-wrap">
+          <div>
+            <h2 class="text-sm font-bold" style="color: var(--text);">KYC Submissions</h2>
+            <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">View KYC verification requests submitted by members</p>
+          </div>
+          <button id="adminRefreshKyc" data-action="loadKycSubmissions" class="px-4 py-2 rounded-lg text-[11px] font-semibold transition-all" style="color: #ff6b42; background: rgba(255,92,53,0.1);">Refresh</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm min-w-[900px]">
+            <thead>
+              <tr class="text-[11px] font-semibold uppercase tracking-wide" style="color: var(--text-muted); border-bottom: 1px solid var(--border);">
+                <th class="text-left pb-3 font-medium">Date</th>
+                <th class="text-left pb-3 font-medium">Ref Code</th>
+                <th class="text-left pb-3 font-medium">Full Name</th>
+                <th class="text-left pb-3 font-medium">Email</th>
+                <th class="text-left pb-3 font-medium">Phone</th>
+                <th class="text-left pb-3 font-medium">Country</th>
+                <th class="text-left pb-3 font-medium">ID Type</th>
+                <th class="text-left pb-3 font-medium">Status</th>
+                <th class="text-left pb-3 font-medium">Agent</th>
+                <th class="text-right pb-3 font-medium">Action</th>
+              </tr>
+            </thead>
+            <tbody id="kycSubmissionsBody" class="divide-y" style="border-color: var(--border);"></tbody>
+          </table>
+          <div id="kycSubmissionsLoading" class="flex justify-center items-center py-6">
+            <div class="w-6 h-6 border-2 border-[#ff5c35] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <div id="kycSubmissionsEmpty" class="hidden text-center py-8 text-[12px]" style="color: var(--text-muted);">No KYC submissions yet.</div>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -1156,7 +1270,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
   </div>
 
   <!-- Sign Out -->
-  <div class="fixed bottom-4 right-4" style="z-index: 100;">
+  <div class="fixed bottom-4 right-4" style="z-index: 100; bottom: max(16px, env(safe-area-inset-bottom, 16px));">
     <a href="#" data-action="adminLogout" class="text-[11px] rounded-lg px-3 py-2 transition-all" style="color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border);">Sign Out</a>
   </div>
 
@@ -1185,9 +1299,6 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       let headerLabel = document.querySelector('header span:last-child');
       if (headerLabel) headerLabel.textContent = 'Admin';
     }
-// Safety: reveal page after 8s even if async init hangs
-    setTimeout(function() { document.body.style.visibility = 'visible'; }, 8000);
-
     document.addEventListener('DOMContentLoaded', async function() {
       initSupabase();
       // Clear stale auth sessions (e.g. from member login) so RLS SELECT policies match auth.uid() IS NULL
@@ -1224,33 +1335,35 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
     async function loadAllData() {
       try {
         await loadWallets();
-      } catch(e) { console.error('loadWallets error:', e) }
+      } catch(e) {  }
       try {
         await loadBanks();
-      } catch(e) { console.error('loadBanks error:', e) }
+      } catch(e) {  }
       try {
         await loadRoles();
-      } catch(e) { console.error('loadRoles error:', e) }
+      } catch(e) {  }
       try {
         await loadFeeConfig();
-      } catch(e) { console.error('loadFeeConfig error:', e) }
+      } catch(e) {  }
       try {
         await loadDepositConfigFromDB();
-      } catch(e) { console.error('loadDepositConfig error:', e) }
+      } catch(e) {  }
       try {
         await loadChatbotConfigFromDB();
-      } catch(e) { console.error('loadChatbotConfig error:', e) }
-      try { await renderDepositRequests(); } catch(e) { console.error('renderDepositRequests error:', e) }
-      try { await renderWithdrawalQueue(); } catch(e) { console.error('renderWithdrawalQueue error:', e) }
-      try { await renderMembers(); } catch(e) { console.error('renderMembers error:', e) }
-      try { await renderAccountRequests(); } catch(e) { console.error('renderAccountRequests error:', e) }
-      try { await renderTransactionLog(); } catch(e) { console.error('renderTransactionLog error:', e) }
-      try { await renderAuditLog(); } catch(e) { console.error('auditLog error:', e) }
-      try { await loadChatConversations(); } catch(e) { console.error('loadChatConversations error:', e) }
-      try { await loadCallbackRequests(); } catch(e) { console.error('loadCallbackRequests error:', e) }
-      try { await loadAgents(); } catch(e) { console.error('loadAgents error:', e) }
-      try { await initAgentStatus(); } catch(e) { console.error('initAgentStatus error:', e) }
-      try { await loadStats(); } catch(e) { console.error('loadStats error:', e) }
+      } catch(e) {  }
+      try { await renderDepositRequests(); } catch(e) {  }
+      try { await renderWithdrawalQueue(); } catch(e) {  }
+      try { await renderMembers(); } catch(e) {  }
+      try { await renderAccountRequests(); } catch(e) {  }
+      try { await renderTransactionLog(); } catch(e) {  }
+      try { await renderAuditLog(); } catch(e) {  }
+      try { await loadChatConversations(); } catch(e) {  }
+      try { await loadCallbackRequests(); } catch(e) {  }
+      try { await loadAgents(); } catch(e) {  }
+      try { await initAgentStatus(); } catch(e) {  }
+      try { await loadDepositLinks(); } catch(e) {  }
+      try { await loadKycSubmissions(); } catch(e) {  }
+      try { await loadStats(); } catch(e) {  }
     }
 
     // ===== REALTIME SUBSCRIPTIONS =====
@@ -1347,7 +1460,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
           p_target_id: targetId || null,
           p_details: details || null
         });
-      } catch(e) { console.error('audit log error:', e); }
+      } catch(e) {  }
     }
 
     async function loadStats() {
@@ -1378,7 +1491,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         // Update member section badge
         let msBadge = document.getElementById('memberCountBadge');
         if (msBadge) msBadge.textContent = memberCountVal.toLocaleString() + ' members';
-      } catch(e) { console.error('loadStats error:', e); }
+      } catch(e) {  }
     }
 
     function formatAmount(amount) { return '$' + parseFloat(amount).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
@@ -1392,7 +1505,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
           message: message,
           email: email || ''
         });
-      } catch(e) { console.error('notif error:', e); }
+      } catch(e) {  }
     }
 
     async function renderMembers() {
@@ -1403,7 +1516,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       if (loading) loading.classList.remove('hidden')
       let { data: members, error: membersErr } = await supabaseClient.rpc('rpc_admin_get_members')
       if (loading) loading.classList.add('hidden')
-      if (membersErr) { console.error('renderMembers error:', membersErr); return }
+      if (membersErr) {  return }
       if (!members || !members.length) {
         tbody.innerHTML = '<tr><td colspan="8" class="py-6 text-center text-[12px]" style="color: var(--text-muted);">No members yet</td></tr>'
         if (countEl) countEl.textContent = '0 members'
@@ -1481,6 +1594,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         if (sb.dataset.sidebarTab === id) { sb.style.background = 'rgba(255,92,53,0.1)'; sb.style.color = '#ff6b42'; }
         else { sb.style.background = 'transparent'; sb.style.color = 'var(--text-muted)'; }
       });
+      if (id === 'kycSubmissionsSection') loadKycSubmissions();
     }
     // ===== LIVE CHAT =====
     let selectedConvId = null;
@@ -1637,7 +1751,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         message: text,
         admin_name: adminName
       });
-      if (error) { console.error('sendChatReply insert error:', error); return; }
+        if (error) {  return; }
       await rpcUpdate('chat_conversation', { id: selectedConvId }, { updated_at: new Date().toISOString() });
       await renderChatMessages(selectedConvId);
     }
@@ -1776,7 +1890,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         document.getElementById('chatView').classList.add('hidden');
         document.getElementById('chatEmpty').classList.remove('hidden');
         await loadChatConversations();
-      } catch(e) { console.error('closeChatConversation error:', e); showAdminToast('Error closing chat'); }
+      } catch(e) {  showAdminToast('Error closing chat'); }
     }
 
     async function deleteChatConversation() {
@@ -1789,7 +1903,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         document.getElementById('chatView').classList.add('hidden');
         document.getElementById('chatEmpty').classList.remove('hidden');
         await loadChatConversations();
-      } catch(e) { console.error('deleteChatConversation error:', e); showAdminToast('Error deleting conversation'); }
+      } catch(e) {  showAdminToast('Error deleting conversation'); }
     }
 
     // Enter key to send
@@ -1850,7 +1964,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
           p_balance: balance
         });
         if (rpcErr) {
-          console.error('createMember RPC error:', rpcErr);
+          
           if (rpcErr.code === '23505') {
             document.getElementById('memberUsername').value = '';
             showToast('Username already exists. Please choose a different one.');
@@ -1872,7 +1986,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         showToast('Member ' + name + ' created');
         renderMembers();
         loadStats();
-      } catch(e) { console.error('createMember error:', e); showToast('Unexpected error: ' + e.message); }
+      } catch(e) {  showToast('Unexpected error'); }
     }
 
     async function creditBalance() {
@@ -1978,10 +2092,10 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         let safeAddress = escHtml(c.address || '');
         let safeQr = escHtml(c.qrcode || '');
         return '<tr class="transition-all text-[13px]">' +
-          '<td class="py-2.5"><input type="text" value="' + safeCoin + '" class="w-16 rounded px-2 py-1 text-[12px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);" onchange="updateCoinKey(' + i + ', this.value)"></td>' +
-          '<td class="py-2.5"><input type="text" value="' + safeLabel + '" class="w-36 rounded px-2 py-1 text-[12px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);" onchange="updateCoinLabel(' + i + ', this.value)"></td>' +
-          '<td class="py-2.5"><input type="text" value="' + safeAddress + '" class="w-48 rounded px-2 py-1 text-[11px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);" onchange="updateCoinAddress(' + i + ', this.value)"></td>' +
-          '<td class="py-2.5"><input type="text" value="' + safeQr + '" placeholder="Image URL" class="w-36 rounded px-2 py-1 text-[11px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);" onchange="updateCoinQRCode(' + i + ', this.value)"></td>' +
+          '<td class="py-2.5"><input type="text" value="' + safeCoin + '" class="w-16 rounded px-2 py-1 text-[12px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px !important;" onchange="updateCoinKey(' + i + ', this.value)"></td>' +
+          '<td class="py-2.5"><input type="text" value="' + safeLabel + '" class="w-36 rounded px-2 py-1 text-[12px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px !important;" onchange="updateCoinLabel(' + i + ', this.value)"></td>' +
+          '<td class="py-2.5"><input type="text" value="' + safeAddress + '" class="w-48 rounded px-2 py-1 text-[11px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px !important;" onchange="updateCoinAddress(' + i + ', this.value)"></td>' +
+          '<td class="py-2.5"><input type="text" value="' + safeQr + '" placeholder="Image URL" class="w-36 rounded px-2 py-1 text-[11px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px !important;" onchange="updateCoinQRCode(' + i + ', this.value)"></td>' +
           '<td class="py-2.5 text-right"><button onclick="removeCoin(' + i + ')" class="px-2 py-1 rounded text-[10px] font-semibold transition-all" style="color: #ff4757; background: rgba(255,71,87,0.08);">Remove</button></td>' +
         '</tr>';
       }).join('');
@@ -2057,6 +2171,119 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         p_account_type: achObj.account_type
       })
       showToast('Deposit config saved')
+    }
+
+    // ===== DEPOSIT LINKS =====
+    function generateRefCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = '';
+      const arr = new Uint8Array(6);
+      crypto.getRandomValues(arr);
+      for (let i = 0; i < 6; i++) code += chars[arr[i] % chars.length];
+      return code;
+    }
+
+    async function createDepositLink() {
+      const amount = parseFloat(document.getElementById('depLinkAmount').value);
+      const currency = document.getElementById('depLinkCurrency').value;
+      const note = document.getElementById('depLinkNote').value.trim();
+      if (isNaN(amount) || amount <= 0) { showToast('Enter a valid amount', 'error'); return; }
+      const ref = generateRefCode();
+      try {
+        const { error } = await supabaseClient.rpc('rpc_insert_pre_deposit', {
+          p_ref_code: ref,
+          p_amount: amount,
+          p_currency: currency,
+          p_note: note || null,
+          p_created_by: 'admin'
+        });
+        if (error) throw error;
+        const url = window.location.origin + '/deposit-landing?ref=' + ref + '&amount=' + amount + '&currency=' + currency + (note ? '&note=' + encodeURIComponent(note) : '');
+        document.getElementById('depLinkUrl').value = url;
+        document.getElementById('depLinkRef').textContent = ref;
+        document.getElementById('depLinkGenerated').classList.remove('hidden');
+        document.getElementById('depLinkAmount').value = '';
+        document.getElementById('depLinkNote').value = '';
+        showToast('Deposit link created');
+        loadDepositLinks();
+      } catch (e) {
+        
+        showToast('Failed to create link: ' + (e.message || e), 'error');
+      }
+    }
+
+    function copyDepositLink() {
+      const url = document.getElementById('depLinkUrl').value;
+      if (navigator.clipboard && url) {
+        navigator.clipboard.writeText(url).then(function() { showToast('Link copied'); });
+      }
+    }
+
+    async function loadDepositLinks() {
+      try {
+        const { data, error } = await supabaseClient.rpc('rpc_admin_get_pre_deposits');
+        if (error) throw error;
+        const tbody = document.getElementById('depLinkTableBody');
+        const empty = document.getElementById('depLinkEmpty');
+        if (!data || !data.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
+        empty.classList.add('hidden');
+        tbody.innerHTML = data.map(function(d) {
+          const statusColor = d.status === 'submitted' ? '#10b981' : d.status === 'pending' ? '#f59e0b' : 'var(--text-muted)';
+          const method = d.payer_method === 'bank' ? 'Bank' : d.payer_method === 'card' ? 'Card' : '---';
+          const payer = d.payer_name || '---';
+          const date = d.created_at ? new Date(d.created_at).toLocaleDateString() : '---';
+          return '<tr class="text-[12px]" style="border-bottom: 1px solid var(--border);">' +
+            '<td class="py-2.5 font-mono text-[11px]" style="color:var(--text-secondary);">' + escHtml(d.ref_code) + '</td>' +
+            '<td class="py-2.5 font-semibold">' + escHtml(d.currency) + ' ' + (parseFloat(d.amount)||0).toLocaleString('en-US',{minimumFractionDigits:2}) + '</td>' +
+            '<td class="py-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-semibold" style="background:' + statusColor + '22; color:' + statusColor + ';">' + escHtml(d.status) + '</span></td>' +
+            '<td class="py-2.5" style="color:var(--text-secondary);">' + escHtml(payer) + '</td>' +
+            '<td class="py-2.5" style="color:var(--text-secondary);">' + escHtml(method) + '</td>' +
+            '<td class="py-2.5" style="color:var(--text-muted);">' + escHtml(date) + '</td>' +
+            '<td class="py-2.5 text-right"><button class="text-[10px] px-2 py-1 rounded" style="color:var(--text-muted); border:1px solid var(--border); background:var(--bg-card);" onclick="copyDepositLinkById(\'' + escHtml(d.ref_code) + '\', ' + (parseFloat(d.amount)||0) + ', \'' + escHtml(d.currency) + '\')">Copy Link</button></td>' +
+            '</tr>';
+        }).join('');
+      } catch (e) {  }
+    }
+
+    function copyDepositLinkById(ref, amount, currency) {
+      const url = window.location.origin + '/deposit-landing?ref=' + ref + '&amount=' + amount + '&currency=' + currency;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(function() { showToast('Link copied'); });
+      }
+    }
+
+    async function loadKycSubmissions() {
+      const tbody = document.getElementById('kycSubmissionsBody');
+      const empty = document.getElementById('kycSubmissionsEmpty');
+      const loading = document.getElementById('kycSubmissionsLoading');
+      if (!tbody) return;
+      loading.style.display = 'flex';
+      empty.classList.add('hidden');
+      const { data, error } = await supabaseClient.rpc('rpc_admin_get_kyc_submissions');
+      loading.style.display = 'none';
+      if (error) { showToast('Error loading KYC submissions'); return; }
+      if (!data || !data.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
+      tbody.innerHTML = data.map(function(s) {
+        const date = s.created_at ? new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '---';
+        const statusColor = s.status === 'pending_review' ? '#f59e0b' : s.status === 'approved' ? '#10b981' : '#ef4444';
+        const statusLabel = s.status === 'pending_review' ? 'Pending Review' : s.status.charAt(0).toUpperCase() + s.status.slice(1);
+        return '<tr class="text-[12px]" style="border-bottom: 1px solid var(--border);">' +
+          '<td class="py-2.5" style="color:var(--text-secondary);">' + date + '</td>' +
+          '<td class="py-2.5"><code class="text-[11px] px-2 py-1 rounded font-bold" style="background:rgba(255,92,53,0.1);color:#ff6b42;">' + escHtml(s.ref_code) + '</code></td>' +
+          '<td class="py-2.5 font-semibold">' + escHtml(s.full_name || '---') + '</td>' +
+          '<td class="py-2.5" style="color:var(--text-secondary);">' + escHtml(s.email || '---') + '</td>' +
+          '<td class="py-2.5" style="color:var(--text-secondary);">' + escHtml(s.phone || '---') + '</td>' +
+          '<td class="py-2.5" style="color:var(--text-secondary);">' + escHtml(s.country || '---') + '</td>' +
+          '<td class="py-2.5" style="color:var(--text-secondary);">' + escHtml(s.id_type || '---') + '</td>' +
+          '<td class="py-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-semibold" style="background:' + statusColor + '22; color:' + statusColor + ';">' + statusLabel + '</span></td>' +
+          '<td class="py-2.5" style="color:var(--text-muted);">' + escHtml(s.agent_name || '---') + '</td>' +
+          '<td class="py-2.5 text-right"><button class="text-[10px] px-2 py-1 rounded" style="color:var(--text-muted); border:1px solid var(--border); background:var(--bg-card);" onclick="viewKycSubmission(\'' + escHtml(s.id) + '\')">View</button></td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    function viewKycSubmission(id) {
+      showToast('KYC detail view coming soon');
     }
 
     async function loadFeeConfig() {
@@ -2163,8 +2390,8 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         let safeKw = escHtml(r.keywords || '');
         let safeResp = escHtml(r.response || '');
         return '<tr class="transition-all text-[13px]">' +
-          '<td class="py-2.5"><input type="text" value="' + safeKw + '" class="w-full rounded px-2 py-1 text-[11px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);" onchange="updateChatbotRule(' + i + ', this.value, null)"></td>' +
-          '<td class="py-2.5"><textarea rows="2" class="w-full rounded px-2 py-1 text-[11px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);" onchange="updateChatbotRule(' + i + ', null, this.value)">' + safeResp + '</textarea></td>' +
+          '<td class="py-2.5"><input type="text" value="' + safeKw + '" class="w-full rounded px-2 py-1 text-[11px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px !important;" onchange="updateChatbotRule(' + i + ', this.value, null)"></td>' +
+          '<td class="py-2.5"><textarea rows="2" class="w-full rounded px-2 py-1 text-[11px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px !important;" onchange="updateChatbotRule(' + i + ', null, this.value)">' + safeResp + '</textarea></td>' +
           '<td class="py-2.5 text-right"><button onclick="removeChatbotRule(' + i + ')" class="px-2 py-1 rounded text-[10px] font-semibold transition-all" style="color: #ff4757; background: rgba(255,71,87,0.08);">Remove</button></td>' +
         '</tr>';
       }).join('');
@@ -2231,8 +2458,8 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       body.innerHTML = fields.map(function(f, i) {
         let safeVal = escHtml(f.value || '')
         let input = f.type === 'textarea'
-          ? '<textarea id="modalField_' + i + '" rows="3" class="w-full rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-family:inherit;resize:vertical;">' + safeVal + '</textarea>'
-          : '<input type="text" id="modalField_' + i + '" value="' + safeVal + '" class="w-full rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background:var(--input-bg);border:1px solid var(--border);color:var(--text);">';
+          ? '<textarea id="modalField_' + i + '" rows="3" class="w-full rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-family:inherit;resize:vertical;font-size:16px !important;">' + safeVal + '</textarea>'
+          : '<input type="text" id="modalField_' + i + '" value="' + safeVal + '" class="w-full rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:16px !important;">';
         let required = f.required ? ' <span style="color:#ff4757;">*</span>' : '';
         return '<div><label class="text-[11px] font-semibold mb-1 block" style="color:var(--text-muted);">' + f.label + required + '</label>' + input + '</div>';
       }).join('');
@@ -2702,7 +2929,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
           p_member_id: w.member_id, p_amount: -feeAmount, p_expected_balance: updatedMember.balance
         });
         if (refundErr || !refundResult || !refundResult.success) {
-          console.error('Fee refund failed after deduction:', refundErr);
+          
           showToast('Fee refund failed — contact support.');
         }
       }
@@ -3124,11 +3351,11 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       try {
         document.getElementById('callbackLoading').style.display = 'flex';
         let { data, error } = await supabaseClient.rpc('rpc_admin_get_sms_callbacks');
-        if (error) { console.error('loadCallbackRequests error:', error); return; }
+        if (error) {  return; }
         allCallbacks = data || [];
         renderCallbackRequests(callbackFilter);
         updateCallbackBadge();
-      } catch(e) { console.error('loadCallbackRequests error:', e); }
+      } catch(e) {  }
       finally { document.getElementById('callbackLoading').style.display = 'none'; }
     }
 
@@ -3198,7 +3425,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
           '<td class="py-3"><span class="text-[11px] font-semibold" style="color: ' + statusColor + ';">' + escHtml(c.status ? c.status.charAt(0).toUpperCase() + c.status.slice(1) : '—') + '</span></td>' +
           '<td class="py-3">' +
             '<div class="flex items-center gap-1">' +
-              '<input type="text" id="note_' + c.id + '" value="' + (c.admin_note ? escHtml(c.admin_note).replace(/"/g,'&quot;') : '') + '" placeholder="Add note" class="w-24 rounded px-1.5 py-1 text-[11px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">' +
+              '<input type="text" id="note_' + c.id + '" value="' + (c.admin_note ? escHtml(c.admin_note).replace(/"/g,'&quot;') : '') + '" placeholder="Add note" class="w-24 rounded px-1.5 py-1 text-[11px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px !important;">' +
               '<button onclick="saveCallbackNote(\'' + c.id + '\')" class="px-1.5 py-1 rounded text-[10px] font-semibold transition-all" style="color: var(--text-muted); background: var(--hover);">Save</button>' +
             '</div>' +
           '</td>' +
@@ -3275,6 +3502,9 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
             break;
           case 'loadCallbackRequests':
             loadCallbackRequests();
+            break;
+          case 'loadKycSubmissions':
+            loadKycSubmissions();
             break;
           case 'clearAllCallbacks':
             clearAllCallbacks();
@@ -3368,6 +3598,12 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
             break;
           case 'adminLogout':
             adminLogout();
+            break;
+          case 'createDepositLink':
+            createDepositLink();
+            break;
+          case 'copyDepositLink':
+            copyDepositLink();
             break;
         }
       });

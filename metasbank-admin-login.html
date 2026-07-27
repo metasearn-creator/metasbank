@@ -1,8 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none';">
   <script src="geo-restrict.js"></script>
   <title>MetasBank — Admin Login</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -86,7 +87,7 @@
       <span class="w-px h-3" style="background: var(--border);"></span>
       <span style="color: var(--text-muted);">Session: <span class="text-[#10b981] font-medium">Encrypted</span></span>
     </div>
-    <div style="color: var(--text-muted); font-size: 10px;">Restricted Access | <a href="#" style="color: var(--text-muted); text-decoration: underline;">IT Support</a></div>
+    <div style="color: var(--text-muted); font-size: 10px;">Restricted Access |       <a href="#" class="py-2 px-1 inline-flex items-center" style="color: var(--text-muted); text-decoration: underline; min-height: 44px;">IT Support</a></div>
   </header>
 
   <!-- Main content -->
@@ -109,13 +110,13 @@
             <div id="adminLoginError" class="hidden mb-3 rounded-md px-3 py-1.5 text-[11px] font-medium" style="background: rgba(255,71,87,0.1); color: #ff4757; border: 1px solid rgba(255,71,87,0.15);"></div>
             <div class="mb-4">
               <label for="adminEmail" class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Agent Username</label>
-              <input id="adminEmail" type="text" placeholder="Enter your agent email" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+              <input id="adminEmail" type="text" placeholder="Enter your agent email" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px !important;">
             </div>
             <div class="mb-5">
               <label for="adminPassword" class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Password</label>
-              <input id="adminPassword" type="password" placeholder="Enter your password" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+              <input id="adminPassword" type="password" placeholder="Enter your password" class="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px !important;">
             </div>
-            <button id="adminLoginBtn" type="submit" class="w-full py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">Login</button>
+            <button id="adminLoginBtn" type="submit" class="w-full py-3.5 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow); min-height: 44px;">Login</button>
           </form>
           <div class="mt-4 pt-4" style="border-top: 1px solid var(--border);">
             <div class="flex items-center justify-center gap-4 flex-wrap">
@@ -139,11 +140,11 @@
     <!-- Footer (outside flex-1 centering so it sticks to bottom) -->
     <footer class="footer-area px-4 py-4 text-center">
       <div class="flex items-center justify-center gap-2 sm:gap-4 text-[10px] flex-wrap" style="color: var(--text-muted);">
-        <a href="#" class="hover:text-[#ff6b42] transition-all" style="cursor: default;">Security Policy</a>
+        <a href="#" class="hover:text-[#ff6b42] transition-all py-2 px-1 inline-flex items-center" style="cursor: default; min-height: 44px;">Security Policy</a>
         <span>|</span>
-        <a href="#" class="hover:text-[#ff6b42] transition-all" style="cursor: default;">Access Logs</a>
+        <a href="#" class="hover:text-[#ff6b42] transition-all py-2 px-1 inline-flex items-center" style="cursor: default; min-height: 44px;">Access Logs</a>
         <span>|</span>
-        <a href="mailto:it@metasbank.com" class="hover:text-[#ff6b42] transition-all">IT Support</a>
+        <a href="mailto:it@metasbank.com" class="hover:text-[#ff6b42] transition-all py-2 px-1 inline-flex items-center" style="min-height: 44px;">IT Support</a>
       </div>
       <p class="text-[10px] mt-2" style="color: var(--text-muted);">
         &copy; 2026 MetasBank. All rights reserved. | v2.4.1
@@ -184,7 +185,7 @@
           window.location.href = '/agent/'
         }
       }).catch(function(err) {
-        console.error('Admin login failed:', err);
+        
         showAdminError('Invalid credentials');
         btn.textContent = 'Login'; btn.disabled = false; btn.style.opacity = '1'
       })
