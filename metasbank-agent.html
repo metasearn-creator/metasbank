@@ -1230,7 +1230,9 @@
           '<td class="py-3"><span class="text-[11px] font-semibold px-2 py-1 rounded-full" style="background:' + statusColor + '22;color:' + statusColor + ';">' + statusLabel + '</span></td>' +
           '<td class="py-3 text-[11px]" style="color:var(--text-muted);">' + createdStr + '</td>' +
           '<td class="py-3 text-[11px]" style="color:var(--text-muted);">' + expiryStr + '</td>' +
-          '<td class="py-3"><button class="px-3 py-1.5 rounded-lg text-[11px] font-semibold gradient-orange text-white copy-kyc-btn" data-url="' + escHtml(kycUrl) + '">Copy Link</button></td>';
+          '<td class="py-3"><div class="flex gap-1.5"><button class="px-3 py-1.5 rounded-lg text-[11px] font-semibold gradient-orange text-white copy-kyc-btn" data-url="' + escHtml(kycUrl) + '">Copy Link</button>' +
+          (link.status !== 'used' ? '<button class="px-3 py-1.5 rounded-lg text-[11px] font-semibold delete-kyc-btn" style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);" data-id="' + link.id + '">Delete</button>' : '') +
+          '</div></td>';
         tbody.appendChild(tr);
       });
       document.querySelectorAll('.copy-kyc-btn').forEach(function(btn) {
@@ -1239,6 +1241,20 @@
           navigator.clipboard.writeText(url).then(function() { showToast('KYC link copied!'); }).catch(function() { showToast('Failed to copy'); });
         });
       });
+      document.querySelectorAll('.delete-kyc-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var linkId = this.getAttribute('data-id');
+          if (!confirm('Delete this KYC link? This cannot be undone.')) return;
+          deleteKycLink(linkId);
+        });
+      });
+    }
+
+    async function deleteKycLink(linkId) {
+      var { error } = await supabaseClient.rpc('rpc_delete_kyc_link', { p_link_id: linkId });
+      if (error) { showToast('Error deleting link: ' + error.message); return; }
+      showToast('KYC link deleted');
+      loadAgentKycLinks();
     }
 
     async function generateKycLink() {
