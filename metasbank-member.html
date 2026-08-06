@@ -3473,7 +3473,7 @@ let chatMemberChannel = null;
     let chatEndedForRating = null; // stores conv info when chat ends to show rating
     let chatTimerPaused = false;
     let agentNoReplyTimer = null;
-    let chatbotState = 'idle'; // idle, awaiting_name, awaiting_tag, form_tag, connecting, form_name, form_message
+    let chatbotState = 'idle'; // idle, awaiting_account, connecting, form_account, form_message
     let chatbotUserName = '';
     let chatbotMemberTag = '';
     let chatbotOfflineMode = false;
@@ -3763,8 +3763,8 @@ let chatMemberChannel = null;
         hideTyping();
         addChatMsg('bot', chatbotGreetings[Math.floor(Math.random() * chatbotGreetings.length)]);
         setTimeout(function() {
-          addChatMsg('bot', 'Before I assist you, could you please share your <b>name</b>?');
-          chatbotState = 'awaiting_name';
+          addChatMsg('bot', 'Before I assist you, could you please share your <b>Account No or Tag</b>?');
+          chatbotState = 'awaiting_account';
         }, 600);
       });
       renderQuickReplies(null);
@@ -3840,69 +3840,29 @@ let chatMemberChannel = null;
       if (typingTimeout) { clearTimeout(typingTimeout); typingTimeout = null; }
       addChatMsg('bot', 'There is no available agent right now, but our team will <b>reach out to you shortly</b>. Please leave your details below.');
       chatbotOfflineMode = true;
-      if (chatbotUserName) {
-        askMemberTag();
-      } else {
-        chatbotState = 'form_name';
-        addChatMsg('bot', 'What is your <b>name</b>?');
-        renderQuickReplies(null);
-      }
-    }
-
-    function handleTagAnswer(text) {
-      var val = text.trim();
-      if (chatbotState === 'awaiting_tag') {
-        var tagAnswer = val.toLowerCase();
-        if (tagAnswer === 'yes' || tagAnswer === 'y') {
-          chatbotState = 'form_tag';
-          addChatMsg('bot', 'Please enter your member <b>ID or Tag</b>.');
-          renderQuickReplies(null);
-        } else if (tagAnswer === 'no' || tagAnswer === 'n') {
-          afterTagCollected();
-        } else {
-          addChatMsg('bot', 'Please answer <b>Yes</b> or <b>No</b>.');
-          renderQuickReplies(['Yes', 'No']);
-        }
-        return;
-      }
-      if (chatbotState === 'form_tag') {
-        if (!val) {
-          addChatMsg('bot', 'Please enter your member ID or Tag, or type <b>No</b>.');
-          return;
-        }
-        if (val.toLowerCase() === 'no') {
-          afterTagCollected();
-          return;
-        }
-        chatbotMemberTag = val;
-        recordMemberTag(val);
-        addChatMsg('bot', 'Thank you, <b>' + escHtml(chatbotUserName) + '</b>.');
-        afterTagCollected();
-        return;
-      }
-    }
-
-    function askMemberTag() {
-      chatbotState = 'awaiting_tag';
-      addChatMsg('bot', 'Do you have a member <b>ID or Tag</b>?');
-      renderQuickReplies(['Yes', 'No']);
-    }
-
-    function afterTagCollected() {
-      if (chatbotOfflineMode) {
+      if (chatbotMemberTag) {
         chatbotState = 'form_message';
-        addChatMsg('bot', 'Finally, what do you <b>need help with</b>?');
+        addChatMsg('bot', 'What do you <b>need help with</b>?');
         renderQuickReplies(null);
-        return;
+      } else {
+        chatbotState = 'form_account';
+        addChatMsg('bot', 'Please share your <b>Account No or Tag</b>.');
+        renderQuickReplies(null);
       }
+    }
+
+    function greetAfterAccount() {
       chatbotState = 'idle';
+      var u = getMemberUser();
+      var display = (u && (u.name || u.username)) || chatbotMemberTag;
       showTyping();
       getOrCreateConversation().then(function(convId) {
+        recordMemberTag(chatbotMemberTag);
         hideTyping();
         if (!convId) {
-          addChatMsg('bot', 'Nice to meet you, ' + escHtml(chatbotUserName) + '. How can I help you today?');
+          addChatMsg('bot', 'Nice to meet you, ' + escHtml(display) + '. How can I help you today?');
         } else {
-          addChatMsg('bot', 'Nice to meet you, <b>' + escHtml(chatbotUserName) + '</b>. How can I help you today?');
+          addChatMsg('bot', 'Nice to meet you, <b>' + escHtml(display) + '</b>. How can I help you today?');
         }
         renderQuickReplies(chatbotQuickReplies);
       });
@@ -3910,7 +3870,7 @@ let chatMemberChannel = null;
 
     function recordMemberTag(tag) {
       if (!tag || !chatConversationId) return;
-      sendSystemMessage('Member tag: ' + tag);
+      sendSystemMessage('Account No/Tag: ' + tag);
     }
 
     async function escalateToAgent(input) {
@@ -4165,55 +4125,34 @@ let chatMemberChannel = null;
         return;
       }
 
-      // Name collection state
-      if (chatbotState === 'awaiting_name') {
-        var lowerName = text.toLowerCase();
-        var wantsAgent = /(^|\b)(agent|human|representative|escalate|support)(\b|$)/.test(lowerName) || /talk to|speak to|real person|transfer/.test(lowerName);
+      // Account No/Tag collection state (greeting)
+      if (chatbotState === 'awaiting_account') {
+        var lowerAccount = text.toLowerCase();
+        var wantsAgent = /(^|\b)(agent|human|representative|escalate|support)(\b|$)/.test(lowerAccount) || /talk to|speak to|real person|transfer/.test(lowerAccount);
         if (wantsAgent) {
           chatbotState = 'idle';
           escalateToAgent(text);
           return;
         }
-        chatbotUserName = text.trim();
-        askMemberTag();
-        return;
-      }
-
-      // Member ID / Tag collection states
-      if (chatbotState === 'awaiting_tag' || chatbotState === 'form_tag') {
-        handleTagAnswer(text);
+        if (!text.trim()) {
+          addChatMsg('bot', 'Please enter your Account No or Tag.');
+          return;
+        }
+        chatbotMemberTag = text.trim();
+        greetAfterAccount();
         return;
       }
 
       // Form states
-      if (chatbotState === 'form_name') {
+      if (chatbotState === 'form_account') {
         if (!text.trim()) {
-          addChatMsg('bot', 'Please enter your name.');
+          addChatMsg('bot', 'Please enter your Account No or Tag.');
           return;
         }
-        chatbotUserName = text.trim();
-        askMemberTag();
-        return;
-      }
-      if (chatbotState === 'form_email') {
-        if (!text.includes('@') || text.length < 5) {
-          addChatMsg('bot', 'Please enter a valid email address.');
-          return;
-        }
-        chatbotFormEmail = text;
-        chatbotState = 'form_phone';
-        addChatMsg('bot', 'Great. Now please share your <b>phone number</b>.');
-        renderQuickReplies(null);
-        return;
-      }
-      if (chatbotState === 'form_phone') {
-        if (text.replace(/\D/g, '').length < 5) {
-          addChatMsg('bot', 'Please enter a valid phone number (at least 5 digits).');
-          return;
-        }
-        chatbotFormPhone = text;
+        chatbotMemberTag = text.trim();
+        recordMemberTag(chatbotMemberTag);
         chatbotState = 'form_message';
-        addChatMsg('bot', 'Finally, what do you <b>need help with</b>? (optional)');
+        addChatMsg('bot', 'Finally, what do you <b>need help with</b>?');
         renderQuickReplies(null);
         return;
       }
@@ -4249,10 +4188,11 @@ let chatMemberChannel = null;
       showTyping();
       let user = getMemberUser();
       try {
-        let tagNote = chatbotMemberTag ? 'Member tag: ' + chatbotMemberTag + '. ' : '';
+        let tagNote = chatbotMemberTag ? 'Account No/Tag: ' + chatbotMemberTag + '. ' : '';
         let msgBody = (chatbotFormMessage || 'Missed chat - no agents available. Member requested agent assistance.');
+        let fullName = (user && (user.name || user.username)) || chatbotMemberTag;
         let { error } = await rpcInsert('sms_callback', {
-          full_name: chatbotUserName,
+          full_name: fullName,
           email: user && user.email ? user.email : chatbotFormEmail,
           phone: chatbotFormPhone,
           message: tagNote + msgBody,
@@ -4316,11 +4256,6 @@ let chatMemberChannel = null;
 
     function quickReplyClick(text) {
       addChatMsg('user', text);
-
-      if (chatbotState === 'awaiting_tag' || chatbotState === 'form_tag') {
-        handleTagAnswer(text);
-        return;
-      }
 
       if (text === 'Talk to agent' || text === 'Speak to agent') {
         escalateToAgent(text);
