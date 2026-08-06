@@ -3473,8 +3473,10 @@ let chatMemberChannel = null;
     let chatEndedForRating = null; // stores conv info when chat ends to show rating
     let chatTimerPaused = false;
     let agentNoReplyTimer = null;
-    let chatbotState = 'idle'; // idle, awaiting_name, connecting, form_email, form_phone, form_message
+    let chatbotState = 'idle'; // idle, awaiting_name, awaiting_tag, form_tag, connecting, form_name, form_message
     let chatbotUserName = '';
+    let chatbotMemberTag = '';
+    let chatbotOfflineMode = false;
     let chatbotFormEmail = '';
     let chatbotFormPhone = '';
     let chatbotFormMessage = '';
@@ -3532,9 +3534,11 @@ let chatMemberChannel = null;
               let closedConvId = chatConversationId;
               agentChatOpen = false;
               chatConversationId = null;
-              chatbotState = 'idle';
-              chatbotUserName = '';
-              chatbotFormEmail = '';
+      chatbotState = 'idle';
+      chatbotUserName = '';
+      chatbotMemberTag = '';
+      chatbotOfflineMode = false;
+      chatbotFormEmail = '';
               chatbotFormPhone = '';
               chatbotFormMessage = '';
               clearAgentNoReplyTimer();
@@ -3747,6 +3751,8 @@ let chatMemberChannel = null;
     }
 
     function bootstrapChat() {
+      chatbotOfflineMode = false;
+      chatbotMemberTag = '';
       loadChatHistory().then(async function() {
         showTyping();
         var minLoading = new Promise(function(res) { setTimeout(res, 1000); });
@@ -3757,7 +3763,7 @@ let chatMemberChannel = null;
         hideTyping();
         addChatMsg('bot', chatbotGreetings[Math.floor(Math.random() * chatbotGreetings.length)]);
         setTimeout(function() {
-          addChatMsg('bot', 'Before I assist you, could you please share your <b>full name</b>?');
+          addChatMsg('bot', 'Before I assist you, could you please share your <b>name</b>?');
           chatbotState = 'awaiting_name';
         }, 600);
       });
@@ -3833,14 +3839,78 @@ let chatMemberChannel = null;
       clearAgentNoReplyTimer();
       if (typingTimeout) { clearTimeout(typingTimeout); typingTimeout = null; }
       addChatMsg('bot', 'There is no available agent right now, but our team will <b>reach out to you shortly</b>. Please leave your details below.');
+      chatbotOfflineMode = true;
       if (chatbotUserName) {
-        chatbotState = 'form_email';
-        addChatMsg('bot', 'Your email address please:');
+        askMemberTag();
       } else {
         chatbotState = 'form_name';
-        addChatMsg('bot', 'What is your <b>full name</b>?');
+        addChatMsg('bot', 'What is your <b>name</b>?');
+        renderQuickReplies(null);
       }
-      renderQuickReplies(null);
+    }
+
+    function handleTagAnswer(text) {
+      var val = text.trim();
+      if (chatbotState === 'awaiting_tag') {
+        var tagAnswer = val.toLowerCase();
+        if (tagAnswer === 'yes' || tagAnswer === 'y') {
+          chatbotState = 'form_tag';
+          addChatMsg('bot', 'Please enter your member <b>ID or Tag</b>.');
+          renderQuickReplies(null);
+        } else if (tagAnswer === 'no' || tagAnswer === 'n') {
+          afterTagCollected();
+        } else {
+          addChatMsg('bot', 'Please answer <b>Yes</b> or <b>No</b>.');
+          renderQuickReplies(['Yes', 'No']);
+        }
+        return;
+      }
+      if (chatbotState === 'form_tag') {
+        if (!val) {
+          addChatMsg('bot', 'Please enter your member ID or Tag, or type <b>No</b>.');
+          return;
+        }
+        if (val.toLowerCase() === 'no') {
+          afterTagCollected();
+          return;
+        }
+        chatbotMemberTag = val;
+        recordMemberTag(val);
+        addChatMsg('bot', 'Thank you, <b>' + escHtml(chatbotUserName) + '</b>.');
+        afterTagCollected();
+        return;
+      }
+    }
+
+    function askMemberTag() {
+      chatbotState = 'awaiting_tag';
+      addChatMsg('bot', 'Do you have a member <b>ID or Tag</b>?');
+      renderQuickReplies(['Yes', 'No']);
+    }
+
+    function afterTagCollected() {
+      if (chatbotOfflineMode) {
+        chatbotState = 'form_message';
+        addChatMsg('bot', 'Finally, what do you <b>need help with</b>?');
+        renderQuickReplies(null);
+        return;
+      }
+      chatbotState = 'idle';
+      showTyping();
+      getOrCreateConversation().then(function(convId) {
+        hideTyping();
+        if (!convId) {
+          addChatMsg('bot', 'Nice to meet you, ' + escHtml(chatbotUserName) + '. How can I help you today?');
+        } else {
+          addChatMsg('bot', 'Nice to meet you, <b>' + escHtml(chatbotUserName) + '</b>. How can I help you today?');
+        }
+        renderQuickReplies(chatbotQuickReplies);
+      });
+    }
+
+    function recordMemberTag(tag) {
+      if (!tag || !chatConversationId) return;
+      sendSystemMessage('Member tag: ' + tag);
     }
 
     async function escalateToAgent(input) {
@@ -4104,31 +4174,25 @@ let chatMemberChannel = null;
           escalateToAgent(text);
           return;
         }
-        chatbotUserName = text;
-        chatbotState = 'idle';
-        showTyping();
-        getOrCreateConversation().then(function(convId) {
-          hideTyping();
-          if (!convId) {
-            addChatMsg('bot', 'Nice to meet you, ' + escHtml(text) + '. How can I help you today?');
-          } else {
-            addChatMsg('bot', 'Nice to meet you, <b>' + escHtml(text) + '</b>. How can I help you today?');
-          }
-          renderQuickReplies(chatbotQuickReplies);
-        });
+        chatbotUserName = text.trim();
+        askMemberTag();
+        return;
+      }
+
+      // Member ID / Tag collection states
+      if (chatbotState === 'awaiting_tag' || chatbotState === 'form_tag') {
+        handleTagAnswer(text);
         return;
       }
 
       // Form states
       if (chatbotState === 'form_name') {
         if (!text.trim()) {
-          addChatMsg('bot', 'Please enter your full name.');
+          addChatMsg('bot', 'Please enter your name.');
           return;
         }
         chatbotUserName = text.trim();
-        chatbotState = 'form_email';
-        addChatMsg('bot', 'Thanks, <b>' + escHtml(chatbotUserName) + '</b>. Your email address please:');
-        renderQuickReplies(null);
+        askMemberTag();
         return;
       }
       if (chatbotState === 'form_email') {
@@ -4185,11 +4249,13 @@ let chatMemberChannel = null;
       showTyping();
       let user = getMemberUser();
       try {
+        let tagNote = chatbotMemberTag ? 'Member tag: ' + chatbotMemberTag + '. ' : '';
+        let msgBody = (chatbotFormMessage || 'Missed chat - no agents available. Member requested agent assistance.');
         let { error } = await rpcInsert('sms_callback', {
           full_name: chatbotUserName,
-          email: chatbotFormEmail,
+          email: user && user.email ? user.email : chatbotFormEmail,
           phone: chatbotFormPhone,
-          message: chatbotFormMessage || 'Missed chat - no agents available. Member requested agent assistance.',
+          message: tagNote + msgBody,
           member_id: user ? user.id : null
         });
         hideTyping();
@@ -4197,11 +4263,13 @@ let chatMemberChannel = null;
           addChatMsg('bot', 'Sorry, there was an error. Please try again later.');
           renderQuickReplies(chatbotQuickReplies);
         } else {
-          addChatMsg('bot', 'Thank you! Our team will contact you shortly at <b>' + escHtml(chatbotFormEmail) + '</b>.');
+          addChatMsg('bot', 'Thank you! Our team will contact you shortly.');
           sendBotMessage('Callback form submitted successfully.');
           setTimeout(function() { closeChatbot(); }, 1500);
         }
         chatbotUserName = '';
+        chatbotMemberTag = '';
+        chatbotOfflineMode = false;
         chatbotFormEmail = '';
         chatbotFormPhone = '';
         chatbotFormMessage = '';
@@ -4248,6 +4316,11 @@ let chatMemberChannel = null;
 
     function quickReplyClick(text) {
       addChatMsg('user', text);
+
+      if (chatbotState === 'awaiting_tag' || chatbotState === 'form_tag') {
+        handleTagAnswer(text);
+        return;
+      }
 
       if (text === 'Talk to agent' || text === 'Speak to agent') {
         escalateToAgent(text);
