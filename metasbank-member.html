@@ -3753,6 +3753,7 @@ let chatMemberChannel = null;
     function bootstrapChat() {
       chatbotOfflineMode = false;
       chatbotMemberTag = '';
+      chatbotState = 'connecting';
       loadChatHistory().then(async function() {
         showTyping();
         var minLoading = new Promise(function(res) { setTimeout(res, 1000); });
@@ -3763,6 +3764,7 @@ let chatMemberChannel = null;
         hideTyping();
         addChatMsg('bot', chatbotGreetings[Math.floor(Math.random() * chatbotGreetings.length)]);
         setTimeout(function() {
+          if (chatbotMemberTag) { chatbotState = 'idle'; return; }
           addChatMsg('bot', 'Before I assist you, could you please share your <b>Account No or Tag</b>?');
           chatbotState = 'awaiting_account';
         }, 600);
