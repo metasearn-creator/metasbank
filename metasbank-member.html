@@ -3747,7 +3747,14 @@ let chatMemberChannel = null;
     }
 
     function bootstrapChat() {
-      loadChatHistory().then(function() {
+      loadChatHistory().then(async function() {
+        showTyping();
+        var minLoading = new Promise(function(res) { setTimeout(res, 1000); });
+        try {
+          await supabaseClient.rpc('rpc_get_agent_availability');
+        } catch (e) {  }
+        await minLoading;
+        hideTyping();
         addChatMsg('bot', chatbotGreetings[Math.floor(Math.random() * chatbotGreetings.length)]);
         setTimeout(function() {
           addChatMsg('bot', 'Before I assist you, could you please share your <b>full name</b>?');
@@ -3838,9 +3845,11 @@ let chatMemberChannel = null;
 
     async function escalateToAgent(input) {
       showTyping();
+      var minLoading = new Promise(function(res) { setTimeout(res, 1200); });
       try {
         let { data } = await supabaseClient.rpc('rpc_get_agent_availability');
         let count = (data && data[0]) ? Number(data[0].available_count) : 0;
+        await minLoading;
         if (count > 0) {
           getOrCreateConversation().then(function(convId) {
             if (convId) {
@@ -3857,6 +3866,7 @@ let chatMemberChannel = null;
           startOfflineForm();
         }
       } catch(e) {
+        await minLoading;
         hideTyping();
         addChatMsg('bot', 'Sorry, something went wrong. Please try again later.');
       }
