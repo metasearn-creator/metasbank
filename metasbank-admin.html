@@ -1,18 +1,19 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none';">
-  <script src="geo-restrict.js"></script>
+  <script src="/geo-restrict.js"></script>
   <title>MetasBank — Admin Console</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/vendor/tailwind.js"></script>
+  <script src="/vendor/supabase.min.js"></script>
   <script src="/supabase-config.js"></script>
   <script src="/validation.js"></script>
   <script>
     tailwind.config = {
+      corePlugins: { preflight: false },
       theme: {
         extend: {
           colors: {
@@ -62,7 +63,7 @@
     }
 
     html { height: 100%; width: 100%; overflow-x: hidden; }
-    body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); color: var(--text); transition: background 0.4s, color 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden; }
+    body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); color: var(--text); transition: background 0.4s, color 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden;  margin: 0;}
     input, select, textarea { font-size: 16px; touch-action: manipulation; }
     button, [data-action], a { touch-action: manipulation; }
     .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
@@ -79,6 +80,8 @@
     .badge-amber { background: rgba(212, 160, 23, 0.2); color: #d4a017; }
     .badge-teal { background: rgba(16, 185, 129, 0.2); color: #10b981; }
     .badge-red { background: rgba(255, 71, 87, 0.2); color: #ff3347; }
+    button { border: none; background: none; text-decoration: none; }
+    a { text-decoration: none; }
     button:active { transform: scale(0.96); transition: transform 0.08s; }
     .gradient-orange:active { transform: scale(0.96); }
     .badge:active { transform: scale(0.96); }
@@ -191,6 +194,7 @@
       </div>
       <span id="adminUserName" class="hidden sm:block text-[11px]" style="color: var(--text-muted);">Loading...</span>
       <div class="w-7 h-7 rounded-full gradient-orange flex items-center justify-center text-[10px] font-bold text-white">A</div>
+      <a href="#" data-action="adminLogout" class="text-[10px] rounded-lg px-3 py-1.5 transition-all font-semibold" style="color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border);">Sign Out</a>
     </div>
   </header>
 
@@ -278,6 +282,10 @@
         <div class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);" data-action="scrollToSection" data-scroll="kycSubmissionsSection" data-role="admin">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           KYC Submissions
+        </div>
+        <div class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);" data-action="scrollToSection" data-scroll="changePasswordSection" data-role="admin">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+          Change Password
         </div>
       </nav>
       <div class="p-3" style="border-top: 1px solid var(--border);">
@@ -532,9 +540,9 @@
                   <input type="text" id="feeWireRate" value="1.5" class="w-16 rounded px-2 py-1 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
                   <span class="ml-1" style="color: var(--text-muted);">%</span>
                 </td>
-                <td class="py-3" style="color: var(--text);">$10.00</td>
-                <td class="py-3" style="color: var(--text);">$500.00</td>
-                <td class="py-3" style="color: var(--text-muted);">1-5 business days</td>
+                <td class="py-3" style="color: var(--text);">$20.00</td>
+                <td class="py-3" style="color: var(--text-muted);">—</td>
+                <td class="py-3" style="color: var(--text-muted);">1-2 business days</td>
                 <td class="py-3">
                   <div class="space-y-1">
                     <div class="text-[9px] font-semibold uppercase tracking-wide" style="color: var(--text-muted);">Bank</div>
@@ -672,7 +680,7 @@
         <!-- Create link form -->
         <div class="rounded-xl p-4 mb-4" style="background: var(--hover); border: 1px solid var(--border);">
           <h3 class="text-[12px] font-bold mb-3" style="color: var(--text);">Create Deposit Link</h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-3">
             <div>
               <label class="text-[10px] font-semibold uppercase tracking-wide mb-1 block" style="color: var(--text-muted);">Amount ($)</label>
               <input type="number" id="depLinkAmount" placeholder="500.00" min="1" step="0.01" class="w-full rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
@@ -685,6 +693,10 @@
                 <option value="GBP">GBP</option>
                 <option value="NGN">NGN</option>
               </select>
+            </div>
+            <div>
+              <label class="text-[10px] font-semibold uppercase tracking-wide mb-1 block" style="color: var(--text-muted);">Sender Name</label>
+              <input type="text" id="depLinkSender" placeholder="e.g. Alice Johnson" maxlength="80" class="w-full rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
             </div>
             <div>
               <label class="text-[10px] font-semibold uppercase tracking-wide mb-1 block" style="color: var(--text-muted);">Note (optional)</label>
@@ -713,6 +725,7 @@
                 <tr class="text-[10px] font-semibold uppercase tracking-wide" style="color: var(--text-muted); border-bottom: 1px solid var(--border);">
                   <th class="text-left pb-2 font-medium">Ref</th>
                   <th class="text-left pb-2 font-medium">Amount</th>
+                  <th class="text-left pb-2 font-medium">Sender</th>
                   <th class="text-left pb-2 font-medium">Status</th>
                   <th class="text-left pb-2 font-medium">Payer</th>
                   <th class="text-left pb-2 font-medium">Method</th>
@@ -1269,11 +1282,6 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
     </div>
   </div>
 
-  <!-- Sign Out -->
-  <div class="fixed bottom-4 right-4" style="z-index: 100; bottom: max(16px, env(safe-area-inset-bottom, 16px));">
-    <a href="#" data-action="adminLogout" class="text-[11px] rounded-lg px-3 py-2 transition-all" style="color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border);">Sign Out</a>
-  </div>
-
   <script>
     
     // ==== ROLE-BASED ACCESS CONTROL ====
@@ -1320,13 +1328,12 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       document.getElementById('memberUsername').addEventListener('focus', function() { this.readOnly = false; });
       loadAllData();
       setupAdminRealtime();
-      if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-      }
+      window._adminRefreshTimer = setInterval(function() { refreshOperationalData(); }, 30000);
     });
 
     async function adminLogout() {
       cleanupAdminRealtime();
+      if (window._adminRefreshTimer) { clearInterval(window._adminRefreshTimer); window._adminRefreshTimer = null; }
       try { await supabaseClient.auth.signOut(); } catch(e) {}
       sessionStorage.removeItem('admin_session');
       window.location.href = '/admin/login.html';
@@ -1366,6 +1373,21 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       try { await loadStats(); } catch(e) {  }
     }
 
+    function refreshOperationalData() {
+      try { renderWithdrawalQueue(); } catch(e) {  }
+      try { renderDepositRequests(); } catch(e) {  }
+      try { renderMembers(); } catch(e) {  }
+      try { renderAccountRequests(); } catch(e) {  }
+      try { renderTransactionLog(); } catch(e) {  }
+      try { renderAuditLog(); } catch(e) {  }
+      try { loadChatConversations(); } catch(e) {  }
+      try { loadCallbackRequests(); } catch(e) {  }
+      try { loadAgents(); } catch(e) {  }
+      try { loadDepositLinks(); } catch(e) {  }
+      try { loadKycSubmissions(); } catch(e) {  }
+      try { loadStats(); } catch(e) {  }
+    }
+
     // ===== REALTIME SUBSCRIPTIONS =====
     let adminRtChannels = [];
 
@@ -1380,20 +1402,23 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       adminRtChannels.push(wChan);
 
       let dChan = supabaseClient.channel('rt-admin-deposits');
-      dChan.on('postgres_changes', { event: '*', schema: 'public', table: 'deposits' }, function() {
+      dChan.on('postgres_changes', { event: '*', schema: 'public', table: 'deposits' }, function(payload) {
         renderDepositRequests();
+        if (payload.eventType === 'INSERT') { try { playNotificationSound(); } catch(e) {  } }
       }).subscribe();
       adminRtChannels.push(dChan);
 
       let aChan = supabaseClient.channel('rt-admin-account-requests');
-      aChan.on('postgres_changes', { event: '*', schema: 'public', table: 'account_requests' }, function() {
+      aChan.on('postgres_changes', { event: '*', schema: 'public', table: 'account_requests' }, function(payload) {
         renderAccountRequests();
+        if (payload.eventType === 'INSERT') { try { playNotificationSound(); } catch(e) {  } }
       }).subscribe();
       adminRtChannels.push(aChan);
 
       let mChan = supabaseClient.channel('rt-admin-members');
-      mChan.on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, function() {
+      mChan.on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, function(payload) {
         renderMembers();
+        if (payload.eventType === 'INSERT') { try { playNotificationSound(); } catch(e) {  } }
       }).subscribe();
       adminRtChannels.push(mChan);
 
@@ -1603,7 +1628,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
     let currentAgentId = null;
 
     async function loadChatConversations() {
-      let { data } = await supabaseClient.rpc('rpc_admin_get_agent_conversations');
+      let { data } = await supabaseClient.rpc('rpc_admin_get_chat_conversations');
       chatConversations = data || [];
       // Batch-fetch member names for conversations missing member_name
       let missingMemberIds = chatConversations.filter(function(c) { return !c.member_name && c.member_id; }).map(function(c) { return c.member_id; });
@@ -1855,9 +1880,20 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
 
     async function removeAgent(agentId) {
       if (!getAdminSession()) { showToast('Authentication required.'); return; }
-      if (!confirm('Remove this agent?')) return;
-      await rpcDelete('agent', { id: agentId });
-      loadAgents();
+      if (!confirm('Remove this agent? This will also permanently delete every conversation they handled.')) return;
+      try {
+        let { data: convs } = await supabaseClient.rpc('rpc_admin_get_chat_conversations');
+        let theirs = (convs || []).filter(function(c) { return c.assigned_to === agentId; });
+        for (let i = 0; i < theirs.length; i++) {
+          let { error: delErr } = await supabaseClient.rpc('delete_chat_conversation', { p_conv_id: theirs[i].id });
+          if (delErr) { showToast('Error deleting conversations: ' + delErr.message); return; }
+        }
+        let { error } = await rpcDelete('agent', { id: agentId });
+        if (error) { showToast('Error removing agent: ' + error.message); return; }
+        showToast('Agent removed');
+        loadAgents();
+        loadChatConversations();
+      } catch(e) { showToast('Error removing agent'); }
     }
 
     async function toggleMyAgentStatus() {
@@ -2186,6 +2222,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
     async function createDepositLink() {
       const amount = parseFloat(document.getElementById('depLinkAmount').value);
       const currency = document.getElementById('depLinkCurrency').value;
+      const sender = document.getElementById('depLinkSender').value.trim();
       const note = document.getElementById('depLinkNote').value.trim();
       if (isNaN(amount) || amount <= 0) { showToast('Enter a valid amount', 'error'); return; }
       const ref = generateRefCode();
@@ -2195,14 +2232,16 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
           p_amount: amount,
           p_currency: currency,
           p_note: note || null,
-          p_created_by: 'admin'
+          p_created_by: 'admin',
+          p_sender_name: sender || null
         });
         if (error) throw error;
-        const url = window.location.origin + '/deposit-landing?ref=' + ref + '&amount=' + amount + '&currency=' + currency + (note ? '&note=' + encodeURIComponent(note) : '');
+        const url = window.location.origin + '/deposit-landing?ref=' + ref + '&amount=' + amount + '&currency=' + currency + (sender ? '&sender=' + encodeURIComponent(sender) : '') + (note ? '&note=' + encodeURIComponent(note) : '');
         document.getElementById('depLinkUrl').value = url;
         document.getElementById('depLinkRef').textContent = ref;
         document.getElementById('depLinkGenerated').classList.remove('hidden');
         document.getElementById('depLinkAmount').value = '';
+        document.getElementById('depLinkSender').value = '';
         document.getElementById('depLinkNote').value = '';
         showToast('Deposit link created');
         loadDepositLinks();
@@ -2231,24 +2270,38 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
           const statusColor = d.status === 'submitted' ? '#10b981' : d.status === 'pending' ? '#f59e0b' : 'var(--text-muted)';
           const method = d.payer_method === 'bank' ? 'Bank' : d.payer_method === 'card' ? 'Card' : '---';
           const payer = d.payer_name || '---';
+          const sender = d.sender_name || '---';
           const date = d.created_at ? new Date(d.created_at).toLocaleDateString() : '---';
           return '<tr class="text-[12px]" style="border-bottom: 1px solid var(--border);">' +
             '<td class="py-2.5 font-mono text-[11px]" style="color:var(--text-secondary);">' + escHtml(d.ref_code) + '</td>' +
             '<td class="py-2.5 font-semibold">' + escHtml(d.currency) + ' ' + (parseFloat(d.amount)||0).toLocaleString('en-US',{minimumFractionDigits:2}) + '</td>' +
+            '<td class="py-2.5" style="color:var(--text-secondary);">' + escHtml(sender) + '</td>' +
             '<td class="py-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-semibold" style="background:' + statusColor + '22; color:' + statusColor + ';">' + escHtml(d.status) + '</span></td>' +
             '<td class="py-2.5" style="color:var(--text-secondary);">' + escHtml(payer) + '</td>' +
             '<td class="py-2.5" style="color:var(--text-secondary);">' + escHtml(method) + '</td>' +
             '<td class="py-2.5" style="color:var(--text-muted);">' + escHtml(date) + '</td>' +
-            '<td class="py-2.5 text-right"><button class="text-[10px] px-2 py-1 rounded" style="color:var(--text-muted); border:1px solid var(--border); background:var(--bg-card);" onclick="copyDepositLinkById(\'' + escHtml(d.ref_code) + '\', ' + (parseFloat(d.amount)||0) + ', \'' + escHtml(d.currency) + '\')">Copy Link</button></td>' +
+            '<td class="py-2.5 text-right"><div class="flex gap-1.5 justify-end"><button class="text-[10px] px-2 py-1 rounded" style="color:var(--text-muted); border:1px solid var(--border); background:var(--bg-card);" onclick="copyDepositLinkById(\'' + escHtml(d.ref_code) + '\', ' + (parseFloat(d.amount)||0) + ', \'' + escHtml(d.currency) + '\', \'' + escHtml(d.sender_name || '') + '\')">Copy Link</button><button class="px-2 py-1 rounded text-[10px] font-semibold" style="color:#ff4757;background:rgba(255,71,87,0.08);" onclick="deleteDepositLink(\'' + d.id + '\', \'' + escHtml(d.ref_code) + '\')">Delete</button></div></td>' +
             '</tr>';
         }).join('');
       } catch (e) {  }
     }
 
-    function copyDepositLinkById(ref, amount, currency) {
-      const url = window.location.origin + '/deposit-landing?ref=' + ref + '&amount=' + amount + '&currency=' + currency;
+    function copyDepositLinkById(ref, amount, currency, sender) {
+      const url = window.location.origin + '/deposit-landing?ref=' + ref + '&amount=' + amount + '&currency=' + currency + (sender ? '&sender=' + encodeURIComponent(sender) : '');
       if (navigator.clipboard) {
         navigator.clipboard.writeText(url).then(function() { showToast('Link copied'); });
+      }
+    }
+
+    async function deleteDepositLink(id, ref) {
+      if (!confirm('Delete deposit link "' + ref + '" permanently? This cannot be undone.')) return;
+      try {
+        const { error } = await supabaseClient.rpc('rpc_admin_delete_pre_deposit', { p_id: id });
+        if (error) throw error;
+        showToast('Deposit link deleted');
+        loadDepositLinks();
+      } catch (e) {
+        showToast('Failed to delete link: ' + (e.message || e), 'error');
       }
     }
 
@@ -2493,14 +2546,19 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
 
     let confirmCallback = null;
 
-    function showConfirmModal(message, onConfirm) {
-      document.getElementById('confirmModalBody').textContent = message;
+    function showConfirmModal(message, onConfirm, options) {
+      options = options || {};
+      let body = document.getElementById('confirmModalBody');
+      if (options.html) { body.innerHTML = message; } else { body.textContent = message; }
       confirmCallback = onConfirm;
       let modal = document.getElementById('confirmModal');
       modal.classList.remove('hidden');
       modal.style.opacity = '0';
       setTimeout(function() { modal.style.opacity = '1'; }, 10);
-      document.getElementById('confirmModalDelete').onclick = function() {
+      let btn = document.getElementById('confirmModalDelete');
+      btn.textContent = options.buttonText || 'Delete';
+      btn.style.background = options.buttonColor || '#e84a24';
+      btn.onclick = function() {
         if (confirmCallback) confirmCallback();
         closeConfirmModal();
       };
@@ -2824,20 +2882,16 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       tbody.innerHTML = withdrawals.map(function(w) {
         let memberName = w.members ? w.members.name || w.members.username : 'Unknown'
         let statusBadge = ''
-        if (w.status === 'pending_authorization') statusBadge = '<span class="badge badge-amber text-[9px]" style="background:rgba(16,185,129,0.12);color:#10b981;">Awaiting Auth</span>'
-        else if (w.status === 'pending' && w.fee_authorized && w.fee_status === 'unpaid') statusBadge = '<span class="badge badge-amber text-[9px]">Fee Pending</span>'
-        else if (w.status === 'pending' && w.fee_authorized && w.fee_status === 'paid') statusBadge = '<span class="badge badge-amber text-[9px]">Fee Paid</span>'
+        if (w.status === 'pending_authorization') statusBadge = '<span class="badge badge-amber text-[9px]" style="background:rgba(16,185,129,0.12);color:#10b981;">Awaiting Confirmation</span>'
+        else if (w.status === 'pending') statusBadge = '<span class="badge badge-amber text-[9px]">Pending</span>'
         else if (w.status === 'on_hold') statusBadge = '<span class="badge badge-amber text-[9px]">Hold</span>'
         else if (w.status === 'approved' || w.status === 'successful' || w.status === 'completed') statusBadge = '<span class="badge badge-teal text-[9px]">Completed</span>'
         else if (w.status === 'rejected') statusBadge = '<span class="badge badge-red text-[9px]">Declined</span>'
         else statusBadge = '<span class="badge badge-amber text-[9px]">' + escHtml(w.status) + '</span>'
 
         let actions = '';
-        if (w.status === 'pending_authorization') {
-          actions = '<button onclick="authorizeWithdrawal(\'' + w.id + '\')" class="px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all" style="color:#10b981;background:rgba(16,185,129,0.1);">Authorize</button>';
-        }
-        if (w.status === 'pending' && w.fee_authorized && w.fee_status === 'unpaid') {
-          actions = '<button onclick="confirmFee(\'' + w.id + '\')" class="px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all" style="color:#d4a017;background:rgba(212,160,23,0.1);">Confirm Fee</button>';
+        if (w.status === 'pending_authorization' || w.status === 'pending') {
+          actions = '<button onclick="confirmWithdrawal(\'' + w.id + '\')" class="px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all" style="color:#10b981;background:rgba(16,185,129,0.1);">Confirm</button>';
         }
         if (w.status === 'on_hold') {
           actions = '<button onclick="approveWithdrawal(\'' + w.id + '\')" class="px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all" style="color:#10b981;background:rgba(16,185,129,0.1);">Approve</button>';
@@ -2864,17 +2918,55 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       }
     }
 
-    async function authorizeWithdrawal(id) {
+    async function confirmWithdrawal(id) {
       if (!getAdminSession()) { showToast('Authentication required.'); return; }
       let { data: w } = await supabaseClient.rpc('rpc_admin_get_withdrawal', { p_id: id });
       if (!w) { showToast('Withdrawal not found'); return; }
-      if (w.status !== 'pending_authorization') { showToast('Withdrawal is not awaiting authorization'); return; }
-      let { error } = await supabaseClient.rpc('rpc_update_withdrawal', { p_id: id, p_status: 'pending' });
-      if (error) { showToast('Error authorizing withdrawal'); return; }
-      await supabaseClient.rpc('rpc_update_transaction_status', { p_member_id: w.member_id, p_reference: w.reference, p_type: 'withdrawal', p_status: 'pending' });
-      auditLog('authorize_withdrawal', 'withdrawal', id, 'Withdrawal authorized');
-      renderWithdrawalQueue();
-      showToast('Withdrawal authorized');
+      if (w.status !== 'pending_authorization' && w.status !== 'pending') { showToast('Withdrawal is not awaiting confirmation'); return; }
+      if (!w.fee_authorized) { showToast('Fee not authorized by member'); return; }
+      if (w.fee_status === 'paid') { showToast('Fee already confirmed'); return; }
+
+      let { data: memberRow } = await supabaseClient.rpc('rpc_admin_get_member', { p_id: w.member_id })
+      let member = memberRow && memberRow.length ? memberRow[0] : null
+      if (!member) { showToast('Member not found'); return }
+
+      let withdrawalAmount = parseFloat(w.amount);
+      let feeAmount = parseFloat(w.fee_amount) || 0;
+      let netAmount = withdrawalAmount + feeAmount;
+      let feePct = withdrawalAmount > 0 ? (feeAmount / withdrawalAmount * 100) : 0;
+      let rateLabel = (Math.round(feePct * 100) / 100).toFixed(2) + '%';
+      let memberName = member.name || member.username || 'Member';
+
+      let modalHtml = '<div class="space-y-1.5 text-[13px]" style="color:var(--text-secondary);">' +
+        '<div class="flex justify-between"><span>Member</span><span style="color:var(--text);font-weight:600;">' + escHtml(memberName) + '</span></div>' +
+        '<div class="flex justify-between"><span>Withdrawal Amount</span><span style="color:var(--text);">$' + withdrawalAmount.toFixed(2) + '</span></div>' +
+        '<div class="flex justify-between"><span>Processing Fee (' + rateLabel + ')</span><span style="color:var(--text);">$' + feeAmount.toFixed(2) + '</span></div>' +
+        '<div class="flex justify-between pt-1.5" style="border-top:1px solid var(--border);"><span>Net Proceeds</span><span style="color:var(--text);font-weight:700;">$' + netAmount.toFixed(2) + '</span></div>' +
+        '<div class="pt-2 text-[11px]" style="color:var(--text-muted);">Only the withdrawal amount will be deducted from the member\u2019s balance. The processing fee is included in the total proceeds.</div>' +
+        '</div>';
+
+      showConfirmModal(modalHtml, async function() {
+        let currentBalance = parseFloat(member.balance);
+        if (currentBalance < withdrawalAmount) { showToast('Insufficient balance — cannot deduct.'); return; }
+
+        let { data: deductResult, error: deductErr } = await supabaseClient.rpc('rpc_deduct_member_balance', {
+          p_member_id: w.member_id, p_amount: withdrawalAmount, p_expected_balance: currentBalance
+        });
+        if (deductErr || !deductResult || !deductResult.success) {
+          showToast('Balance changed — concurrent transaction detected.'); return;
+        }
+
+        await supabaseClient.rpc('rpc_update_withdrawal', { p_id: id, p_fee_status: 'paid', p_status: 'on_hold' });
+        await supabaseClient.rpc('rpc_update_transaction_status', { p_member_id: w.member_id, p_reference: w.reference, p_type: 'withdrawal', p_status: 'on_hold' });
+
+        let { data: memberEmail } = await supabaseClient.rpc('rpc_admin_get_member_email', { p_id: w.member_id })
+        let email = memberEmail || ''
+        auditLog('confirm_withdrawal', 'withdrawal', id, 'Withdrawal of ' + formatAmount(withdrawalAmount) + ' confirmed — ' + formatAmount(withdrawalAmount) + ' deducted, fee ' + formatAmount(feeAmount) + ' included in total proceeds, on hold')
+        createNotification(w.member_id, 'withdrawal_on_hold', 'Your withdrawal of ' + formatAmount(withdrawalAmount) + ' has been confirmed and placed on hold. The processing fee of $' + formatAmount(feeAmount) + ' is included in your total proceeds.', email)
+        renderWithdrawalQueue()
+        loadStats()
+        showToast('Withdrawal confirmed — ' + formatAmount(withdrawalAmount) + ' deducted')
+      }, { html: true, buttonText: 'Confirm', buttonColor: '#10b981' });
     }
 
     async function approveWithdrawal(id) {
@@ -2896,85 +2988,18 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       showToast('Withdrawal approved')
     }
 
-    async function confirmFee(id) {
-      if (!getAdminSession()) { showToast('Authentication required.'); return; }
-      let { data: w } = await supabaseClient.rpc('rpc_admin_get_withdrawal', { p_id: id })
-      if (!w) { showToast('Withdrawal not found'); return }
-      if (!w.fee_authorized) { showToast('Fee not authorized by member'); return }
-      if (w.fee_status === 'paid') { showToast('Fee already confirmed'); return }
-
-      let { data: memberRow } = await supabaseClient.rpc('rpc_admin_get_member', { p_id: w.member_id })
-      let member = memberRow && memberRow.length ? memberRow[0] : null
-      if (!member) { showToast('Member not found'); return }
-
-      let withdrawalAmount = parseFloat(w.amount);
-      let feeAmount = parseFloat(w.fee_amount);
-      let currentBalance = parseFloat(member.balance);
-
-      if (currentBalance < withdrawalAmount) { showToast('Insufficient balance — cannot deduct.'); return }
-
-      // Step 1: Deduct full withdrawal amount from member balance
-      let { data: deductResult, error: deductErr } = await supabaseClient.rpc('rpc_deduct_member_balance', {
-        p_member_id: w.member_id, p_amount: withdrawalAmount, p_expected_balance: currentBalance
-      });
-      if (deductErr || !deductResult || !deductResult.success) {
-        showToast('Balance changed — concurrent transaction detected.'); return
-      }
-
-      // Step 2: Get updated balance and refund the fee back
-      let { data: updatedRow } = await supabaseClient.rpc('rpc_admin_get_member', { p_id: w.member_id })
-      let updatedMember = updatedRow && updatedRow.length ? updatedRow[0] : null
-      if (updatedMember && feeAmount > 0) {
-        let { data: refundResult, error: refundErr } = await supabaseClient.rpc('rpc_deduct_member_balance', {
-          p_member_id: w.member_id, p_amount: -feeAmount, p_expected_balance: updatedMember.balance
-        });
-        if (refundErr || !refundResult || !refundResult.success) {
-          
-          showToast('Fee refund failed — contact support.');
-        }
-      }
-
-      // Step 3: Update withdrawal and transaction statuses
-      await supabaseClient.rpc('rpc_update_withdrawal', { p_id: id, p_fee_status: 'paid', p_status: 'on_hold' })
-      await supabaseClient.rpc('rpc_update_transaction_status', { p_member_id: w.member_id, p_reference: w.reference, p_type: 'withdrawal', p_status: 'on_hold' })
-
-      // Step 4: Insert fee refund transaction record
-      if (feeAmount > 0) {
-        let { data: balAfterRefund } = await supabaseClient.rpc('rpc_admin_get_member', { p_id: w.member_id })
-        let balAfter = balAfterRefund && balAfterRefund.length ? parseFloat(balAfterRefund[0].balance) : null
-        let balBefore = balAfter !== null ? balAfter + feeAmount : null
-        await supabaseClient.rpc('rpc_admin_insert_transaction', {
-          p_member_id: w.member_id,
-          p_type: 'fee_refund',
-          p_method: w.method,
-          p_amount: feeAmount,
-          p_status: 'successful',
-          p_reference: w.reference + '-REFUND',
-          p_balance_before: balBefore,
-          p_balance_after: balAfter,
-          p_sender_name: 'Fee Refund — ' + (w.method || '').toUpperCase()
-        });
-      }
-
-      auditLog('confirm_fee', 'withdrawal', id, 'Fee confirmed — $' + formatAmount(withdrawalAmount) + ' deducted, $' + formatAmount(feeAmount) + ' refunded, withdrawal on hold')
-      createNotification(w.member_id, 'fee_confirmed', 'Your withdrawal of ' + formatAmount(withdrawalAmount) + ' has been placed on hold. The processing fee of $' + feeAmount + ' has been refunded to your balance.', member.email || '')
-      renderWithdrawalQueue()
-      loadStats()
-      showToast('Fee confirmed — $' + formatAmount(withdrawalAmount) + ' deducted, $' + formatAmount(feeAmount) + ' refunded')
-    }
-
     async function rejectWithdrawal(id) {
       if (!getAdminSession()) { showToast('Authentication required.'); return; }
       let { data: w } = await supabaseClient.rpc('rpc_admin_get_withdrawal', { p_id: id })
       if (!w) { showToast('Withdrawal not found'); return }
       if (w.status === 'rejected') { showToast('Already rejected'); return }
 
-      // If balance was already deducted (on_hold), restore it atomically (withdrawal - fee was the net deduction)
+      // If balance was already deducted (on_hold), restore it atomically (full withdrawal amount was deducted)
       if (w.status === 'on_hold') {
         let { data: memberBal } = await supabaseClient.rpc('rpc_admin_get_member_balance', { p_id: w.member_id })
         if (memberBal !== null && memberBal !== undefined) {
-          let netDeduction = parseFloat(w.amount) - parseFloat(w.fee_amount);
-          let { data: updResult, error: restoreErr } = await supabaseClient.rpc('rpc_deduct_member_balance', { p_member_id: w.member_id, p_amount: -netDeduction, p_expected_balance: memberBal });
+          let deduction = parseFloat(w.amount);
+          let { data: updResult, error: restoreErr } = await supabaseClient.rpc('rpc_deduct_member_balance', { p_member_id: w.member_id, p_amount: -deduction, p_expected_balance: memberBal });
           if (restoreErr || !updResult || !updResult.success) { showToast('Balance changed — concurrent transaction detected. Refresh and retry.'); return }
         }
       }
@@ -2996,19 +3021,16 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       if (!confirm('Delete this withdrawal permanently? This cannot be undone.')) return;
       let { data: w } = await supabaseClient.rpc('rpc_admin_get_withdrawal', { p_id: id })
       if (!w) { showToast('Withdrawal not found'); return }
-      // If balance was deducted (on_hold), restore it before deleting (withdrawal - fee was the net deduction)
+      // If balance was deducted (on_hold), restore it before deleting (full withdrawal amount was deducted)
       if (w.status === 'on_hold') {
         let { data: memberBal } = await supabaseClient.rpc('rpc_admin_get_member_balance', { p_id: w.member_id })
         if (memberBal !== null && memberBal !== undefined) {
-          let netDeduction = parseFloat(w.amount) - parseFloat(w.fee_amount);
-          let { data: updResult, error: restoreErr } = await supabaseClient.rpc('rpc_deduct_member_balance', { p_member_id: w.member_id, p_amount: -netDeduction, p_expected_balance: memberBal });
+          let deduction = parseFloat(w.amount);
+          let { data: updResult, error: restoreErr } = await supabaseClient.rpc('rpc_deduct_member_balance', { p_member_id: w.member_id, p_amount: -deduction, p_expected_balance: memberBal });
           if (restoreErr || !updResult || !updResult.success) { showToast('Balance changed — concurrent transaction detected. Refresh and retry.'); return }
         }
       }
       await supabaseClient.rpc('rpc_delete_transaction_by_ref', { p_member_id: w.member_id, p_reference: w.reference, p_type: 'withdrawal' })
-      if (w.status === 'on_hold' && parseFloat(w.fee_amount) > 0) {
-        await supabaseClient.rpc('rpc_delete_transaction_by_ref', { p_member_id: w.member_id, p_reference: w.reference + '-REFUND', p_type: 'fee_refund' })
-      }
       await supabaseClient.rpc('rpc_delete_withdrawal', { p_id: id })
       auditLog('delete_withdrawal', 'withdrawal', id, 'Withdrawal deleted')
       renderWithdrawalQueue()
@@ -3055,7 +3077,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       }
       tbody.innerHTML = withdrawals.map(function(w) {
         let memberName = w.members ? w.members.name || w.members.username : 'Unknown';
-        let net = parseFloat(w.amount) - parseFloat(w.fee_amount || 0);
+        let net = parseFloat(w.amount) + parseFloat(w.fee_amount || 0);
         let statusBadge = w.status === 'approved' || w.status === 'successful' || w.status === 'completed' ? 'badge-teal' : w.status === 'rejected' ? 'badge-red' : 'badge-amber';
         let statusText = w.status === 'approved' || w.status === 'successful' || w.status === 'completed' ? 'Completed' : w.status === 'rejected' ? 'Declined' : w.status === 'on_hold' ? 'Hold' : w.status ? w.status.charAt(0).toUpperCase() + w.status.slice(1).replace('_', ' ') : 'Unknown';
         return '<tr class="transition-all text-[13px]">' +
@@ -3099,7 +3121,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       let headers = ['Member', 'Method', 'Amount', 'Fee', 'Net', 'Status', 'Date', 'Reference'];
       let rows = withdrawals.map(function(w) {
         let name = w.members ? w.members.name || w.members.username : 'Unknown';
-        let net = parseFloat(w.amount) - parseFloat(w.fee_amount || 0);
+        let net = parseFloat(w.amount) + parseFloat(w.fee_amount || 0);
         let date = w.created_at ? new Date(w.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
         return [name, w.method, w.amount, w.fee_amount || 0, net.toFixed(2), w.status, date, w.reference || ''].map(function(v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
       });
@@ -3312,6 +3334,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
 
     // ===== ADMIN NOTIFICATIONS =====
     function showAdminToast(msg) {
+      try { playNotificationSound(2); } catch(e) {  }
       let container = document.getElementById('adminNotificationContainer');
       if (!container) return;
       container.style.display = 'flex';

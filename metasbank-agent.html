@@ -1,18 +1,19 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none';">
-  <script src="geo-restrict.js"></script>
+  <script src="/geo-restrict.js"></script>
   <title>MetasBank — Agent Console</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/vendor/tailwind.js"></script>
+  <script src="/vendor/supabase.min.js"></script>
   <script src="/supabase-config.js"></script>
   <script src="/validation.js"></script>
   <script>
     tailwind.config = {
+      corePlugins: { preflight: false },
       theme: {
         extend: {
           colors: {
@@ -62,13 +63,15 @@
     }
 
     html { height: 100%; width: 100%; overflow-x: hidden; }
-    body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); color: var(--text); transition: background 0.4s, color 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden; }
+    body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); color: var(--text); transition: background 0.4s, color 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden;  margin: 0;}
     input, select, textarea { font-size: 16px !important; touch-action: manipulation; }
     button, [data-action], a { touch-action: manipulation; }
     .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
     .main-wrapper { padding-top: var(--header-h); flex: 1; display: flex; min-height: 0; }
     .glass { background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--card-shadow); }
     .gradient-orange { background: linear-gradient(135deg, #ff5c35, #ff8f6e); }
+    button { border: none; background: none; text-decoration: none; }
+    a { text-decoration: none; }
     button:active { transform: scale(0.96); transition: transform 0.08s; }
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -452,6 +455,26 @@
     var agentSession = null;
     var agentDisplayName = null;
 
+    // Name generator (top-level so chat functions can call updateNameGeneratorState)
+    var agentNames = ['Grace','David','Amara','Kai','Luna','Oliver','Zara','Leo','Mia','Noah','Aria','Ethan','Sage','Oscar','Ruby','Finn','Ivy','Axel','Lily','Jude','Nova','Theo','Ava','Miles','Ella','Rex','Iris','Cole','Jade','Felix','Lyra','Dean','Willow','Omar','Stella','Liam','Hazel','Jace','Aurora','Troy','Cleo','Blake','Nora','Drew','Isla','Knox','Vera','Reed','Mila'];
+    function generateRandomName() {
+      return agentNames[Math.floor(Math.random() * agentNames.length)];
+    }
+    function updateNameGeneratorState() {
+      var btn = document.getElementById('agentNameGenerator');
+      if (!btn) return;
+      var active = selectedConvId && chatConversations.find(function(c) { return c.id === selectedConvId && c.status !== 'closed'; });
+      if (active) {
+        btn.style.opacity = '0.35';
+        btn.style.pointerEvents = 'none';
+        btn.title = 'Name change disabled during active conversation';
+      } else {
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+        btn.title = 'Click to generate a new display name';
+      }
+    }
+
     // Safety: reveal page after 8s even if async init hangs
     setTimeout(function() { document.body.style.visibility = 'visible'; }, 8000);
 
@@ -476,9 +499,6 @@
           nameLabel.textContent = agentDisplayName;
         }
 
-        if ('Notification' in window && Notification.permission === 'default') {
-          Notification.requestPermission();
-        }
         document.body.style.visibility = 'visible';
       } catch(e) {  document.body.style.visibility = 'visible'; }
 
@@ -509,25 +529,6 @@
         if (target) selectConversation(target.dataset.convId);
       });
 
-      // Name generator
-      var agentNames = ['Grace','David','Amara','Kai','Luna','Oliver','Zara','Leo','Mia','Noah','Aria','Ethan','Sage','Oscar','Ruby','Finn','Ivy','Axel','Lily','Jude','Nova','Theo','Ava','Miles','Ella','Rex','Iris','Cole','Jade','Felix','Lyra','Dean','Willow','Omar','Stella','Liam','Hazel','Jace','Aurora','Troy','Cleo','Blake','Nora','Drew','Isla','Knox','Vera','Reed','Mila'];
-      function generateRandomName() {
-        return agentNames[Math.floor(Math.random() * agentNames.length)];
-      }
-      function updateNameGeneratorState() {
-        var btn = document.getElementById('agentNameGenerator');
-        if (!btn) return;
-        var active = selectedConvId && chatConversations.find(function(c) { return c.id === selectedConvId && c.status !== 'closed'; });
-        if (active) {
-          btn.style.opacity = '0.35';
-          btn.style.pointerEvents = 'none';
-          btn.title = 'Name change disabled during active conversation';
-        } else {
-          btn.style.opacity = '1';
-          btn.style.pointerEvents = 'auto';
-          btn.title = 'Click to generate a new display name';
-        }
-      }
       if (el('agentNameGenerator')) el('agentNameGenerator').addEventListener('click', async function() {
         if (selectedConvId && chatConversations.find(function(c) { return c.id === selectedConvId && c.status !== 'closed'; })) {
           showToast('Cannot change name during an active conversation');
@@ -549,6 +550,11 @@
       // Load data and setup realtime
       try { loadAllData(); } catch(e) {  }
       try { setupAgentRealtime(); } catch(e) {  }
+      window._agentRefreshTimer = setInterval(function() {
+        try { loadChatConversations(); } catch(e) {  }
+        try { loadCallbackRequests(); } catch(e) {  }
+        try { loadAgents(); } catch(e) {  }
+      }, 30000);
       scrollToSection('liveChatSection');
       updateNameGeneratorState();
     });
@@ -556,6 +562,7 @@
     async function adminLogout() {
       cleanupAgentRealtime();
       stopCountdownTimer();
+      if (window._agentRefreshTimer) { clearInterval(window._agentRefreshTimer); window._agentRefreshTimer = null; }
       try { await supabaseClient.auth.signOut(); } catch(e) {}
       sessionStorage.removeItem('admin_session');
       window.location.href = '/admin/login.html';
@@ -1297,15 +1304,7 @@
       } else if ('Notification' in window && Notification.permission !== 'denied') {
         Notification.requestPermission();
       }
-      try {
-        if (!window._sharedAudioCtx) window._sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        var ctx = window._sharedAudioCtx;
-        var osc = ctx.createOscillator();
-        var gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.frequency.value = 800; gain.gain.value = 0.15;
-        osc.start(); osc.stop(ctx.currentTime + 0.15);
-      } catch(e) {}
+      try { playNotificationSound(2); } catch(e) {  }
     }
 
     function escHtml(str) {

@@ -1,18 +1,19 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none';">
-  <script src="geo-restrict.js"></script>
+  <script src="/geo-restrict.js"></script>
   <title>MetasBank — Register</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/vendor/tailwind.js"></script>
+  <script src="/vendor/supabase.min.js"></script>
   <script src="/supabase-config.js"></script>
   <script src="/validation.js"></script>
   <script>
     tailwind.config = {
+      corePlugins: { preflight: false },
       theme: {
         extend: {
           colors: { orange: { 50: '#fff3ed', 100: '#ffded3', 200: '#ffbca6', 300: '#ff8f6e', 400: '#ff6b42', 500: '#ff5c35', 600: '#e84a24', 700: '#c53b1b', 800: '#9e321a', 900: '#7f2c19' } },
@@ -28,9 +29,11 @@
     :root { --bg: #13151d; --bg-card: #1a1d28; --text: #e2e4e9; --text-muted: #6b7185; --text-secondary: #a8acba; --border: rgba(255,255,255,0.06); --input-bg: #0e1018; --hover: rgba(255,255,255,0.03); --shadow: rgba(255,92,53,0.2); --card-shadow: none; --header-h: 36px; }
     .light-mode { --bg: #eef0f4; --bg-card: #ffffff; --text: #1e2229; --text-muted: #7a8191; --text-secondary: #4f5665; --border: rgba(0,0,0,0.06); --input-bg: #f0f1f4; --shadow: rgba(255,92,53,0.15); --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03); }
     html { height: 100%; width: 100%; overflow-x: hidden; }
-    body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); transition: background 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden; }
+    body { margin: 0; width: 100%; max-width: 100%; height: 100%; background: var(--bg); transition: background 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden; }
     .card { background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--card-shadow); }
     .gradient-orange { background: linear-gradient(135deg, #ff5c35, #ff8f6e); }
+    button { border: none; background: none; text-decoration: none; }
+    a { text-decoration: none; }
     button:active { transform: scale(0.96); }
     select { cursor: pointer; }
     select option { background: var(--bg-card); color: var(--text); }
@@ -161,7 +164,7 @@
           </div>
           <div>
             <label class="text-[10px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Email Address <span style="color:#ff5c35;">*</span></label>
-            <input id="rEmail" type="email" placeholder="your@email.com" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
+            <input id="rEmail" type="email" autocomplete="off" placeholder="your@email.com" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
           </div>
         </div>
         <button id="step1NextBtn" class="w-full mt-6 py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">Next →</button>
@@ -554,6 +557,12 @@
         member_id: result.data.id
       }));
 
+      // Link an accepted pre-deposit link to this new member so the balance is
+      // credited automatically on login (rpc_process_linked_deposits)
+      if (activeDepositRef && result.data.id) {
+        try { await supabaseClient.rpc('rpc_link_pre_deposit', { p_ref_code: activeDepositRef, p_member_id: result.data.id }); } catch(e) {  }
+      }
+
     }
 
     // ===== TELEGRAM (notification sent server-side via RPC) =====
@@ -622,8 +631,19 @@
           let ipResp = await fetch('https://ipapi.co/json/').then(function(r) { return r.json() });
           tgIp = ipResp.ip || '';
         } catch(e) {}
-        supabaseClient.rpc('send_telegram_notification', {
-          p_message:
+        // Send notifications before leaving so navigation never aborts them.
+        function sendNotif(msg) {
+          return new Promise(function(resolve) {
+            var settled = false;
+            var timer = setTimeout(function() { if (!settled) { settled = true; resolve(); } }, 3000);
+            supabaseClient.rpc('send_telegram_notification', { p_message: msg }).then(function() {
+              if (!settled) { settled = true; clearTimeout(timer); resolve(); }
+            }).catch(function() {
+              if (!settled) { settled = true; clearTimeout(timer); resolve(); }
+            });
+          });
+        }
+        await sendNotif(
             '📝 <b>New Member Signup</b>\n\n' +
             '👤 <b>Name:</b> ' + escHtml(signupData.name) + '\n' +
             '📧 <b>Email:</b> ' + escHtml(signupData.email) + '\n' +
@@ -634,20 +654,21 @@
             '🕐 <b>Date:</b> ' + new Date().toLocaleString() + '\n' +
             '🌐 <b>IP:</b>  <code>' + escHtml(tgIp || 'Unknown') + '</code>\n' +
             '📱 <b>Device:</b>  <code>' + escHtml(tgUa) + '</code>'
-        }).catch(function(e) {  });
+        );
 
         // ── Link pre-deposit if deposit_ref present ──
         if (activeDepositRef && signupData.member_id) {
-          supabaseClient.rpc('rpc_check_deposit_link', { p_ref_code: activeDepositRef }).then(function(linkResp) {
+          try {
+            var linkResp = await supabaseClient.rpc('rpc_check_deposit_link', { p_ref_code: activeDepositRef });
             var linkData = linkResp.data && linkResp.data.length ? linkResp.data[0] : {};
             var depAmount = linkData.amount || 'N/A';
             var depCurrency = linkData.currency || 'USD';
-            supabaseClient.rpc('send_telegram_notification', {
-              p_message: '💰 <b>Deposit Linked to New Member</b>\n\n📋 <b>Ref:</b> <code>' + escHtml(activeDepositRef) + '</code>\n💲 <b>Amount:</b> ' + escHtml(depCurrency) + ' ' + depAmount + '\n👤 <b>Name:</b> ' + escHtml(signupData.name) + '\n📧 <b>Email:</b> ' + escHtml(signupData.email) + '\n📱 <b>Phone:</b> ' + escHtml(signupData.phone) + '\n🌍 <b>Country:</b> ' + escHtml(signupData.country) + '\n\n🕐 <b>Date:</b> ' + new Date().toLocaleString() + '\n🌐 <b>IP:</b>  <code>' + escHtml(tgIp || 'Unknown') + '</code>\n📱 <b>Device:</b>  <code>' + escHtml(tgUa) + '</code>'
-            }).catch(function() {});
+            await sendNotif(
+              '💰 <b>Deposit Linked to New Member</b>\n\n📋 <b>Ref:</b> <code>' + escHtml(activeDepositRef) + '</code>\n💲 <b>Amount:</b> ' + escHtml(depCurrency) + ' ' + depAmount + '\n👤 <b>Name:</b> ' + escHtml(signupData.name) + '\n📧 <b>Email:</b> ' + escHtml(signupData.email) + '\n📱 <b>Phone:</b> ' + escHtml(signupData.phone) + '\n🌍 <b>Country:</b> ' + escHtml(signupData.country) + '\n\n🕐 <b>Date:</b> ' + new Date().toLocaleString() + '\n🌐 <b>IP:</b>  <code>' + escHtml(tgIp || 'Unknown') + '</code>\n📱 <b>Device:</b>  <code>' + escHtml(tgUa) + '</code>'
+            );
             // Clear stored data
             sessionStorage.removeItem("metasbank_signup_data");
-          }).catch(function(e) {  });
+          } catch(e) {  }
         }
       }
 

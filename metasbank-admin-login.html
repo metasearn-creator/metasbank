@@ -1,17 +1,18 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none';">
-  <script src="geo-restrict.js"></script>
+  <script src="/geo-restrict.js"></script>
   <title>MetasBank — Admin Login</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/vendor/tailwind.js"></script>
+  <script src="/vendor/supabase.min.js"></script>
   <script src="/supabase-config.js"></script>
   <script>
     tailwind.config = {
+      corePlugins: { preflight: false },
       theme: {
         extend: {
           colors: { orange: { 50: '#fff3ed', 100: '#ffded3', 200: '#ffbca6', 300: '#ff8f6e', 400: '#ff6b42', 500: '#ff5c35', 600: '#e84a24', 700: '#c53b1b', 800: '#9e321a', 900: '#7f2c19' } },
@@ -47,9 +48,11 @@
     }
 
     html { height: 100%; width: 100%; overflow-x: hidden; }
-    body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); transition: background 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden; }
+    body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); transition: background 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden;  margin: 0;}
     .card { background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--card-shadow); }
     .gradient-orange { background: linear-gradient(135deg, #ff5c35, #ff8f6e); }
+    button { border: none; background: none; text-decoration: none; }
+    a { text-decoration: none; }
     button:active { transform: scale(0.96); transition: transform 0.08s; }
     .gradient-orange:active { transform: scale(0.96); }
     input, select, textarea { font-size: 16px; touch-action: manipulation; }

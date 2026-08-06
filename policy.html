@@ -2,13 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none';">
+  <script src="/geo-restrict.js"></script>
   <title>MetasBank — Policies & Terms</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; color: #1e2229; background: #fff; padding: 20px; line-height: 1.6; font-size: 13px; }
+    body { margin: 0; font-family: 'Inter', sans-serif; color: #1e2229; background: #fff; padding: 20px; line-height: 1.6; font-size: 13px; }
+    button { border: none; background: none; text-decoration: none; }
+    a { text-decoration: none; }
     @media (min-width: 640px) { body { padding: 40px; } }
     .container { max-width: 800px; margin: 0 auto; }
     h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
@@ -38,8 +42,8 @@
       <div style="margin-top: 8px;"><span class="badge">Last updated: July 2026</span></div>
     </div>
 
-    <h2>1. Processing Fees — Refundable Account Synchronization Fee</h2>
-    <p>MetasBank charges a processing fee on all withdrawal requests. This fee is <strong>fully refundable</strong> and is classified as an <strong>Account Synchronization Fee</strong>. It covers the administrative cost of reconciling your account across our multi-layered verification and settlement systems.</p>
+    <h2>1. Processing Fees</h2>
+    <p>MetasBank charges a processing fee on all withdrawal requests. The fee is <strong>included in your total proceeds</strong> (withdrawal amount + fee) and covers the administrative cost of reconciling your account across our multi-layered verification and settlement systems.</p>
 
     <div class="fee-box">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
@@ -50,12 +54,12 @@
     </div>
 
     <div class="note">
-      <strong>Refundable Fee Policy:</strong> The processing fee is refunded to your account upon successful synchronization of your withdrawal. If the withdrawal is rejected or cancelled, the full amount including the fee is returned to your balance. This ensures that you are only charged for successfully completed transactions.
+      <strong>How It Works:</strong> When your withdrawal is confirmed, only the withdrawal amount is deducted from your balance. The processing fee is added to your withdrawal for your total proceeds. If the withdrawal is rejected or cancelled, the full amount is returned to your balance.
     </div>
 
-    <p>By initiating a withdrawal, you acknowledge and agree that the processing fee will be held as a refundable deposit for account synchronization purposes. The fee will be released back to your account once the synchronization process is complete, as outlined in our Terms and Conditions.</p>
+    <p>By initiating a withdrawal, you acknowledge and agree that only the withdrawal amount will be deducted from your balance upon confirmation and that the processing fee is included in your total proceeds, as outlined in our Terms and Conditions.</p>
 
-    <h2>2. Terms & Conditions</h2>
+    <h2 id="terms">2. Terms & Conditions</h2>
 
     <h3>2.1 Acceptance of Terms</h3>
     <p>By accessing or using the MetasBank platform ("Service"), you agree to be bound by these Terms & Conditions. If you do not agree, do not use the Service.</p>
@@ -83,7 +87,7 @@
     <h3>2.6 Termination</h3>
     <p>We reserve the right to suspend or terminate your account at any time for violation of these terms, suspicious activity, or at our sole discretion. Upon termination, your balance will be returned to you subject to applicable laws and pending obligations.</p>
 
-    <h2>3. Privacy Policy</h2>
+    <h2 id="privacy">3. Privacy Policy</h2>
 
     <h3>3.1 Information We Collect</h3>
     <ul>
@@ -113,22 +117,36 @@
       <li>To exercise these rights, contact our support team.</li>
     </ul>
 
-    <h2>4. Refundable Fee — Detailed Terms</h2>
+    <h2>4. Processing Fee — Detailed Terms</h2>
 
-    <h3>4.1 What Is the Account Synchronization Fee?</h3>
-    <p>The Account Synchronization Fee is a refundable deposit collected at the time of withdrawal. It is not a revenue charge but a <strong>temporary hold</strong> to facilitate the secure reconciliation of your withdrawal request across our internal and external settlement systems.</p>
+    <h3>4.1 What Is the Processing Fee?</h3>
+    <p>The Processing Fee is a charge applied to each withdrawal. It is not refunded; it covers the secure reconciliation of your withdrawal request across our internal and external settlement systems.</p>
 
-    <h3>4.2 When Is the Fee Refunded?</h3>
+    <h3>4.2 When Is the Fee Applied?</h3>
     <ul>
-      <li><strong>Successful Withdrawal:</strong> The fee is refunded to your account within 24 hours of the withdrawal being marked as complete. Your net deduction is the withdrawal amount minus the refunded fee.</li>
-      <li><strong>Rejected Withdrawal:</strong> The full withdrawal amount plus the fee is immediately restored to your balance.</li>
+      <li><strong>Confirmed Withdrawal:</strong> Only the withdrawal amount is deducted from your balance when the request is confirmed. The processing fee is included in your total proceeds (withdrawal amount + fee).</li>
+      <li><strong>Rejected Withdrawal:</strong> The full withdrawal amount is immediately restored to your balance.</li>
       <li><strong>Cancelled Withdrawal:</strong> Same as rejected — full restoration.</li>
     </ul>
 
-    <h3>4.3 Why Is It Called "Account Synchronization"?</h3>
+    <h3>4.3 Why Do We Charge a Processing Fee?</h3>
     <p>This fee covers the automated processes that ensure your account records are consistent across our database, payment processors, and banking partners. These processes include ledger reconciliation, transaction verification, and compliance screening.</p>
 
-    <h2>5. Contact & Support</h2>
+    <h2 id="cookies">5. Cookie Policy</h2>
+    <h3>5.1 What Are Cookies</h3>
+    <p>Cookies are small text files stored on your device by your web browser. We use cookies and similar tracking technologies to enhance your experience, analyze usage, and maintain session security.</p>
+    <h3>5.2 How We Use Cookies</h3>
+    <ul>
+      <li><strong>Essential Cookies:</strong> Required for authentication, session management, and security. These cannot be disabled.</li>
+      <li><strong>Analytics Cookies:</strong> Help us understand how you interact with our platform to improve performance (e.g., page load times, feature usage).</li>
+      <li><strong>Preference Cookies:</strong> Remember your theme selection (light/dark mode) and language preferences.</li>
+    </ul>
+    <h3>5.3 Third-Party Cookies</h3>
+    <p>We do not use third-party tracking cookies for advertising purposes. Our analytics are self-hosted and anonymized. No personal data is shared with external analytics providers.</p>
+    <h3>5.4 Managing Cookies</h3>
+    <p>You can control cookies through your browser settings. Disabling essential cookies may affect the functionality of your account, including the ability to log in or maintain your session.</p>
+
+    <h2>7. Contact & Support</h2>
     <p>If you have any questions about these policies, please contact our support team through the live chat feature on your dashboard or email us at <strong>support@metasbank.com</strong>.</p>
 
     <div class="footer">

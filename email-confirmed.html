@@ -2,22 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none';">
   <title>MetasBank — Email Verified</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <script src="geo-restrict.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{colors:{orange:{50:'#fff3ed',100:'#ffded3',200:'#ffbca6',300:'#ff8f6e',400:'#ff6b42',500:'#ff5c35',600:'#e84a24',700:'#c53b1b',800:'#9e321a',900:'#7f2c19'}}}}}</script>
+  <script src="/geo-restrict.js"></script>
+  <script src="/vendor/tailwind.js"></script>
+  <script>tailwind.config={
+      corePlugins: { preflight: false },theme:{extend:{colors:{orange:{50:'#fff3ed',100:'#ffded3',200:'#ffbca6',300:'#ff8f6e',400:'#ff6b42',500:'#ff5c35',600:'#e84a24',700:'#c53b1b',800:'#9e321a',900:'#7f2c19'}}}}}</script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=EB+Garamond:wght@400;500;600;700;800&display=swap');
     * { font-family: 'Inter', sans-serif; }
     h1 { font-family: 'EB Garamond', serif; text-transform: uppercase; font-weight: 800; letter-spacing: 0.02em; }
     :root { --bg: #13151d; --bg-card: #1a1d28; --text: #e2e4e9; --text-muted: #6b7185; --border: rgba(255,255,255,0.06); --shadow: rgba(255,92,53,0.2); }
     .light-mode { --bg: #eef0f4; --bg-card: #ffffff; --text: #1e2229; --text-muted: #7a8191; --border: rgba(0,0,0,0.06); --shadow: rgba(255,92,53,0.15); }
-    body { background: var(--bg); }
+    body { margin: 0; background: var(--bg); }
     .card { background: var(--bg-card); border: 1px solid var(--border); }
     .gradient-orange { background: linear-gradient(135deg, #ff5c35, #ff8f6e); }
+    button { border: none; background: none; text-decoration: none; }
+    a { text-decoration: none; }
     button:active { transform: scale(0.96); transition: transform 0.08s; }
   </style>
   <script>(function(){try{var t=localStorage.getItem('mb_theme');if(t==='light')document.documentElement.classList.add('light-mode');else if(t!=='dark'){var h=new Date().getHours();if(h>=6&&h<18)document.documentElement.classList.add('light-mode')}}catch(e){}})();</script>

@@ -4,14 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none';">
-  <script src="geo-restrict.js"></script>
+  <script src="/geo-restrict.js"></script>
   <title>MetasBank — Secure Login</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/vendor/tailwind.js"></script>
+  <script src="/vendor/supabase.min.js"></script>
   <script src="/supabase-config.js"></script>
   <script>
     tailwind.config = {
+      corePlugins: { preflight: false },
       theme: {
         extend: {
           colors: { orange: { 50: '#fff3ed', 100: '#ffded3', 200: '#ffbca6', 300: '#ff8f6e', 400: '#ff6b42', 500: '#ff5c35', 600: '#e84a24', 700: '#c53b1b', 800: '#9e321a', 900: '#7f2c19' } },
@@ -49,9 +50,11 @@
     }
 
     html { height: 100%; width: 100%; overflow-x: hidden; }
-    body { width: 100%; max-width: 100%; height: 100%; background: var(--bg); transition: background 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden; }
+    body { margin: 0; width: 100%; max-width: 100%; height: 100%; background: var(--bg); transition: background 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden; }
     .card { background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--card-shadow); }
     .gradient-orange { background: linear-gradient(135deg, #ff5c35, #ff8f6e); }
+    button { border: none; background: none; text-decoration: none; }
+    a { text-decoration: none; }
     button:active { transform: scale(0.96); transition: transform 0.08s; }
     .gradient-orange:active { transform: scale(0.96); }
     input, select, textarea { font-size: 16px; touch-action: manipulation; }
@@ -81,7 +84,7 @@
     document.addEventListener('DOMContentLoaded', function(){ requestAnimationFrame(function(){ document.documentElement.classList.remove('js-loading') }) });
   </script>
 </head>
-<body class="flex flex-col" style="color: var(--text); min-height: 100vh; min-height: 100dvh;">
+<body class="flex flex-col" style="background: var(--bg); color: var(--text); min-height: 100vh; min-height: 100dvh;">
 
   <!-- Fixed header -->
   <header class="fixed-header flex items-center justify-between px-4 lg:px-6 py-2 text-[10px]" style="background: var(--bg-card); border-bottom: 1px solid var(--border);">
@@ -117,14 +120,13 @@
               <input id="loginUsername" type="text" placeholder="your@email.com or username" autocomplete="off" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
             </div>
             <div class="mb-2">
-              <label for="loginAccessKey" class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Password</label>
-              <input id="loginAccessKey" type="password" placeholder="e.g. A7k2&Pq4!xZ" autocomplete="off" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px;">
-            </div>
-            <div class="flex items-center justify-between mb-3">
-              <div></div>
-              <button type="button" id="forgotAccessKeyBtn" class="text-[11px] font-medium hover:opacity-80 transition-all" style="color: #ff5c35; min-height: 44px; padding: 10px 8px;">Forgot Access Key?</button>
+              <label for="loginAccessKey" class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Token Key</label>
+              <input id="loginAccessKey" type="password" placeholder="e.g. A7k2Pq4xZ" autocomplete="off" class="w-full rounded-lg px-4 py-3 text-[13px] font-mono focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 16px; margin-bottom: 6px;">
             </div>
             <button id="loginBtn" type="submit" class="w-full py-3 rounded-lg gradient-orange text-white text-[13px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow); min-height: 44px;">Login</button>
+            <div class="text-right mt-2">
+              <button type="button" id="forgotAccessKeyBtn" class="text-[11px] font-medium hover:opacity-80 transition-all" style="color: #ff5c35; min-height: 44px; padding: 5px;">Forgot Token Key?</button>
+            </div>
           </form>
 
           <div class="mt-4 pt-4" style="border-top: 1px solid var(--border);">
@@ -149,11 +151,11 @@
     <!-- Footer (outside flex-1 centering so it sticks to bottom) -->
     <footer class="footer-area px-4 py-4 text-center">
       <div class="flex items-center justify-center gap-2 sm:gap-4 text-[10px] flex-wrap" style="color: var(--text-muted);">
-        <a href="#" class="hover:text-[#ff6b42] transition-all" style="min-height: 44px; display: inline-flex; align-items: center;">Privacy Policy</a>
+        <a href="/policy" class="hover:text-[#ff6b42] transition-all" style="min-height: 44px; display: inline-flex; align-items: center; color: var(--text-muted); text-decoration: none;">Privacy Policy</a>
         <span>|</span>
-        <a href="#" class="hover:text-[#ff6b42] transition-all" style="min-height: 44px; display: inline-flex; align-items: center;">Terms of Service</a>
+        <a href="/policy#terms" class="hover:text-[#ff6b42] transition-all" style="min-height: 44px; display: inline-flex; align-items: center; color: var(--text-muted); text-decoration: none;">Terms of Service</a>
         <span>|</span>
-        <a href="#" class="hover:text-[#ff6b42] transition-all" style="min-height: 44px; display: inline-flex; align-items: center;">Cookie Policy</a>
+        <a href="/policy#cookies" class="hover:text-[#ff6b42] transition-all" style="min-height: 44px; display: inline-flex; align-items: center; color: var(--text-muted); text-decoration: none;">Cookie Policy</a>
       </div>
       <p class="text-[10px] mt-2" style="color: var(--text-muted);">
         &copy; 2026 MetasBank. All rights reserved. | v2.4.1
@@ -209,18 +211,22 @@
 
       btn.textContent = 'Logging in...'; btn.disabled = true; btn.style.opacity = '0.7'
 
-      memberLogin(username, accessKey).then(function(result) {
-        if (result.error) {
+      try {
+        memberLogin(username, accessKey).then(function(result) {
+          if (result.error) {
+            showLoginError('Invalid credentials')
+            btn.textContent = 'Login'; btn.disabled = false; btn.style.opacity = '1'
+          } else {
+            window.location.href = '/dashboard/'
+          }
+        }).catch(function(err) {
           showLoginError('Invalid credentials')
           btn.textContent = 'Login'; btn.disabled = false; btn.style.opacity = '1'
-        } else {
-          window.location.href = '/dashboard/'
-        }
-      }).catch(function(err) {
-        
-        showLoginError('Invalid credentials')
+        })
+      } catch(e) {
+        showLoginError('Connection error. Please try again.')
         btn.textContent = 'Login'; btn.disabled = false; btn.style.opacity = '1'
-      })
+      }
     }
 
     function showLoginError(msg) {

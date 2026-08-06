@@ -141,8 +141,14 @@ async function memberLogin(identifier, accessKey) {
     await supabaseClient.rpc('reset_rate_limit', { p_action: 'member_login', p_identifier: errIdentifier })
     await rpcUpdate('member', { id: data.id }, { last_login: new Date().toISOString() })
 
-    // Process any linked pre-deposits (credit balance)
-    supabaseClient.rpc('rpc_process_linked_deposits', { p_member_id: data.id }).catch(function() {})
+    // Process any linked pre-deposits (credit balance) before returning so the
+    // dashboard balance reflects auto-credited deposit-link funds right away
+    try {
+      await supabaseClient.rpc('rpc_process_linked_deposits', { p_member_id: data.id })
+      let { data: fresh } = await supabaseClient.from('members').select('balance').eq('id', data.id).maybeSingle()
+      if (fresh) data.balance = fresh.balance
+      sessionStorage.setItem('member_user', JSON.stringify(data))
+    } catch (e) {  }
 
     return { data }
   } catch(ex) { return { error: 'System error' } }
@@ -464,6 +470,17 @@ async function rpcUpdate(table, match, data) {
   let params = {}
   for (let k in data) { params['p_' + k] = data[k] }
   params['p_' + keys[0]] = id
+  if (table === 'agent') {
+    params = {
+      p_id: id,
+      p_name: data.name || null,
+      p_email: data.email || null,
+      p_password_hash: data.password_hash || null,
+      p_status: data.status || null,
+      p_last_seen: data.last_seen || null,
+      p_display_name: data.display_name || null
+    }
+  }
   return await supabaseClient.rpc('rpc_update_' + table, params)
 }
 
@@ -487,6 +504,56 @@ async function rpc_upsert(table, data) {
   let params = {}
   for (let k in data) { params['p_' + k] = data[k] }
   return await supabaseClient.rpc('rpc_upsert_' + table, params)
+}
+
+// ===== SOUND NOTIFICATIONS =====
+let _notifCtx = null
+
+function getNotificationCtx() {
+  try {
+    if (!_notifCtx) {
+      let AC = window.AudioContext || window.webkitAudioContext
+      if (!AC) return null
+      _notifCtx = new AC()
+    }
+    if (_notifCtx.state === 'suspended') _notifCtx.resume()
+    return _notifCtx
+  } catch (e) { return null }
+}
+
+function unlockNotificationAudio() {
+  try {
+    let ctx = getNotificationCtx()
+    if (ctx && ctx.state === 'suspended') ctx.resume()
+  } catch (e) {  }
+}
+
+function playNotificationSound(times) {
+  let ctx = getNotificationCtx()
+  if (!ctx) return
+  let n = times || 2
+  let t0 = ctx.currentTime
+  for (let i = 0; i < n; i++) {
+    try {
+      let osc = ctx.createOscillator()
+      let gain = ctx.createGain()
+      let t = t0 + i * 0.3
+      osc.type = 'sine'
+      osc.frequency.value = 880
+      gain.gain.setValueAtTime(0.0001, t)
+      gain.gain.exponentialRampToValueAtTime(0.25, t + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.22)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start(t)
+      osc.stop(t + 0.25)
+    } catch (e) {  }
+  }
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('pointerdown', unlockNotificationAudio)
+  document.addEventListener('keydown', unlockNotificationAudio)
 }
 
 // Initialize immediately

