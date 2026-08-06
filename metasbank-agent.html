@@ -550,6 +550,7 @@
       // Load data and setup realtime
       try { loadAllData(); } catch(e) {  }
       try { setupAgentRealtime(); } catch(e) {  }
+      try { startConversationPolling(); } catch(e) {  }
       window._agentRefreshTimer = setInterval(function() {
         try { loadChatConversations(); } catch(e) {  }
         try { loadCallbackRequests(); } catch(e) {  }
@@ -653,6 +654,68 @@
     function cleanupAgentRealtime() {
       agentRtChannels.forEach(function(c) { supabaseClient.removeChannel(c); });
       agentRtChannels = [];
+      stopConversationPolling();
+    }
+
+    // ===== NEW CHAT POLLING (realtime fallback) =====
+    var convPollTimer = null;
+    var convPollSnapshot = {};
+    var convPollInitialized = false;
+    var convPollBusy = false;
+
+    function startConversationPolling() {
+      stopConversationPolling();
+      convPollInitialized = false;
+      convPollSnapshot = {};
+      pollConversations();
+      convPollTimer = setInterval(pollConversations, 5000);
+    }
+
+    function stopConversationPolling() {
+      if (convPollTimer) { clearInterval(convPollTimer); convPollTimer = null; }
+    }
+
+    function pollConversations() {
+      if (convPollBusy) return;
+      convPollBusy = true;
+      supabaseClient.rpc('rpc_admin_get_chat_conversations').then(function(res) {
+        var convs = (res && res.data) || [];
+        var now = {};
+        var newConv = null;
+        var changedIds = [];
+        convs.forEach(function(c) {
+          now[c.id] = { status: c.status, updated: c.updated_at || '', assigned: c.assigned_to };
+          var prev = convPollSnapshot[c.id];
+          if (!prev) {
+            if (!newConv) newConv = c;
+          } else if (c.status !== 'closed' && prev.updated !== (c.updated_at || '')) {
+            changedIds.push(c.id);
+          }
+        });
+        var wasInitialized = convPollInitialized;
+        convPollInitialized = true;
+        convPollSnapshot = now;
+        if (wasInitialized && newConv) {
+          var agentId = getMyAgentId();
+          if (newConv.status === 'unassigned') notifyAgent('New chat request from a member');
+          else if (newConv.assigned_to === agentId) notifyAgent('New chat request assigned to you');
+        }
+        if (wasInitialized && changedIds.length) {
+          var idx = 0;
+          (function checkNext() {
+            if (idx >= changedIds.length) return;
+            var cid = changedIds[idx++];
+            supabaseClient.rpc('rpc_admin_get_chat_messages', { p_conversation_id: cid }).then(function(r) {
+              var msgs = (r && r.data) || [];
+              var last = msgs[msgs.length - 1];
+              if (last && (last.sender === 'member' || last.sender === 'system')) {
+                notifyAgent('New message from a member');
+              }
+              checkNext();
+            }).catch(function() { checkNext(); });
+          })();
+        }
+      }).catch(function() { }).then(function() { convPollBusy = false; });
     }
 
     document.addEventListener('visibilitychange', function() {
