@@ -367,8 +367,8 @@ async function adminLogin(email, password) {
       if (matched) {
         await supabaseClient.rpc('reset_rate_limit', { p_action: 'admin_login', p_identifier: rateId })
         let role = matched.role || 'agent'
-        sessionStorage.setItem('admin_session', JSON.stringify({ user: { email, agent_id: matched.id, name: matched.name, role: role, display_name: matched.display_name || null } }))
-        return { data: { user: { email, agent_id: matched.id, name: matched.name, role: role, display_name: matched.display_name || null } } }
+        sessionStorage.setItem('admin_session', JSON.stringify({ user: { email, agent_id: matched.id, name: matched.name, role: role, display_name: matched.display_name || null, auth_hash: hashHex } }))
+        return { data: { user: { email, agent_id: matched.id, name: matched.name, role: role, display_name: matched.display_name || null, auth_hash: hashHex } } }
       }
     }
 
@@ -376,13 +376,15 @@ async function adminLogin(email, password) {
     if (email.toLowerCase() !== 'admin@secure.metasbank') {
       return { error: 'Unauthorized admin email' }
     }
-    if (!_adminPwHash) await loadAdminPasswordHash()
-    if (!_adminPwHash) return { error: 'Admin password not configured' }
-    if (!timingSafeEqual(hashHex, _adminPwHash)) {
+    // Verify server-side so the stored hash never reaches the client
+    let verifyResp = await supabaseClient.rpc('rpc_verify_admin_login', { p_password_hash: hashHex })
+    if (verifyResp.error) return { error: 'Authentication error' }
+    if (!verifyResp.data) {
       // Increment rate limit on failure
       await supabaseClient.rpc('check_rate_limit', { p_action: 'admin_login', p_identifier: rateId, p_max_attempts: 5, p_window_minutes: 1 })
       return { error: 'Invalid password' }
     }
+    _adminPwHash = hashHex
     await supabaseClient.rpc('reset_rate_limit', { p_action: 'admin_login', p_identifier: rateId })
     // Also look up admin's agent record so admin can attend chats
     let adminAgent = { agent_id: null, name: 'Admin' }
@@ -390,8 +392,8 @@ async function adminLogin(email, password) {
       let { data: a } = await supabaseClient.from('agents').select('id, name').eq('email', email.toLowerCase()).maybeSingle()
       if (a) { adminAgent.agent_id = a.id; adminAgent.name = a.name || 'Admin' }
     } catch(e) {}
-    sessionStorage.setItem('admin_session', JSON.stringify({ user: { email, role: 'admin', agent_id: adminAgent.agent_id, name: adminAgent.name } }))
-    return { data: { user: { email, role: 'admin', agent_id: adminAgent.agent_id, name: adminAgent.name } } }
+    sessionStorage.setItem('admin_session', JSON.stringify({ user: { email, role: 'admin', agent_id: adminAgent.agent_id, name: adminAgent.name, auth_hash: hashHex } }))
+    return { data: { user: { email, role: 'admin', agent_id: adminAgent.agent_id, name: adminAgent.name, auth_hash: hashHex } } }
   } catch(e) {  return { error: 'Authentication error' } }
 }
 
@@ -418,6 +420,57 @@ function getAdminSession() {
   try { return JSON.parse(sessionStorage.getItem('admin_session')) } catch(e) { return null }
 }
 
+// ===== ADMIN PROOF (guarded RPC authorization) =====
+// The guarded chat/admin RPCs require the caller to prove they know an
+// admin/agent password hash. The hash is stored in the admin session at
+// login (never in source/URL) and is verified server-side on each call.
+
+function getAdminProof() {
+  let session = getAdminSession()
+  if (!session || !session.user || !session.user.email || !session.user.auth_hash) return null
+  return { p_admin_email: session.user.email, p_admin_hash: session.user.auth_hash }
+}
+
+function withAdminProof(params) {
+  let proof = getAdminProof()
+  if (!proof) return null
+  let out = {}
+  for (let k in params) { out[k] = params[k] }
+  out['p_admin_email'] = proof.p_admin_email
+  out['p_admin_hash'] = proof.p_admin_hash
+  return out
+}
+
+async function rpcAdminChatConversations() {
+  let proof = getAdminProof()
+  if (!proof) return { data: null, error: { message: 'Not authorized' } }
+  return await supabaseClient.rpc('rpc_admin_get_chat_conversations', proof)
+}
+
+async function rpcAdminChatMessages(convId) {
+  let proof = getAdminProof()
+  if (!proof) return { data: null, error: { message: 'Not authorized' } }
+  let params = { p_conversation_id: convId }
+  for (let k in proof) { params[k] = proof[k] }
+  return await supabaseClient.rpc('rpc_admin_get_chat_messages', params)
+}
+
+async function rpcDeleteChatConversation(convId) {
+  let proof = getAdminProof()
+  if (!proof) return { error: { message: 'Not authorized' } }
+  return await supabaseClient.rpc('delete_chat_conversation', { p_conv_id: convId, p_admin_email: proof.p_admin_email, p_admin_hash: proof.p_admin_hash })
+}
+
+async function rpcMarkChatRead(convId, sender) {
+  let params = { p_conversation_id: convId, p_sender: sender }
+  let proof = getAdminProof()
+  if (proof) {
+    params['p_admin_email'] = proof.p_admin_email
+    params['p_admin_hash'] = proof.p_admin_hash
+  }
+  return await supabaseClient.rpc('rpc_mark_chat_read', params)
+}
+
 // ===== SERVER-SIDE SESSION VERIFICATION =====
 // Verifies admin/agent session against the database to prevent tampering
 
@@ -434,8 +487,8 @@ async function verifyAdminSession(expectedRole) {
   let session = getAdminSession()
   if (!session || !session.user) return null
   if (session.user.email === 'admin@secure.metasbank') {
-    // Super admin: verify password hash still matches
-    if (!_adminPwHash) await loadAdminPasswordHash()
+    // Super admin: auth_hash was stored in the session at login
+    if (!_adminPwHash) _adminPwHash = session.user.auth_hash || null
     if (!_adminPwHash) return null
     return session
   }
@@ -447,10 +500,12 @@ async function verifyAdminSession(expectedRole) {
     if (expectedRole === 'admin' && agent.role !== 'admin') return null
     if (expectedRole === 'agent' && !agent.role) return null
     // Refresh session data from DB
+    let storedHash = session.user.auth_hash || null
     session.user.name = agent.name
     session.user.agent_id = agent.id
     session.user.role = agent.role || 'agent'
     session.user.display_name = agent.display_name || null
+    session.user.auth_hash = storedHash
     sessionStorage.setItem('admin_session', JSON.stringify(session))
     return session
   } catch(e) {  return null }
@@ -481,6 +536,14 @@ async function rpcUpdate(table, match, data) {
       p_display_name: data.display_name || null
     }
   }
+  if (table === 'chat_conversation') {
+    // Guarded RPCs require admin/agent proof (members pass via conversation ownership)
+    let proof = getAdminProof()
+    if (proof) {
+      params['p_admin_email'] = proof.p_admin_email
+      params['p_admin_hash'] = proof.p_admin_hash
+    }
+  }
   return await supabaseClient.rpc('rpc_update_' + table, params)
 }
 
@@ -488,6 +551,14 @@ async function rpcInsert(table, data) {
   // Generic insert via RPC
   let params = {}
   for (let k in data) { params['p_' + k] = data[k] }
+  if (table === 'chat_message' || table === 'chat_rating') {
+    // Guarded RPCs require admin/agent proof (members pass via conversation ownership)
+    let proof = getAdminProof()
+    if (proof) {
+      params['p_admin_email'] = proof.p_admin_email
+      params['p_admin_hash'] = proof.p_admin_hash
+    }
+  }
   return await supabaseClient.rpc('rpc_insert_' + table, params)
 }
 

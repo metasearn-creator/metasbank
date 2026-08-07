@@ -687,7 +687,7 @@
     function pollConversations() {
       if (convPollBusy) return;
       convPollBusy = true;
-      supabaseClient.rpc('rpc_admin_get_chat_conversations').then(function(res) {
+      rpcAdminChatConversations().then(function(res) {
         var convs = (res && res.data) || [];
         var now = {};
         var newConv = null;
@@ -714,7 +714,7 @@
           (function checkNext() {
             if (idx >= changedIds.length) return;
             var cid = changedIds[idx++];
-            supabaseClient.rpc('rpc_admin_get_chat_messages', { p_conversation_id: cid }).then(function(r) {
+            rpcAdminChatMessages(cid).then(function(r) {
               var msgs = (r && r.data) || [];
               var last = msgs[msgs.length - 1];
               if (last && (last.sender === 'member' || last.sender === 'system')) {
@@ -752,7 +752,7 @@
     async function loadChatConversations() {
       try {
         var agentId = getMyAgentId();
-        var { data, error } = await supabaseClient.rpc('rpc_admin_get_chat_conversations');
+        var { data, error } = await rpcAdminChatConversations();
         if (error) {  return; }
         chatConversations = data || [];
         // Batch-fetch missing member names
@@ -893,7 +893,7 @@
       }
 
       // Mark messages as read
-      try { await supabaseClient.rpc('rpc_mark_chat_read', { p_conversation_id: convId, p_sender: 'admin' }); } catch(e) {}
+      try { await rpcMarkChatRead(convId, 'admin'); } catch(e) {}
 
       // Show/hide claim button
       var claimBtn = document.getElementById('claimConvBtn');
@@ -945,7 +945,7 @@
       var container = document.getElementById('chatMessages');
       if (!container) return;
       var conv = chatConversations.find(function(c) { return c.id === convId; });
-      var { data, error } = await supabaseClient.rpc('rpc_admin_get_chat_messages', { p_conversation_id: convId });
+      var { data, error } = await rpcAdminChatMessages(convId);
       if (error) { container.innerHTML = '<div class="text-[11px]" style="color:#ef4444;">Error loading messages</div>'; return; }
       var msgs = data || [];
       if (!msgs.length) { container.innerHTML = '<div class="text-[11px] p-3" style="color:var(--text-muted);">No messages yet</div>'; return; }

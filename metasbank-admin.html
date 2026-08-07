@@ -1636,7 +1636,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
     let currentAgentId = null;
 
     async function loadChatConversations() {
-      let { data } = await supabaseClient.rpc('rpc_admin_get_chat_conversations');
+      let { data } = await rpcAdminChatConversations();
       chatConversations = data || [];
       // Batch-fetch member names for conversations missing member_name
       let missingMemberIds = chatConversations.filter(function(c) { return !c.member_name && c.member_id; }).map(function(c) { return c.member_id; });
@@ -1749,7 +1749,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
     async function renderChatMessages(convId) {
       let container = document.getElementById('chatMessages');
       if (!container) return;
-      let { data } = await supabaseClient.rpc('rpc_admin_get_chat_messages', { p_conversation_id: convId });
+      let { data } = await rpcAdminChatMessages(convId);
       if (!data || !data.length) { container.innerHTML = '<div class="text-[11px] text-center py-4" style="color:var(--text-muted);">No messages yet</div>'; return; }
       container.innerHTML = data.map(function(m) {
         let side = m.sender === 'admin' ? 'admin' : m.sender === 'system' ? 'system' : 'member';
@@ -1890,10 +1890,10 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       if (!getAdminSession()) { showToast('Authentication required.'); return; }
       if (!confirm('Remove this agent? This will also permanently delete every conversation they handled.')) return;
       try {
-        let { data: convs } = await supabaseClient.rpc('rpc_admin_get_chat_conversations');
+        let { data: convs } = await rpcAdminChatConversations();
         let theirs = (convs || []).filter(function(c) { return c.assigned_to === agentId; });
         for (let i = 0; i < theirs.length; i++) {
-          let { error: delErr } = await supabaseClient.rpc('delete_chat_conversation', { p_conv_id: theirs[i].id });
+          let { error: delErr } = await rpcDeleteChatConversation(theirs[i].id);
           if (delErr) { showToast('Error deleting conversations: ' + delErr.message); return; }
         }
         let { error } = await rpcDelete('agent', { id: agentId });
@@ -1941,7 +1941,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       if (!selectedConvId) return;
       if (!confirm('Delete this entire conversation and all its messages? This cannot be undone.')) return;
       try {
-        let { error } = await supabaseClient.rpc('delete_chat_conversation', { p_conv_id: selectedConvId });
+        let { error } = await rpcDeleteChatConversation(selectedConvId);
         if (error) { showAdminToast('Error deleting conversation: ' + error.message); return; }
         selectedConvId = null;
         document.getElementById('chatView').classList.add('hidden');
@@ -2484,27 +2484,27 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
 
       // Upsert chatbot_config
       let { data: existing } = await supabaseClient.rpc('rpc_admin_get_chatbot_config_id')
-      await supabaseClient.rpc('rpc_upsert_chatbot_config', {
+      await supabaseClient.rpc('rpc_upsert_chatbot_config', withAdminProof({
         p_id: existing && existing.id ? existing.id : 1,
         p_agent_name: agentName,
         p_fallback: fallback,
         p_quick_replies: quickReplies,
         p_greetings: greetings
-      })
+      }))
 
       // Delete existing rules and re-insert
       let { data: existingRuleIds } = await supabaseClient.rpc('rpc_admin_get_chatbot_rule_ids')
       if (existingRuleIds && existingRuleIds.length) {
         for (let rid of existingRuleIds) {
-          await supabaseClient.rpc('rpc_delete_chatbot_rule', { p_id: rid })
+          await supabaseClient.rpc('rpc_delete_chatbot_rule', withAdminProof({ p_id: rid }))
         }
       }
       for (let i = 0; i < chatRules.length; i++) {
-        await supabaseClient.rpc('rpc_insert_chatbot_rule', {
+        await supabaseClient.rpc('rpc_insert_chatbot_rule', withAdminProof({
           p_keywords: chatRules[i].keywords,
           p_response: chatRules[i].response,
           p_sort_order: i + 1
-        })
+        }))
       }
 
       showToast('Chatbot config saved')

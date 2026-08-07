@@ -3509,7 +3509,7 @@ let chatMemberChannel = null;
           let name = payload.new.admin_name ? '<b>' + escHtml(payload.new.admin_name) + '</b>: ' : '';
           addChatMsg('bot', name + escHtml(payload.new.message));
           // Mark member messages as read when agent replies
-          try { supabaseClient.rpc('rpc_mark_chat_read', { p_conversation_id: chatConversationId, p_sender: 'member' }); } catch(e) {}
+          try { rpcMarkChatRead(chatConversationId, 'member'); } catch(e) {}
         } else if (payload.new && payload.new.sender === 'system') {
           let msg = payload.new.message;
           if (msg === '[TIMER_PAUSED]') {
@@ -3724,15 +3724,31 @@ let chatMemberChannel = null;
       if (!u) return;
       try {
         let { data: conv } = await supabaseClient.from('chat_conversations')
-          .select('id, status')
+          .select('id, status, assigned_to')
           .eq('member_id', u.id)
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
         if (!conv) return;
-        if (conv.status === 'unassigned' || conv.status === 'active') {
+        let resumeAgentChat = false;
+        if (conv.status === 'active' && conv.assigned_to) {
+          let cutoff = new Date(Date.now() - 60000).toISOString();
+          let { data: agent } = await supabaseClient.from('agents')
+            .select('id')
+            .eq('id', conv.assigned_to)
+            .eq('status', 'online')
+            .gte('last_seen', cutoff)
+            .maybeSingle();
+          resumeAgentChat = !!agent;
+          if (!resumeAgentChat) {
+            try {
+              await rpcUpdate('chat_conversation', { id: conv.id }, { status: 'unassigned', assigned_to: null, updated_at: new Date().toISOString() });
+            } catch (e) {}
+          }
+        }
+        if (conv.status === 'unassigned' || resumeAgentChat) {
           chatConversationId = conv.id;
-          if (conv.status === 'active') agentChatOpen = true;
+          if (resumeAgentChat) agentChatOpen = true;
           subscribeToChatMessages();
         }
         let { data: msgs } = await supabaseClient.from('chat_messages')
