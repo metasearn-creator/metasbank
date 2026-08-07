@@ -3827,7 +3827,8 @@ let chatMemberChannel = null;
 
     async function findAvailableAgent() {
       try {
-        let { data } = await supabaseClient.from('agents').select('id, name').eq('status', 'online');
+        let cutoff = new Date(Date.now() - 60000).toISOString();
+        let { data } = await supabaseClient.from('agents').select('id, name').eq('status', 'online').gte('last_seen', cutoff);
         if (data && data.length) {
           let randomIndex = Math.floor(Math.random() * data.length);
           return data[randomIndex];
@@ -3839,6 +3840,7 @@ let chatMemberChannel = null;
     function startOfflineForm() {
       hideTyping();
       clearAgentNoReplyTimer();
+      agentChatOpen = false;
       if (typingTimeout) { clearTimeout(typingTimeout); typingTimeout = null; }
       addChatMsg('bot', 'There is no available agent right now, but our team will <b>reach out to you shortly</b>. Please leave your details below.');
       chatbotOfflineMode = true;
@@ -3879,10 +3881,9 @@ let chatMemberChannel = null;
       showTyping();
       var minLoading = new Promise(function(res) { setTimeout(res, 1200); });
       try {
-        let { data } = await supabaseClient.rpc('rpc_get_agent_availability');
-        let count = (data && data[0]) ? Number(data[0].available_count) : 0;
+        let agent = await findAvailableAgent();
         await minLoading;
-        if (count > 0) {
+        if (agent) {
           getOrCreateConversation().then(function(convId) {
             if (convId) {
               agentChatOpen = true;
@@ -3918,12 +3919,7 @@ let chatMemberChannel = null;
             autoHideTyping(40000);
             startAgentNoReplyTimer();
           });
-        } else if (attempt === 0) {
-          sendSystemMessage('Your request has been submitted. A support representative will be with you shortly.');
-          sendChatMessage('User requested agent assistance');
-          renderQuickReplies(null);
-          agentRetryTimer = setTimeout(function() { tryAssignAgent(convId, input, 1); }, 5000);
-        } else if (attempt < 24) {
+        } else if (attempt < 3) {
           agentRetryTimer = setTimeout(function() { tryAssignAgent(convId, input, attempt + 1); }, 5000);
         } else {
           hideTyping();

@@ -1329,11 +1329,18 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       loadAllData();
       setupAdminRealtime();
       window._adminRefreshTimer = setInterval(function() { refreshOperationalData(); }, 30000);
+      // Heartbeat: keep last_seen fresh so members only get routed to a live console
+      window._adminAgentHeartbeat = setInterval(function() {
+        if (myAgentId && document.visibilityState === 'visible') {
+          rpcUpdate('agent', { id: myAgentId }, { last_seen: new Date().toISOString() }).catch(function(){});
+        }
+      }, 20000);
     });
 
     async function adminLogout() {
       cleanupAdminRealtime();
       if (window._adminRefreshTimer) { clearInterval(window._adminRefreshTimer); window._adminRefreshTimer = null; }
+      if (window._adminAgentHeartbeat) { clearInterval(window._adminAgentHeartbeat); window._adminAgentHeartbeat = null; }
       try { await supabaseClient.auth.signOut(); } catch(e) {}
       sessionStorage.removeItem('admin_session');
       window.location.href = '/admin/login.html';
@@ -1460,6 +1467,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
     }
 
     function cleanupAdminRealtime() {
+      if (window._adminAgentHeartbeat) { clearInterval(window._adminAgentHeartbeat); window._adminAgentHeartbeat = null; }
       adminRtChannels.forEach(function(c) { supabaseClient.removeChannel(c); });
       adminRtChannels = [];
     }

@@ -556,6 +556,14 @@
         try { loadCallbackRequests(); } catch(e) {  }
         try { loadAgents(); } catch(e) {  }
       }, 30000);
+      // Heartbeat: keep last_seen fresh so members only get routed to a live console
+      window._agentHeartbeat = setInterval(function() {
+        var hbId = getMyAgentId();
+        if (!hbId) return;
+        if (document.visibilityState === 'visible') {
+          rpcUpdate('agent', { id: hbId }, { last_seen: new Date().toISOString() }).catch(function(){});
+        }
+      }, 20000);
       scrollToSection('liveChatSection');
       updateNameGeneratorState();
     });
@@ -652,6 +660,7 @@
     }
 
     function cleanupAgentRealtime() {
+      if (window._agentHeartbeat) { clearInterval(window._agentHeartbeat); window._agentHeartbeat = null; }
       agentRtChannels.forEach(function(c) { supabaseClient.removeChannel(c); });
       agentRtChannels = [];
       stopConversationPolling();
