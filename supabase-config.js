@@ -8,7 +8,7 @@
 // Without RLS enforced, the anon key can read/write any row in any table.
 // See: https://supabase.com/docs/guides/auth/row-level-security
 const SUPABASE_URL = 'https://pkhftlbacapcarwnrhzn.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBraGZ0bGJhY2FwY2Fyd25yaHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MTc2NTYsImV4cCI6MjA5ODA5MzY1Nn0.0fb4lcpAMyMNZRnbBQIwl1EfdnTe3ioj0pIyGPA3gj0'
+const SUPABASE_ANON_KEY = 'sb_publishable_3UThE1nV4ZgIlAtgIl_GFg__JiXekUZ'
 
 // Global supabase client
 let supabaseClient = null
