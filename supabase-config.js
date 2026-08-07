@@ -13,9 +13,50 @@ const SUPABASE_ANON_KEY = 'sb_publishable_3UThE1nV4ZgIlAtgIl_GFg__JiXekUZ'
 // Global supabase client
 let supabaseClient = null
 
+// Guarded RPCs require admin/agent proof (p_admin_email + p_admin_hash).
+// The proof comes from the admin session and is injected automatically.
+const ADMIN_GUARDED_RPCS = new Set([
+  'rpc_admin_delete_pre_deposit','rpc_admin_find_member','rpc_admin_get_account_request','rpc_admin_get_agent_conversations',
+  'rpc_admin_get_agent_status','rpc_admin_get_agents','rpc_admin_get_agents_safe','rpc_admin_get_all_withdrawals',
+  'rpc_admin_get_bank_accounts','rpc_admin_get_chat_conversations','rpc_admin_get_chat_messages','rpc_admin_get_chatbot_config',
+  'rpc_admin_get_chatbot_config_id','rpc_admin_get_chatbot_rule_ids','rpc_admin_get_chatbot_rules','rpc_admin_get_dashboard_stats',
+  'rpc_admin_get_deposit','rpc_admin_get_deposit_ach_config','rpc_admin_get_deposit_ach_id','rpc_admin_get_deposit_coin_ids',
+  'rpc_admin_get_deposit_coins','rpc_admin_get_deposit_wire_config','rpc_admin_get_deposit_wire_id','rpc_admin_get_fee_config',
+  'rpc_admin_get_kyc_submissions','rpc_admin_get_member','rpc_admin_get_member_balance','rpc_admin_get_member_email',
+  'rpc_admin_get_member_names','rpc_admin_get_members','rpc_admin_get_pending_account_requests','rpc_admin_get_pending_deposits',
+  'rpc_admin_get_pre_deposits','rpc_admin_get_roles','rpc_admin_get_setting','rpc_admin_get_sms_callbacks','rpc_admin_get_wallets',
+  'rpc_admin_get_withdrawal','rpc_admin_get_withdrawals','rpc_admin_get_withdrawals_count','rpc_admin_insert_transaction',
+  'rpc_agent_get_kyc_links','rpc_agent_get_own_status','rpc_agent_verify_password','rpc_approve_withdrawal','rpc_confirm_deposit',
+  'rpc_credit_balance','rpc_deduct_member_balance','rpc_delete_agent','rpc_delete_all_deposit_coins','rpc_delete_all_sms_callbacks',
+  'rpc_delete_audit_log_entry','rpc_delete_bank_account','rpc_delete_chatbot_rule','rpc_delete_deposit_coin','rpc_delete_kyc_link',
+  'rpc_delete_member','rpc_delete_role','rpc_delete_sms_callback','rpc_delete_transaction_by_ref','rpc_delete_wallet',
+  'rpc_delete_withdrawal','rpc_generate_kyc_link','rpc_get_audit_logs','rpc_insert_account','rpc_insert_agent',
+  'rpc_insert_chat_message','rpc_insert_chat_rating','rpc_insert_chatbot_rule','rpc_insert_deposit_coin','rpc_insert_member',
+  'rpc_insert_notification','rpc_insert_pre_deposit','rpc_insert_sms_callback','rpc_mark_chat_read','rpc_set_member_auth_password',
+  'rpc_insert_audit_log',
+  'rpc_update_account_request_status','rpc_update_agent','rpc_update_chat_conversation','rpc_update_deposit_status',
+  'rpc_update_member','rpc_update_settings','rpc_update_sms_callback','rpc_update_transaction_status','rpc_update_withdrawal',
+  'rpc_update_withdrawal_status','rpc_upsert_bank_account','rpc_upsert_chatbot_config','rpc_upsert_deposit_ach_config',
+  'rpc_upsert_deposit_wire_config','rpc_upsert_fee_config','rpc_upsert_role','rpc_upsert_setting','rpc_upsert_wallet',
+  'admin_create_member','admin_delete_member'
+])
+
 function initSupabase() {
   if (typeof supabase !== 'undefined') {
     supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    const origRpc = supabaseClient.rpc.bind(supabaseClient)
+    supabaseClient.rpc = function(fn, params) {
+      let args = params || {}
+      if (ADMIN_GUARDED_RPCS.has(fn)) {
+        const proof = getAdminProof()
+        if (proof) {
+          args = Object.assign({}, args)
+          if (!args.p_admin_email) args.p_admin_email = proof.p_admin_email
+          if (!args.p_admin_hash) args.p_admin_hash = proof.p_admin_hash
+        }
+      }
+      return origRpc(fn, args)
+    }
     return supabaseClient
   }
   return null
@@ -37,6 +78,12 @@ const RL_PREFIX = 'mb_rl_'
 function rlGet(key) { return parseInt(localStorage.getItem(RL_PREFIX + key) || '0', 10) }
 function rlSet(key, val) { localStorage.setItem(RL_PREFIX + key, String(val)) }
 function rlRemove(key) { localStorage.removeItem(RL_PREFIX + key) }
+
+function parseJsonb(val) {
+  if (!val) return null
+  if (typeof val === 'object') return val
+  try { return JSON.parse(val) } catch(e) { return null }
+}
 
 function trackRateLimit(action, maxAttempts, windowMs) {
   let now = Date.now()
@@ -106,21 +153,15 @@ async function memberLogin(identifier, accessKey) {
       return { error: 'Too many failed attempts. Try again later.' }
     }
 
-    const isEmail = identifier.includes('@')
     let accessKeyTrimmed = (accessKey || '').trim()
-    let query = supabaseClient.from('members').select('id, name, username, email, balance, status, access_key, created_at, last_login, auth_uid, auth_password').eq('access_key', accessKeyTrimmed)
-    if (isEmail) {
-      query = query.eq('email', identifier.toLowerCase().trim())
-    } else {
-      query = query.eq('username', identifier.toLowerCase().trim())
-    }
-    let resp = await query
-    if (resp.error || !resp.data || resp.data.length === 0) {
+    let loginResp = await supabaseClient.rpc('rpc_member_login', { p_identifier: identifier.toLowerCase().trim(), p_access_key: accessKeyTrimmed })
+    let loginData = parseJsonb(loginResp.data)
+    if (loginResp.error || !loginData || loginData.error || loginData.id == null) {
       // Increment rate limit on failure
       await supabaseClient.rpc('check_rate_limit', { p_action: 'member_login', p_identifier: errIdentifier, p_max_attempts: 10, p_window_minutes: 5 })
       return { error: 'Invalid credentials' }
     }
-    let data = resp.data[0]
+    let data = loginData
     if (data.status !== 'active') return { error: 'Account is suspended' }
 
     // Sign in with Supabase Auth using stored password, then discard immediately
@@ -139,7 +180,6 @@ async function memberLogin(identifier, accessKey) {
 
     sessionStorage.setItem('member_user', JSON.stringify(data))
     await supabaseClient.rpc('reset_rate_limit', { p_action: 'member_login', p_identifier: errIdentifier })
-    await rpcUpdate('member', { id: data.id }, { last_login: new Date().toISOString() })
 
     // Process any linked pre-deposits (credit balance) before returning so the
     // dashboard balance reflects auto-credited deposit-link funds right away
@@ -187,9 +227,13 @@ async function reauthMember() {
     if (!user || !user.email) return false
     // Sign out first to clear any stale session
     try { await supabaseClient.auth.signOut() } catch(e) {}
-    let { data: rows } = await supabaseClient.from('members').select('auth_password').eq('id', user.id).single()
-    if (!rows || !rows.auth_password) return false
-    await supabaseClient.auth.signInWithPassword({ email: user.email, password: rows.auth_password })
+    let identifier = user.email.toLowerCase().trim()
+    let accessKey = (user.access_key || '').trim()
+    if (!accessKey) return false
+    let { data: rpcData } = await supabaseClient.rpc('rpc_member_login', { p_identifier: identifier, p_access_key: accessKey })
+    let parsed = parseJsonb(rpcData)
+    if (!parsed || parsed.error || !parsed.auth_password) return false
+    await supabaseClient.auth.signInWithPassword({ email: user.email, password: parsed.auth_password })
     return true
   } catch(e) {  return false }
 }
@@ -214,31 +258,34 @@ async function memberSignup(email, name, dob, phone, street, city, state, zip, c
   trackRateLimit('member_signup', 3, 3600000)
 
   // 1. Check duplicate email
-  let { data: emailCheck } = await supabaseClient.from('members').select('id').eq('email', email).maybeSingle()
-  if (emailCheck) {  await supabaseClient.rpc('check_rate_limit', { p_action: 'member_signup', p_identifier: email, p_max_attempts: 3, p_window_minutes: 60 }); return { error: 'Registration could not be completed. Please try again later.' } }
+  let { data: availEmail } = await supabaseClient.rpc('rpc_member_check_available', { p_email: email, p_username: '', p_access_key: '' })
+  let availEmailObj = parseJsonb(availEmail)
+  if (availEmailObj && availEmailObj.email_taken) {  await supabaseClient.rpc('check_rate_limit', { p_action: 'member_signup', p_identifier: email, p_max_attempts: 3, p_window_minutes: 60 }); return { error: 'Registration could not be completed. Please try again later.' } }
 
   // 2. Generate unique username
   let baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
   if (!baseUsername) baseUsername = 'user'
   let username = baseUsername
-  let { data: userCheck } = await supabaseClient.from('members').select('username').eq('username', username).maybeSingle()
+  let { data: availUser } = await supabaseClient.rpc('rpc_member_check_available', { p_email: '', p_username: username, p_access_key: '' })
+  let userCheck = parseJsonb(availUser) && parseJsonb(availUser).username_taken
   let attempts = 0
   while (userCheck && attempts < 100) {
     username = baseUsername + cryptoRandomInt(99999)
-    let result = await supabaseClient.from('members').select('username').eq('username', username).maybeSingle()
-    userCheck = result.data
+    let result = await supabaseClient.rpc('rpc_member_check_available', { p_email: '', p_username: username, p_access_key: '' })
+    userCheck = parseJsonb(result.data) && parseJsonb(result.data).username_taken
     attempts++
   }
   if (userCheck) {  return { error: 'Registration could not be completed. Please try again later.' } }
 
   // 3. Generate unique access key
   let accessKey = generateAccessKey()
-  let { data: keyCheck } = await supabaseClient.from('members').select('id').eq('access_key', accessKey).maybeSingle()
+  let { data: availKey } = await supabaseClient.rpc('rpc_member_check_available', { p_email: '', p_username: '', p_access_key: accessKey })
+  let keyCheck = parseJsonb(availKey) && parseJsonb(availKey).access_key_taken
   let keyAttempts = 0
   while (keyCheck && keyAttempts < 100) {
     accessKey = generateAccessKey()
-    let keyResult = await supabaseClient.from('members').select('id').eq('access_key', accessKey).maybeSingle()
-    keyCheck = keyResult.data
+    let keyResult = await supabaseClient.rpc('rpc_member_check_available', { p_email: '', p_username: '', p_access_key: accessKey })
+    keyCheck = parseJsonb(keyResult.data) && parseJsonb(keyResult.data).access_key_taken
     keyAttempts++
   }
   if (keyCheck) {  return { error: 'Registration could not be completed. Please try again later.' } }
@@ -300,13 +347,12 @@ async function memberSignup(email, name, dob, phone, street, city, state, zip, c
   }
   let authUid = authResp.data && authResp.data.user ? authResp.data.user.id : null
 
-  // 7. Update member with auth_uid and auth_password
-  let updateResp = await rpcUpdate('member', { id: data.id }, { auth_uid: authUid, auth_password: authPassword })
+  // 7. Update member with auth_uid and auth_password (signup-linkage branch requires p_access_key)
+  let updateResp = await supabaseClient.rpc('rpc_update_member', { p_id: data.id, p_auth_uid: authUid, p_auth_password: authPassword, p_access_key: accessKey })
   if (updateResp.error) {  }
 
-  // Re-fetch to get fresh data including auth_uid
-  let { data: refreshed } = await supabaseClient.from('members').select('id, name, username, email, balance, status, access_key, auth_uid, created_at, last_login').eq('id', data.id).maybeSingle()
-  if (refreshed) data = refreshed
+  // 8. Stamp auth_uid locally (no anon members re-read needed)
+  if (data && typeof data === 'object') data.auth_uid = authUid
 
   // Auto-confirm email via RPC so user doesn't need to click the confirmation link
   try { await supabaseClient.rpc('confirm_auth_user', { user_id: authUid }) } catch(e) {  }
@@ -389,8 +435,9 @@ async function adminLogin(email, password) {
     // Also look up admin's agent record so admin can attend chats
     let adminAgent = { agent_id: null, name: 'Admin' }
     try {
-      let { data: a } = await supabaseClient.from('agents').select('id, name').eq('email', email.toLowerCase()).maybeSingle()
-      if (a) { adminAgent.agent_id = a.id; adminAgent.name = a.name || 'Admin' }
+      let { data: a } = await supabaseClient.rpc('rpc_verify_agent_login', { p_email: email.toLowerCase(), p_hash: hashHex })
+      let agentRow = a && a.length > 0 ? a[0] : null
+      if (agentRow) { adminAgent.agent_id = agentRow.id; adminAgent.name = agentRow.name || 'Admin' }
     } catch(e) {}
     sessionStorage.setItem('admin_session', JSON.stringify({ user: { email, role: 'admin', agent_id: adminAgent.agent_id, name: adminAgent.name, auth_hash: hashHex } }))
     return { data: { user: { email, role: 'admin', agent_id: adminAgent.agent_id, name: adminAgent.name, auth_hash: hashHex } } }

@@ -3733,12 +3733,8 @@ let chatMemberChannel = null;
         let resumeAgentChat = false;
         if (conv.status === 'active' && conv.assigned_to) {
           let cutoff = new Date(Date.now() - 60000).toISOString();
-          let { data: agent } = await supabaseClient.from('agents')
-            .select('id')
-            .eq('id', conv.assigned_to)
-            .eq('status', 'online')
-            .gte('last_seen', cutoff)
-            .maybeSingle();
+          let { data: agentsAvail } = await supabaseClient.rpc('rpc_get_available_agents');
+          let agent = (agentsAvail || []).find(function(a) { return a.id === conv.assigned_to && a.last_seen && new Date(a.last_seen).toISOString() >= cutoff; });
           resumeAgentChat = !!agent;
           if (!resumeAgentChat) {
             try {
@@ -3844,10 +3840,11 @@ let chatMemberChannel = null;
     async function findAvailableAgent() {
       try {
         let cutoff = new Date(Date.now() - 60000).toISOString();
-        let { data } = await supabaseClient.from('agents').select('id, name').eq('status', 'online').gte('last_seen', cutoff);
-        if (data && data.length) {
-          let randomIndex = Math.floor(Math.random() * data.length);
-          return data[randomIndex];
+        let { data } = await supabaseClient.rpc('rpc_get_available_agents');
+        let avail = (data || []).filter(function(a) { return a.last_seen && new Date(a.last_seen).toISOString() >= cutoff; });
+        if (avail.length) {
+          let randomIndex = Math.floor(Math.random() * avail.length);
+          return { id: avail[randomIndex].id, name: avail[randomIndex].name };
         }
       } catch(e) {  }
       return null;

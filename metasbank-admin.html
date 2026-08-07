@@ -3323,8 +3323,8 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       let curHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(currentPw))
       let curHashHex = Array.from(new Uint8Array(curHash)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('')
 
-      let { data: agentData } = await supabaseClient.from('agents').select('password_hash').eq('id', session.user.agent_id).maybeSingle()
-      if (!agentData || agentData.password_hash !== curHashHex) { showToast('Current password is incorrect.'); return }
+      let { data: pwMatch } = await supabaseClient.rpc('rpc_agent_verify_password', { p_id: session.user.agent_id, p_hash: curHashHex })
+      if (!pwMatch) { showToast('Current password is incorrect.'); return }
 
       // Update password
       let newHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(newPw))
