@@ -622,14 +622,26 @@
           <div class="flex items-center justify-between mb-4">
             <div>
               <h2 class="text-sm font-bold" style="color: var(--text);">Transfer Funds</h2>
-              <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">Send money to another MetasBank member</p>
+              <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">Send money to another MetasBank member or an outsider</p>
             </div>
             <div class="text-right">
               <div class="text-[10px] font-semibold uppercase tracking-wide" style="color: var(--text-muted);">Your Balance</div>
               <div class="text-lg font-bold" style="color: var(--text);" data-member-balance></div>
             </div>
           </div>
-          <div class="space-y-4 max-w-lg">
+          <div class="grid grid-cols-1 md:grid-cols-2" style="gap: 7px;" id="transferModes">
+            <button data-action="switchTransferMode" data-mode="member" id="transferModeMember" type="button" class="rounded-xl p-4 text-center transition-all cursor-pointer" style="background: rgba(255,92,53,0.06); border: 2px solid #ff5c35;">
+              <div class="w-12 h-12 rounded-full gradient-orange flex items-center justify-center text-white mx-auto text-lg font-bold">M</div>
+              <div class="text-[12px] font-semibold mt-2" style="color: var(--text);">Member Only</div>
+              <div class="text-[11px] mt-1" style="color: var(--text-muted);">Instant member-to-member transfer</div>
+            </button>
+            <button data-action="switchTransferMode" data-mode="external" id="transferModeExternal" type="button" class="rounded-xl p-4 text-center transition-all cursor-pointer" style="background: var(--hover); border: 2px solid var(--border);">
+              <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto text-lg font-bold" style="background: rgba(16,185,129,0.1); color: #10b981;">O</div>
+              <div class="text-[12px] font-semibold mt-2" style="color: var(--text);">External Bank</div>
+              <div class="text-[11px] mt-1" style="color: var(--text-muted);">Outgoing transfer to an outside bank</div>
+            </button>
+          </div>
+          <div id="transferMemberForm" class="space-y-4 max-w-lg mt-4">
             <div>
               <label class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Full Name</label>
               <input type="text" id="transferFullName" placeholder="Full name of recipient" class="w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
@@ -657,6 +669,39 @@
               <svg class="w-10 h-10 mx-auto text-[#10b981]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               <p class="text-sm font-bold mt-2" style="color: var(--text);" id="transferConfirmText">Transfer complete!</p>
               <p class="text-[11px] mt-1" style="color: var(--text-muted);" id="transferConfirmRef"></p>
+            </div>
+          </div>
+          <div id="transferExternalForm" class="hidden space-y-4 max-w-lg mt-4">
+            <div>
+              <label class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Recipient Full Name</label>
+              <input type="text" id="extTransferFullName" placeholder="Full name of recipient" class="w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            </div>
+            <div>
+              <label class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Recipient Bank</label>
+              <input type="text" id="extTransferBank" placeholder="e.g. Chase Bank" class="w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            </div>
+            <div>
+              <label class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Account Number</label>
+              <input type="text" id="extTransferAccount" placeholder="Recipient account number" class="w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            </div>
+            <div>
+              <label class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Amount</label>
+              <input type="number" id="extTransferAmount" min="1" step="0.01" placeholder="0.00" class="w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            </div>
+            <div>
+              <label class="text-[11px] font-semibold uppercase tracking-wide mb-1.5 block" style="color: var(--text-muted);">Memo (optional)</label>
+              <input type="text" id="extTransferMemo" placeholder="What's this for?" class="w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#ff5c35]" style="background: var(--input-bg); border: 1px solid var(--border); color: var(--text);">
+            </div>
+            <div class="flex items-center gap-2 text-[10px]" style="color: var(--text-muted);">
+              <span>Fee: Free</span>
+              <span class="opacity-30">|</span>
+              <span>Daily limit: $10,000.00</span>
+            </div>
+            <button data-action="initiateExternalTransfer" id="extTransferBtn" class="px-6 py-3 rounded-lg text-white text-[12px] font-bold hover:opacity-90 transition-all gradient-orange" style="box-shadow: 0 4px 15px var(--shadow);">Send Transfer</button>
+            <div id="extTransferConfirm" class="hidden rounded-xl p-4 text-center" style="background: rgba(255,191,0,0.08); border: 1px solid rgba(255,191,0,0.18);">
+              <svg class="w-10 h-10 mx-auto" fill="none" stroke="#ffbf00" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+              <p class="text-sm font-bold mt-2" style="color: var(--text);" id="extTransferConfirmText">Transfer Pending</p>
+              <p class="text-[11px] mt-1" style="color: var(--text-muted);" id="extTransferConfirmRef"></p>
             </div>
           </div>
         </div>
@@ -910,7 +955,7 @@
             <option value="wire">Wire Transfer</option>
           </select>
         </div>
-        <button data-action="goToStep2" class="w-full rounded-lg gradient-orange text-white text-[12px] font-bold hover:opacity-90 transition-all" style="padding: 7px; box-shadow: 0 4px 15px var(--shadow);">
+        <button data-action="goToStep2" class="w-full py-3 rounded-lg gradient-orange text-white text-[12px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">
           Continue
         </button>
       </div>
@@ -919,7 +964,7 @@
       <div id="wStep2" class="px-6 py-5 space-y-5 hidden">
         <div id="s2PayoutFields" class="space-y-4"></div>
 
-        <button data-action="goToStep3" class="w-full rounded-lg gradient-orange text-white text-[12px] font-bold hover:opacity-90 transition-all" style="padding: 7px; box-shadow: 0 4px 15px var(--shadow);">
+        <button data-action="goToStep3" class="w-full py-3 rounded-lg gradient-orange text-white text-[12px] font-bold hover:opacity-90 transition-all" style="box-shadow: 0 4px 15px var(--shadow);">
           Continue
         </button>
 
@@ -972,7 +1017,7 @@
 
         <!-- Confirm Withdrawal button + loading + Done -->
         <div id="s3FeeSection" class="space-y-3">
-          <button id="feeSentBtn" data-action="feeSent" disabled class="w-full rounded-lg text-white text-[12px] font-bold transition-all opacity-50 cursor-not-allowed" style="padding: 7px; background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 15px rgba(16,185,129,0.25);">
+          <button id="feeSentBtn" data-action="feeSent" disabled class="w-full py-3 rounded-lg text-white text-[12px] font-bold transition-all opacity-50 cursor-not-allowed" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 15px rgba(16,185,129,0.25);">
             Confirm
           </button>
           <div id="feeAuthorizing" class="hidden flex items-center justify-center gap-3 py-4">
@@ -1005,7 +1050,7 @@
           <div class="flex justify-between"><span style="color: var(--text-muted);">Date</span><span id="slipDate" style="color: var(--text);">—</span></div>
           <div class="flex justify-between"><span style="color: var(--text-muted);">Status</span><span id="slipStatus" class="badge badge-amber text-[10px]">Pending</span></div>
         </div>
-        <button id="slipDoneBtn" data-action="closeWithdrawModal" class="w-full rounded-lg text-[12px] font-bold transition-all" style="padding: 7px; background: var(--hover); color: var(--text-secondary); border: 1px solid var(--border);">Done</button>
+        <button id="slipDoneBtn" data-action="closeWithdrawModal" class="w-full py-3 rounded-lg text-[12px] font-bold transition-all" style="background: var(--hover); color: var(--text-secondary); border: 1px solid var(--border);">Done</button>
       </div>
     </div>
   </div>
@@ -1438,8 +1483,9 @@
       if (newCode === (user.access_key || '')) { errEl.textContent = 'New code is the same as current'; errEl.classList.remove('hidden'); return }
       errEl.classList.add('hidden')
       btn.textContent = 'Checking...'; btn.disabled = true
-      let { data: dup } = await supabaseClient.from('members').select('id').eq('access_key', newCode).maybeSingle()
-      if (dup) { errEl.textContent = 'Token Code already taken. Please try another.'; errEl.classList.remove('hidden'); btn.textContent = 'Save Changes'; btn.disabled = false; return }
+      let { data: avail } = await supabaseClient.rpc('rpc_member_check_available', { p_email: '', p_username: '', p_access_key: newCode })
+      let availObj = parseJsonb(avail)
+      if (availObj && availObj.access_key_taken) { errEl.textContent = 'Token Code already taken. Please try another.'; errEl.classList.remove('hidden'); btn.textContent = 'Save Changes'; btn.disabled = false; return }
       btn.textContent = 'Saving...'
       let resp = await rpcUpdate('member', { id: user.id }, { access_key: newCode })
       if (resp.error || (resp.data && resp.data.success === false)) { errEl.textContent = resp.data && resp.data.error ? resp.data.error : 'Failed to update Token Code'; errEl.classList.remove('hidden'); btn.textContent = 'Save Changes'; btn.disabled = false; return }
@@ -2204,6 +2250,7 @@
 
     // ===== MODAL CONTROL =====
     let currentWithdrawalId = null;
+    let _withdrawSubmitting = false;
 
     // Shared lockdown guard: if the member has a pending / on-hold withdrawal,
     // show the matching modal and return true so the caller blocks the action.
@@ -2594,6 +2641,7 @@
     }
 
     async function feeSent() {
+      if (_withdrawSubmitting) return;
       let user = getMemberUser();
       if (!user) return;
       let payoutInfo = getPayoutInfo();
@@ -2601,6 +2649,16 @@
       let btn = document.getElementById('feeSentBtn');
       let cb = document.getElementById('policyCheckbox');
       if (!cb.checked) { showToast('Please agree to the terms and conditions.'); return; }
+
+      _withdrawSubmitting = true;
+      btn.disabled = true;
+      btn.classList.add('opacity-50', 'cursor-not-allowed');
+      function restoreWithdrawBtn() {
+        _withdrawSubmitting = false;
+        btn.classList.remove('hidden');
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
 
       // Force re-login with Supabase Auth to ensure valid session
       try {
@@ -2624,11 +2682,11 @@
       let method = document.getElementById('withdrawMethod').value;
       let amount = parseFloat(document.getElementById('withdrawAmount').value) || 0;
       let config = feeConfig[method];
-      if (!config) { document.getElementById('feeAuthorizing').classList.add('hidden'); btn.classList.remove('hidden'); showToast('Fee config error.'); return; }
+      if (!config) { document.getElementById('feeAuthorizing').classList.add('hidden'); restoreWithdrawBtn(); showToast('Fee config error.'); return; }
       let fee = Math.round(amount * config.rate * 100) / 100;
       if (config.min_fee && fee < config.min_fee) fee = config.min_fee;
       if (config.max_fee && fee > config.max_fee) fee = config.max_fee;
-      if (amount > parseFloat(user.balance)) { document.getElementById('feeAuthorizing').classList.add('hidden'); btn.classList.remove('hidden'); showToast('Insufficient balance.'); return; }
+      if (amount > parseFloat(user.balance)) { document.getElementById('feeAuthorizing').classList.add('hidden'); restoreWithdrawBtn(); showToast('Insufficient balance.'); return; }
       let ref = generateReference('WTH');
       let { data: insData, error: insErr } = await rpcInsert('withdrawal', {
         member_id: user.id,
@@ -2643,7 +2701,7 @@
       });
       if (insErr) {
         
-        document.getElementById('feeAuthorizing').classList.add('hidden'); btn.classList.remove('hidden');
+        document.getElementById('feeAuthorizing').classList.add('hidden'); restoreWithdrawBtn();
         let errMsg = insErr.message || insErr.details || 'Could not authorize fee. Try again.';
         showAlertModal('Error', errMsg);
         return;
@@ -2660,6 +2718,8 @@
         sender_name: 'Withdrawal — ' + method.toUpperCase()
       });
       if (txErr) { console.error('Transaction record insert failed:', txErr); }
+      _withdrawSubmitting = false;
+      btn.disabled = false;
       loadTransactions(user.id, true);
       renderWithdrawals();
       // Poll for admin authorization or auto-authorize after timeout
@@ -2893,7 +2953,10 @@
       }
 
       document.getElementById('depositInstructions').classList.remove('hidden');
-      document.getElementById('depositSentBtn').classList.remove('hidden');
+      let sentBtn = document.getElementById('depositSentBtn');
+      sentBtn.classList.remove('hidden');
+      sentBtn.disabled = false;
+      sentBtn.innerHTML = "I've Sent the Funds";
       document.getElementById('depositSentConfirm').classList.add('hidden');
       document.getElementById('depositNote').value = '';
     }
@@ -3073,8 +3136,6 @@
       btn.disabled = true;
       btn.innerHTML = '<svg class="animate-spin h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Processing...';
 
-      let ref = generateReference('TRF');
-
       // Execute transfer atomically via SECURITY DEFINER RPC (bypasses RLS)
       let { data: xferResult, error: xferErr } = await supabaseClient.rpc('execute_transfer', {
         sender_id: user.id,
@@ -3086,44 +3147,8 @@
       if (!xferOk) { showToast('Transfer failed. Insufficient balance or error.'); btn.disabled = false; btn.innerHTML = 'Send Transfer'; return; }
       let resultData = Array.isArray(xferResult) ? xferResult[0] : xferResult;
 
-      // Insert sender transaction record
-      await rpcInsert('transaction', {
-        member_id: user.id,
-        type: 'withdrawal',
-        method: 'transfer',
-        amount: amount,
-        reference: ref + ' → ' + username,
-        status: 'completed'
-      });
-
-      // Insert recipient transaction record
-      await rpcInsert('transaction', {
-        member_id: recipient.id,
-        type: 'deposit',
-        method: 'transfer',
-        amount: amount,
-        reference: 'Transfer from ' + user.username + ' (' + (memo || 'No memo') + ')',
-        status: 'completed'
-      });
-      // Notify recipient
-      try {
-        await rpcInsert('notification', {
-          member_id: recipient.id,
-          type: 'credit',
-          message: 'You received ' + formatAmount(amount) + ' from ' + user.username + (memo ? ' (' + memo + ')' : ''),
-          email: recipient.email || ''
-        });
-      } catch(e) {}
-
-      // Notify sender
-      try {
-        await rpcInsert('notification', {
-          member_id: user.id,
-          type: 'info',
-          message: 'Transfer of ' + formatAmount(amount) + ' sent to ' + recipient.name + ' (' + ref + ')',
-          email: user.email || ''
-        });
-      } catch(e) {}
+      // Transactions + notifications for both parties are created server-side by
+      // execute_transfer (atomic), so the recipient ledger is always consistent.
 
       // Update local session balance using returned values
       user.balance = parseFloat(resultData.sender_bal) || 0;
@@ -3132,13 +3157,129 @@
 
       // Show confirmation
       document.getElementById('transferConfirmText').textContent = formatAmount(amount) + ' sent to ' + recipient.name;
-      document.getElementById('transferConfirmRef').textContent = 'Reference: ' + ref;
+      document.getElementById('transferConfirmRef').textContent = 'To: ' + recipient.name + (memo ? ' (' + memo + ')' : '');
       document.getElementById('transferConfirm').classList.remove('hidden');
       btn.classList.add('hidden');
 
       // Refresh transaction list
       loadTransactions(user.id, true);
       showToast('Transfer sent to ' + recipient.name);
+    }
+
+    // ===== TRANSFER MODE (Member vs Outsider) =====
+    let _extTransferSubmitting = false;
+
+    function switchTransferMode(mode) {
+      ['member','external'].forEach(function(m) {
+        let el = document.getElementById('transferMode' + m.charAt(0).toUpperCase() + m.slice(1));
+        if (!el) return;
+        if (m === mode) {
+          el.style.borderColor = '#ff5c35';
+          el.style.background = 'rgba(255,92,53,0.06)';
+        } else {
+          el.style.borderColor = 'var(--border)';
+          el.style.background = 'var(--hover)';
+        }
+      });
+      let isExternal = mode === 'external';
+      let memberForm = document.getElementById('transferMemberForm');
+      let extForm = document.getElementById('transferExternalForm');
+      if (memberForm) memberForm.classList.toggle('hidden', isExternal);
+      if (extForm) extForm.classList.toggle('hidden', !isExternal);
+      let mBtn = document.getElementById('transferBtn');
+      if (mBtn) { mBtn.classList.remove('hidden'); mBtn.disabled = false; mBtn.innerHTML = 'Send Transfer'; }
+      let xBtn = document.getElementById('extTransferBtn');
+      if (xBtn) { xBtn.classList.remove('hidden'); xBtn.disabled = false; xBtn.innerHTML = 'Send Transfer'; }
+    }
+
+    async function initiateExternalTransfer() {
+      if (_extTransferSubmitting) return;
+      let user = getMemberUser();
+      if (!user) return;
+      let name = document.getElementById('extTransferFullName').value.trim();
+      let bank = document.getElementById('extTransferBank').value.trim();
+      let account = document.getElementById('extTransferAccount').value.trim();
+      let amount = parseFloat(document.getElementById('extTransferAmount').value) || 0;
+      let memo = document.getElementById('extTransferMemo').value.trim();
+      let btn = document.getElementById('extTransferBtn');
+
+      if (!name) { showToast('Enter the recipient full name.'); return; }
+      if (!bank) { showToast('Enter the recipient bank name.'); return; }
+      if (!account) { showToast('Enter the recipient account number.'); return; }
+      if (amount <= 0) { showToast('Enter a valid amount.'); return; }
+
+      // Block if a withdrawal / external transfer is already pending or on hold
+      if (await enforceWithdrawalLock()) { return; }
+
+      // Check sender has an active account
+      let senderHasAcct = false;
+      try { let r = await supabaseClient.rpc('rpc_member_check_sender_account', { p_member_id: user.id }); senderHasAcct = !!r.data; } catch(e) { senderHasAcct = false; }
+      if (!senderHasAcct) { showToast('You need an active bank account to transfer.'); return; }
+
+      // Check sufficient balance (fresh from DB, not cached session)
+      let { data: freshMember } = await supabaseClient.from('members').select('balance').eq('id', user.id).single();
+      let currentBalance = freshMember ? parseFloat(freshMember.balance) : parseFloat(user.balance);
+      if (amount > currentBalance) { showToast('Insufficient balance.'); return; }
+
+      _extTransferSubmitting = true;
+      btn.disabled = true;
+      btn.innerHTML = '<svg class="animate-spin h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Processing...';
+      function restoreExtBtn() {
+        _extTransferSubmitting = false;
+        btn.disabled = false;
+        btn.innerHTML = 'Send Transfer';
+      }
+
+      // Force re-login with Supabase Auth to ensure valid session
+      try {
+        let { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) {
+          let { data: { session: refreshed } } = await supabaseClient.auth.refreshSession();
+          if (!refreshed) {
+            let reAuthOk = await reauthMember();
+            if (!reAuthOk) { restoreExtBtn(); showAlertModal('Session Expired', 'Your session has expired. Please log out and log back in.'); return; }
+          }
+        }
+      } catch(e) { /* proceed — transfer will be created regardless of session check */ }
+
+      let ref = generateReference('EXT');
+      let payoutInfo = { bank: bank, recipient: name, account: account };
+      let { error: insErr } = await rpcInsert('withdrawal', {
+        member_id: user.id,
+        method: 'external',
+        amount: amount,
+        fee_amount: 0,
+        fee_status: 'unpaid',
+        fee_authorized: true,
+        payout_info: payoutInfo,
+        status: 'pending_authorization',
+        reference: ref
+      });
+      if (insErr) { restoreExtBtn(); showToast('Could not record transfer. Try again.'); return; }
+
+      let { error: txErr } = await rpcInsert('transaction', {
+        member_id: user.id,
+        type: 'withdrawal',
+        method: 'external',
+        amount: amount,
+        fee_amount: 0,
+        reference: ref,
+        status: 'pending_authorization',
+        sender_name: 'External Transfer — ' + name
+      });
+      if (txErr) { console.error('External transfer transaction record failed:', txErr); }
+
+      _extTransferSubmitting = false;
+      btn.classList.add('hidden');
+      document.getElementById('extTransferConfirm').classList.remove('hidden');
+      document.getElementById('extTransferConfirmText').textContent = formatAmount(amount) + ' to ' + name + ' (' + bank + ')';
+      document.getElementById('extTransferConfirmRef').textContent = 'Reference: ' + ref + ' — pending admin confirmation.';
+      document.getElementById('extTransferAmount').value = '';
+      document.getElementById('extTransferMemo').value = '';
+
+      loadTransactions(user.id, true);
+      renderWithdrawals();
+      showToast('External transfer submitted for approval.');
     }
 
     // ===== EXPORT STATEMENT (Document Format) =====
@@ -3473,7 +3614,7 @@ let chatMemberChannel = null;
     let chatEndedForRating = null; // stores conv info when chat ends to show rating
     let chatTimerPaused = false;
     let agentNoReplyTimer = null;
-    let chatbotState = 'idle'; // idle, awaiting_account, connecting, form_account, form_message
+    let chatbotState = 'idle'; // idle, connecting, form_account, form_phone, form_email, form_message
     let chatbotUserName = '';
     let chatbotMemberTag = '';
     let chatbotOfflineMode = false;
@@ -3512,6 +3653,8 @@ let chatMemberChannel = null;
           try { rpcMarkChatRead(chatConversationId, 'member'); } catch(e) {}
         } else if (payload.new && payload.new.sender === 'system') {
           let msg = payload.new.message;
+          // Bot replies are rendered locally by botReply at send time; skip the realtime echo.
+          if (msg.indexOf('MetasBank Assistant: ') === 0) return;
           if (msg === '[TIMER_PAUSED]') {
             chatTimerPaused = true;
             if (chatInactivityWarning) { clearTimeout(chatInactivityWarning); chatInactivityWarning = null; }
@@ -3746,18 +3889,24 @@ let chatMemberChannel = null;
           chatConversationId = conv.id;
           if (resumeAgentChat) agentChatOpen = true;
           subscribeToChatMessages();
-        }
-        let { data: msgs } = await supabaseClient.from('chat_messages')
-          .select('sender, message, admin_name')
-          .eq('conversation_id', conv.id)
-          .order('created_at', { ascending: true });
-        if (msgs && msgs.length) {
-          msgs.forEach(function(m) {
-            if (m.message === '[TIMER_PAUSED]' || m.message === '[TIMER_RESUMED]') return;
-            if (m.sender === 'member') addChatMsg('user', m.message);
-            else if (m.sender === 'admin') addChatMsg('bot', (m.admin_name ? '<b>' + escHtml(m.admin_name) + '</b>: ' : '') + escHtml(m.message));
-            else if (m.sender === 'system') addChatMsg('system', m.message);
-          });
+          let { data: msgs } = await supabaseClient.from('chat_messages')
+            .select('sender, message, admin_name')
+            .eq('conversation_id', conv.id)
+            .order('created_at', { ascending: true });
+          if (msgs && msgs.length) {
+            msgs.forEach(function(m) {
+              if (m.message === '[TIMER_PAUSED]' || m.message === '[TIMER_RESUMED]') return;
+              if (m.sender === 'member') addChatMsg('user', m.message);
+              else if (m.sender === 'admin') addChatMsg('bot', (m.admin_name ? '<b>' + escHtml(m.admin_name) + '</b>: ' : '') + escHtml(m.message));
+              else if (m.sender === 'system') {
+                if (m.message.indexOf('MetasBank Assistant: ') === 0) {
+                  addChatMsg('bot', m.message.substring('MetasBank Assistant: '.length));
+                } else {
+                  addChatMsg('system', m.message);
+                }
+              }
+            });
+          }
         }
       } catch(e) {}
     }
@@ -3765,21 +3914,19 @@ let chatMemberChannel = null;
     function bootstrapChat() {
       chatbotOfflineMode = false;
       chatbotMemberTag = '';
+      chatConversationId = null;
+      agentChatOpen = false;
+      chatTimerPaused = false;
       chatbotState = 'connecting';
-      loadChatHistory().then(async function() {
-        showTyping();
-        var minLoading = new Promise(function(res) { setTimeout(res, 1000); });
-        try {
-          await supabaseClient.rpc('rpc_get_agent_availability');
-        } catch (e) {  }
-        await minLoading;
+      showTyping();
+      var minLoading = new Promise(function(res) { setTimeout(res, 1000); });
+      try {
+        supabaseClient.rpc('rpc_get_agent_availability');
+      } catch (e) {  }
+      minLoading.then(function() {
         hideTyping();
         addChatMsg('bot', chatbotGreetings[Math.floor(Math.random() * chatbotGreetings.length)]);
-        setTimeout(function() {
-          if (chatbotMemberTag) { chatbotState = 'idle'; return; }
-          addChatMsg('bot', 'Before I assist you, could you please share your <b>Account No or Tag</b>?');
-          chatbotState = 'awaiting_account';
-        }, 600);
+        chatbotState = 'idle';
       });
       renderQuickReplies(null);
     }
@@ -3855,17 +4002,13 @@ let chatMemberChannel = null;
       clearAgentNoReplyTimer();
       agentChatOpen = false;
       if (typingTimeout) { clearTimeout(typingTimeout); typingTimeout = null; }
+      if (chatInactivityWarning) { clearTimeout(chatInactivityWarning); chatInactivityWarning = null; }
+      if (chatInactivityTimer) { clearTimeout(chatInactivityTimer); chatInactivityTimer = null; }
       addChatMsg('bot', 'There is no available agent right now, but our team will <b>reach out to you shortly</b>. Please leave your details below.');
       chatbotOfflineMode = true;
-      if (chatbotMemberTag) {
-        chatbotState = 'form_message';
-        addChatMsg('bot', 'What do you <b>need help with</b>?');
-        renderQuickReplies(null);
-      } else {
-        chatbotState = 'form_account';
-        addChatMsg('bot', 'Please share your <b>Account No or Tag</b>.');
-        renderQuickReplies(null);
-      }
+      chatbotState = 'form_account';
+      addChatMsg('bot', 'Please share your <b>Account No or Tag</b>.');
+      renderQuickReplies(null);
     }
 
     function greetAfterAccount() {
@@ -3891,8 +4034,10 @@ let chatMemberChannel = null;
     }
 
     async function escalateToAgent(input) {
+      hideTyping();
+      addChatMsg('bot', 'One moment, please. I am checking for an available support agent...');
       showTyping();
-      var minLoading = new Promise(function(res) { setTimeout(res, 1200); });
+      var minLoading = new Promise(function(res) { setTimeout(res, 4000); });
       try {
         let agent = await findAvailableAgent();
         await minLoading;
@@ -3900,7 +4045,7 @@ let chatMemberChannel = null;
           getOrCreateConversation().then(function(convId) {
             if (convId) {
               agentChatOpen = true;
-              tryAssignAgent(convId, input, 0);
+              tryAssignAgent(convId, 0);
             } else {
               hideTyping();
               addChatMsg('bot', 'Sorry, we could not connect you to an agent right now. Please try again later.');
@@ -3919,7 +4064,7 @@ let chatMemberChannel = null;
     }
 
     let agentRetryTimer = null;
-    function tryAssignAgent(convId, input, attempt) {
+    function tryAssignAgent(convId, attempt) {
       if (agentRetryTimer) { clearTimeout(agentRetryTimer); agentRetryTimer = null; }
       showTyping();
       findAvailableAgent().then(function(agent) {
@@ -3933,7 +4078,7 @@ let chatMemberChannel = null;
             startAgentNoReplyTimer();
           });
         } else if (attempt < 3) {
-          agentRetryTimer = setTimeout(function() { tryAssignAgent(convId, input, attempt + 1); }, 5000);
+          agentRetryTimer = setTimeout(function() { tryAssignAgent(convId, attempt + 1); }, 5000);
         } else {
           hideTyping();
           startOfflineForm();
@@ -4133,6 +4278,11 @@ let chatMemberChannel = null;
 
       // Block input while connecting
       if (chatbotState === 'connecting') {
+        var msgsBox = document.getElementById('chatbot-messages');
+        var lastMsg = msgsBox.lastElementChild;
+        if (!lastMsg || lastMsg.dataset.role !== 'bot' || lastMsg.textContent.indexOf('Connecting, please wait') === -1) {
+          addChatMsg('bot', 'Connecting, please wait a moment...');
+        }
         return;
       }
 
@@ -4145,10 +4295,6 @@ let chatMemberChannel = null;
           escalateToAgent(text);
           return;
         }
-        if (!text.trim()) {
-          addChatMsg('bot', 'Please enter your Account No or Tag.');
-          return;
-        }
         chatbotMemberTag = text.trim();
         greetAfterAccount();
         return;
@@ -4156,12 +4302,22 @@ let chatMemberChannel = null;
 
       // Form states
       if (chatbotState === 'form_account') {
-        if (!text.trim()) {
-          addChatMsg('bot', 'Please enter your Account No or Tag.');
-          return;
-        }
         chatbotMemberTag = text.trim();
         recordMemberTag(chatbotMemberTag);
+        chatbotState = 'form_phone';
+        addChatMsg('bot', 'Please share the <b>phone number</b> we can reach you on.');
+        renderQuickReplies(null);
+        return;
+      }
+      if (chatbotState === 'form_phone') {
+        chatbotFormPhone = text.trim();
+        chatbotState = 'form_email';
+        addChatMsg('bot', 'And your <b>email address</b>?');
+        renderQuickReplies(null);
+        return;
+      }
+      if (chatbotState === 'form_email') {
+        chatbotFormEmail = text.trim();
         chatbotState = 'form_message';
         addChatMsg('bot', 'Finally, what do you <b>need help with</b>?');
         renderQuickReplies(null);
@@ -4204,8 +4360,8 @@ let chatMemberChannel = null;
         let fullName = (user && (user.name || user.username)) || chatbotMemberTag;
         let { error } = await rpcInsert('sms_callback', {
           full_name: fullName,
-          email: user && user.email ? user.email : chatbotFormEmail,
-          phone: chatbotFormPhone,
+          email: chatbotFormEmail || (user && user.email) || '',
+          phone: chatbotFormPhone || (user && user.phone) || '',
           message: tagNote + msgBody,
           member_id: user ? user.id : null
         });
@@ -4725,6 +4881,8 @@ let chatMemberChannel = null;
           case 'closeWithdrawModal': closeWithdrawModal(); break;
           case 'feeSent': feeSent(); break;
           case 'initiateTransfer': initiateTransfer(); break;
+          case 'switchTransferMode': switchTransferMode(el.getAttribute('data-mode')); break;
+          case 'initiateExternalTransfer': initiateExternalTransfer(); break;
           case 'showRequestAccountModal':
             showRequestAccountModal();
             break;

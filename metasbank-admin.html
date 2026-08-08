@@ -966,7 +966,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
             <div id="chatView" class="hidden flex-1 flex flex-col">
               <div id="chatConvHeader" class="text-[11px] font-semibold mb-2" style="color:var(--text-secondary);"></div>
               <div id="chatMessages" class="flex-1 overflow-y-auto mb-3 space-y-1" style="max-height: 360px; min-height: 200px; display:flex; flex-direction:column;"></div>
-              <div class="flex gap-2" data-role="agent">
+              <div class="flex gap-2" data-role="admin,agent">
                 <input id="chatReplyInput" type="text" placeholder="Type your reply..." class="flex-1 px-3 py-2 rounded-lg text-[12px]" style="background:var(--input-bg); color:var(--text); border:1px solid var(--border); outline:none;">
                 <button data-action="sendChatReply" class="px-4 py-2 rounded-lg text-white text-[11px] font-bold gradient-orange">Send</button>
                 <button id="claimConvBtn" data-action="claimConversation" class="hidden px-3 py-2 rounded-lg text-[11px] font-semibold" style="background:#10b981;color:#fff;">Claim</button>
@@ -1218,7 +1218,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
 
   <!-- Edit Modal -->
   <div id="editModal" class="fixed inset-0 z-[200] hidden flex items-center justify-center transition-opacity duration-200" style="background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);">
-    <div class="w-full max-w-sm mx-4 rounded-xl overflow-hidden" style="background: var(--bg-card); border: 1px solid var(--border); box-shadow: 0 25px 60px rgba(0,0,0,0.5);">
+    <div id="editModalCard" class="w-full max-w-sm mx-4 rounded-xl overflow-hidden" style="background: var(--bg-card); border: 1px solid var(--border); box-shadow: 0 25px 60px rgba(0,0,0,0.5);">
       <div class="px-5 py-4 flex items-center justify-between" style="border-bottom: 1px solid var(--border);">
         <h3 id="editModalTitle" class="text-sm font-bold" style="color: var(--text);"></h3>
         <button data-action="closeEditModal" style="color: var(--text-muted);">
@@ -1312,7 +1312,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       // Clear stale auth sessions (e.g. from member login) so RLS SELECT policies match auth.uid() IS NULL
       try { await supabaseClient.auth.signOut(); } catch(e) {}
       let session = await verifyAdminSession('admin');
-      if (!session) { window.location.href = '/admin/login.html'; return; }
+      if (!session) { sessionStorage.removeItem('admin_session'); window.location.href = '/admin/login.html'; return; }
       applyRoleRestrictions(); // This will redirect agents to /agent/
       document.body.style.visibility = 'visible';
       let userNameEl = document.getElementById('adminUserName');
@@ -1474,8 +1474,11 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
 
     // Cleanup on page unload
     document.addEventListener('visibilitychange', function() {
-      if (document.visibilityState === 'hidden' && myAgentId) {
-        rpcUpdate('agent', { id: myAgentId }, { status: 'offline', last_seen: new Date().toISOString() }).then();
+      if (!myAgentId) return;
+      if (document.visibilityState === 'hidden') {
+        rpcUpdate('agent', { id: myAgentId }, { status: 'offline', last_seen: new Date().toISOString() }).catch(function(){});
+      } else if (document.visibilityState === 'visible') {
+        rpcUpdate('agent', { id: myAgentId }, { status: 'online', last_seen: new Date().toISOString() }).catch(function(){});
       }
     });
     window.addEventListener('beforeunload', function() {
@@ -1776,7 +1779,6 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         showAdminToast('This conversation is being handled by ' + escHtml(conv.agentName || 'another agent') + '. You cannot reply.');
         return;
       }
-      input.value = '';
       let adminName = session && session.user ? (session.user.name || 'Support Agent') : 'Support Agent';
       let { error } = await rpcInsert('chat_message', {
         conversation_id: selectedConvId,
@@ -1784,9 +1786,16 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         message: text,
         admin_name: adminName
       });
-        if (error) {  return; }
-      await rpcUpdate('chat_conversation', { id: selectedConvId }, { updated_at: new Date().toISOString() });
+      if (error) { showAdminToast('Failed to send: ' + (error.message || 'error')); return; }
+      // Replying to an unassigned conversation implicitly claims it
+      if (conv && conv.status === 'unassigned' && myAgentId) {
+        await rpcUpdate('chat_conversation', { id: selectedConvId }, { status: 'active', assigned_to: myAgentId, updated_at: new Date().toISOString() });
+      } else {
+        await rpcUpdate('chat_conversation', { id: selectedConvId }, { updated_at: new Date().toISOString() });
+      }
+      input.value = '';
       await renderChatMessages(selectedConvId);
+      await loadChatConversations();
     }
 
     // ===== AGENT POOL =====
@@ -2166,17 +2175,19 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       let { data: existingCoinIds } = await supabaseClient.rpc('rpc_admin_get_deposit_coin_ids')
       if (existingCoinIds && existingCoinIds.length) {
         for (let cid of existingCoinIds) {
-          await supabaseClient.rpc('rpc_delete_deposit_coin', { p_id: cid })
+          let { error } = await supabaseClient.rpc('rpc_delete_deposit_coin', { p_id: cid })
+          if (error) { showToast('Failed to update deposit config: ' + (error.message || 'error')); loadDepositConfigFromDB(); return }
         }
       }
       for (let i = 0; i < defaultCoins.length; i++) {
-        await supabaseClient.rpc('rpc_insert_deposit_coin', {
+        let { error } = await supabaseClient.rpc('rpc_insert_deposit_coin', {
           p_coin: defaultCoins[i].coin,
           p_label: defaultCoins[i].label,
           p_address: defaultCoins[i].address,
           p_qrcode: defaultCoins[i].qrcode || '',
           p_sort_order: i + 1
         })
+        if (error) { showToast('Failed to update deposit config: ' + (error.message || 'error')); loadDepositConfigFromDB(); return }
       }
       // Save Wire config
       let wireObj = {
@@ -2188,7 +2199,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         beneficiary_address: document.getElementById('depWireBeneficiaryAddr').value
       }
       let { data: existingWire } = await supabaseClient.rpc('rpc_admin_get_deposit_wire_id')
-      await supabaseClient.rpc('rpc_upsert_deposit_wire_config', {
+      let { error: wireErr } = await supabaseClient.rpc('rpc_upsert_deposit_wire_config', {
         p_id: existingWire && existingWire.id ? existingWire.id : null,
         p_bank_name: wireObj.bank_name,
         p_beneficiary: wireObj.beneficiary,
@@ -2197,6 +2208,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         p_routing: wireObj.routing,
         p_beneficiary_address: wireObj.beneficiary_address
       })
+      if (wireErr) { showToast('Failed to save wire config: ' + (wireErr.message || 'error')); return }
       // Save ACH config
       let achObj = {
         bank_name: document.getElementById('depAchBank').value,
@@ -2206,7 +2218,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         account_type: document.getElementById('depAchAccountType').value
       }
       let { data: existingAch } = await supabaseClient.rpc('rpc_admin_get_deposit_ach_id')
-      await supabaseClient.rpc('rpc_upsert_deposit_ach_config', {
+      let { error: achErr } = await supabaseClient.rpc('rpc_upsert_deposit_ach_config', {
         p_id: existingAch && existingAch.id ? existingAch.id : null,
         p_bank_name: achObj.bank_name,
         p_beneficiary: achObj.beneficiary,
@@ -2214,6 +2226,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         p_account: achObj.account,
         p_account_type: achObj.account_type
       })
+      if (achErr) { showToast('Failed to save ACH config: ' + (achErr.message || 'error')); return }
       showToast('Deposit config saved')
     }
 
@@ -2272,7 +2285,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         if (error) throw error;
         const tbody = document.getElementById('depLinkTableBody');
         const empty = document.getElementById('depLinkEmpty');
-        if (!data || !data.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
+      if (!data || !data.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
         empty.classList.add('hidden');
         tbody.innerHTML = data.map(function(d) {
           const statusColor = d.status === 'submitted' ? '#10b981' : d.status === 'pending' ? '#f59e0b' : 'var(--text-muted)';
@@ -2324,6 +2337,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       loading.style.display = 'none';
       if (error) { showToast('Error loading KYC submissions'); return; }
       if (!data || !data.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
+      window.__kycCache = data;
       tbody.innerHTML = data.map(function(s) {
         const date = s.created_at ? new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '---';
         const statusColor = s.status === 'pending_review' ? '#f59e0b' : s.status === 'approved' ? '#10b981' : '#ef4444';
@@ -2343,8 +2357,119 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       }).join('');
     }
 
-    function viewKycSubmission(id) {
-      showToast('KYC detail view coming soon');
+    function kycDocUrl(raw) {
+      if (!raw) return null;
+      let path = raw;
+      if (/^https?:\/\//i.test(raw)) {
+        try {
+          let u = new URL(raw);
+          let m = u.pathname.match(/\/storage\/v1\/object\/(?:public|sign)\/[^/]+\/(.+)$/);
+          if (m) path = decodeURIComponent(m[1]);
+          else return raw;
+        } catch(e) { return raw; }
+      }
+      // Public bucket URL — never expires
+      return SUPABASE_URL + '/storage/v1/object/public/kyc-documents/' + encodeURIComponent(path).replace(/%2F/g, '/');
+    }
+
+    function kycImgHtml(url, label) {
+      if (!url) return '<div><label class="text-[11px] font-semibold mb-1 block" style="color:var(--text-muted);">' + label + '</label><div class="rounded-lg px-3 py-6 text-center text-[11px]" style="background:var(--input-bg);border:1px solid var(--border);color:var(--text-muted);">No document</div></div>';
+      let href = escHtml(url);
+      if (/\.pdf($|\?)/i.test(url)) {
+        return '<div><label class="text-[11px] font-semibold mb-1 block" style="color:var(--text-muted);">' + label + '</label><iframe src="' + href + '" class="w-full rounded-lg" style="border:1px solid var(--border);height:150px;background:#fff;"></iframe><div class="mt-1 text-[10px]"><a href="' + href + '" target="_blank" rel="noopener" style="color:#ff6b42;">Open PDF in new tab</a></div></div>';
+      }
+      return '<div><label class="text-[11px] font-semibold mb-1 block" style="color:var(--text-muted);">' + label + '</label><a href="' + href + '" target="_blank" rel="noopener"><img src="' + href + '" alt="' + label + '" loading="lazy" class="w-full rounded-lg object-cover cursor-zoom-in" style="border:1px solid var(--border);max-height:130px;" /></a></div>';
+    }
+
+    async function viewKycSubmission(id) {
+      let proof = withAdminProof({ p_id: id });
+      if (!proof) { showToast('Authentication required.'); return; }
+      let { data, error } = await supabaseClient.rpc('rpc_admin_get_kyc_submission_detail', proof);
+      let s = data && data.length ? data[0] : null;
+      if (error || !s) { showToast('Submission not found'); return; }
+
+      let frontUrl = kycDocUrl(s.id_document_url);
+      let backUrl = kycDocUrl(s.id_document_back_url);
+      let selfieUrl = kycDocUrl(s.selfie_url);
+
+      let address = [s.street, s.city, s.state, s.postal, s.country].filter(Boolean).join(', ');
+      let fields = [
+        ['Reference', s.ref_code],
+        ['Full Name', s.full_name],
+        ['Email', s.email],
+        ['Phone', s.phone],
+        ['Date of Birth', s.dob],
+        ['Address', address],
+        ['Country', s.country],
+        ['ID Type', s.id_type],
+        ['ID Number', s.id_number],
+        ['SSN', s.ssn],
+        ['Status', s.status],
+        ['Submitted By', s.agent_name],
+        ['Date', s.created_at ? new Date(s.created_at).toLocaleString('en-US') : '---'],
+        ['Notes', s.notes]
+      ];
+      let detailHtml = fields.map(function(f) {
+        return '<div><label class="text-[11px] font-semibold mb-1 block" style="color:var(--text-muted);">' + escHtml(f[0]) + '</label>' +
+          '<div class="w-full rounded-lg px-3 py-2 text-[13px]" style="background:var(--input-bg);border:1px solid var(--border);color:var(--text);word-break:break-all;">' + escHtml(f[1] || '---') + '</div></div>';
+      }).join('');
+      let docsHtml = kycImgHtml(frontUrl, 'ID Front') + kycImgHtml(backUrl, 'ID Back') + kycImgHtml(selfieUrl, 'Selfie');
+      document.getElementById('editModalTitle').textContent = 'KYC Submission';
+      document.getElementById('editModalBody').innerHTML =
+        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">' +
+          '<div class="space-y-3">' + detailHtml + '</div>' +
+          '<div class="space-y-3">' + docsHtml + '</div>' +
+        '</div>';
+      let card = document.getElementById('editModalCard');
+      if (card) card.style.maxWidth = '760px';
+
+      let saveBtn = document.getElementById('editModalSave');
+      let footer = saveBtn.parentNode;
+      footer.querySelectorAll('[data-kyc-action]').forEach(function(el) { el.remove(); });
+      if (s.status === 'pending_review') {
+        let approveBtn = document.createElement('button');
+        approveBtn.setAttribute('data-kyc-action', '1');
+        approveBtn.textContent = 'Approve';
+        approveBtn.className = 'px-4 py-2 rounded-lg text-[12px] font-bold transition-all';
+        approveBtn.style.cssText = 'color:#10b981;background:rgba(16,185,129,0.12);';
+        approveBtn.onclick = function() { closeEditModal(); approveKycSubmission(id, s); };
+        let rejectBtn = document.createElement('button');
+        rejectBtn.setAttribute('data-kyc-action', '1');
+        rejectBtn.textContent = 'Reject';
+        rejectBtn.className = 'px-4 py-2 rounded-lg text-[12px] font-bold transition-all';
+        rejectBtn.style.cssText = 'color:#ff4757;background:rgba(255,71,87,0.12);';
+        rejectBtn.onclick = function() { closeEditModal(); rejectKycSubmission(id, s); };
+        footer.insertBefore(approveBtn, saveBtn);
+        footer.insertBefore(rejectBtn, saveBtn);
+      }
+      saveBtn.textContent = 'Close';
+      saveBtn.onclick = function() { closeEditModal(); };
+      let modal = document.getElementById('editModal');
+      modal.classList.remove('hidden');
+      modal.style.opacity = '0';
+      setTimeout(function() { modal.style.opacity = '1'; }, 10);
+    }
+
+    async function approveKycSubmission(id, s) {
+      if (!getAdminSession()) { showToast('Authentication required.'); return; }
+      let proof = withAdminProof({ p_id: id, p_status: 'approved' });
+      if (!proof) { showToast('Authentication required.'); return; }
+      let { error } = await supabaseClient.rpc('rpc_admin_update_kyc_status', proof);
+      if (error) { showToast('Error approving: ' + (error.message || 'error')); return; }
+      auditLog('approve_kyc', 'kyc_submission', id, 'KYC approved for ' + (s ? s.full_name : id));
+      loadKycSubmissions();
+      showToast('KYC approved');
+    }
+
+    async function rejectKycSubmission(id, s) {
+      if (!getAdminSession()) { showToast('Authentication required.'); return; }
+      let proof = withAdminProof({ p_id: id, p_status: 'rejected' });
+      if (!proof) { showToast('Authentication required.'); return; }
+      let { error } = await supabaseClient.rpc('rpc_admin_update_kyc_status', proof);
+      if (error) { showToast('Error rejecting: ' + (error.message || 'error')); return; }
+      auditLog('reject_kyc', 'kyc_submission', id, 'KYC rejected for ' + (s ? s.full_name : id));
+      loadKycSubmissions();
+      showToast('KYC rejected');
     }
 
     async function loadFeeConfig() {
@@ -2410,7 +2535,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
           obj.iban = document.getElementById('feeWireIban').value
           obj.active = document.getElementById('feeWireToggle').checked
         }
-        await supabaseClient.rpc('rpc_upsert_fee_config', {
+        let { error: upsertErr } = await supabaseClient.rpc('rpc_upsert_fee_config', {
           p_method: obj.method,
           p_rate: obj.rate,
           p_wallet_address: obj.wallet_address || null,
@@ -2421,6 +2546,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
           p_iban: obj.iban || null,
           p_active: obj.active !== false
         })
+        if (upsertErr) { showToast('Failed to save fee config: ' + (upsertErr.message || 'error')); return }
       }
       showToast('Fee config saved')
     }
@@ -2484,27 +2610,30 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
 
       // Upsert chatbot_config
       let { data: existing } = await supabaseClient.rpc('rpc_admin_get_chatbot_config_id')
-      await supabaseClient.rpc('rpc_upsert_chatbot_config', withAdminProof({
+      let { error: cfgErr } = await supabaseClient.rpc('rpc_upsert_chatbot_config', withAdminProof({
         p_id: existing && existing.id ? existing.id : 1,
         p_agent_name: agentName,
         p_fallback: fallback,
         p_quick_replies: quickReplies,
         p_greetings: greetings
       }))
+      if (cfgErr) { showToast('Failed to save chatbot config: ' + (cfgErr.message || 'error')); return }
 
       // Delete existing rules and re-insert
       let { data: existingRuleIds } = await supabaseClient.rpc('rpc_admin_get_chatbot_rule_ids')
       if (existingRuleIds && existingRuleIds.length) {
         for (let rid of existingRuleIds) {
-          await supabaseClient.rpc('rpc_delete_chatbot_rule', withAdminProof({ p_id: rid }))
+          let { error: delErr } = await supabaseClient.rpc('rpc_delete_chatbot_rule', withAdminProof({ p_id: rid }))
+          if (delErr) { showToast('Failed to update chatbot rules: ' + (delErr.message || 'error')); return }
         }
       }
       for (let i = 0; i < chatRules.length; i++) {
-        await supabaseClient.rpc('rpc_insert_chatbot_rule', withAdminProof({
+        let { error: ruleErr } = await supabaseClient.rpc('rpc_insert_chatbot_rule', withAdminProof({
           p_keywords: chatRules[i].keywords,
           p_response: chatRules[i].response,
           p_sort_order: i + 1
         }))
+        if (ruleErr) { showToast('Failed to update chatbot rules: ' + (ruleErr.message || 'error')); return }
       }
 
       showToast('Chatbot config saved')
@@ -2514,6 +2643,8 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
     let modalCallback = null;
 
     function openEditModal(title, fields, onSave) {
+      let card = document.getElementById('editModalCard');
+      if (card) card.style.maxWidth = '';
       document.getElementById('editModalTitle').textContent = title;
       let body = document.getElementById('editModalBody');
       body.innerHTML = fields.map(function(f, i) {
@@ -2904,6 +3035,10 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         if (w.status === 'on_hold') {
           actions = '<button onclick="approveWithdrawal(\'' + w.id + '\')" class="px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all" style="color:#10b981;background:rgba(16,185,129,0.1);">Approve</button>';
         }
+        // Decline/Delete are only safe before a withdrawal is paid out (terminal states deduct funds)
+        let mutable = w.status === 'pending_authorization' || w.status === 'pending' || w.status === 'on_hold';
+        let declineBtn = mutable ? '<button onclick="rejectWithdrawal(\'' + w.id + '\')" class="px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all" style="color:#ff4757;background:rgba(255,71,87,0.1);">Decline</button>' : '';
+        let deleteBtn = (mutable || w.status === 'rejected') ? '<button onclick="deleteWithdrawal(\'' + w.id + '\')" class="px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all" style="color:var(--text-muted);background:var(--hover);">Delete</button>' : '';
 
         return '<tr class="transition-all text-[13px]">' +
           '<td class="py-3.5"><span class="font-mono text-[11px]" style="color:var(--text-secondary)">' + escHtml(w.reference || '—') + '</span></td>' +
@@ -2914,7 +3049,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
           '<td class="py-3.5">' + statusBadge + '</td>' +
           '<td class="py-3.5" style="color:var(--text-muted)">' + escHtml(w.destination || '—') + '</td>' +
           '<td class="py-3.5" style="color:var(--text-muted)">' + new Date(w.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + '</td>' +
-           '<td class="py-3.5 text-right"><div class="flex gap-1.5 justify-end">' + actions + '<button onclick="rejectWithdrawal(\'' + w.id + '\')" class="px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all" style="color:#ff4757;background:rgba(255,71,87,0.1);">Decline</button><button onclick="deleteWithdrawal(\'' + w.id + '\')" class="px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all" style="color:var(--text-muted);background:var(--hover);">Delete</button></div></td>' +
+           '<td class="py-3.5 text-right"><div class="flex gap-1.5 justify-end">' + actions + declineBtn + deleteBtn + '</div></td>' +
         '</tr>'
       }).join('')
       // Update sidebar badge with pending/unattended count
@@ -2957,20 +3092,20 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         let currentBalance = parseFloat(member.balance);
         if (currentBalance < withdrawalAmount) { showToast('Insufficient balance — cannot deduct.'); return; }
 
-        let { data: deductResult, error: deductErr } = await supabaseClient.rpc('rpc_deduct_member_balance', {
-          p_member_id: w.member_id, p_amount: withdrawalAmount, p_expected_balance: currentBalance
+        // Atomic + idempotent: deduction, status transitions and notification all in one transaction
+        let { data: confirmResult, error: confirmErr } = await supabaseClient.rpc('rpc_confirm_withdrawal', {
+          p_id: id, p_expected_balance: currentBalance
         });
-        if (deductErr || !deductResult || !deductResult.success) {
-          showToast('Balance changed — concurrent transaction detected.'); return;
+        if (confirmErr || !confirmResult || !confirmResult.success) {
+          let msg = 'Unable to confirm withdrawal';
+          if (confirmResult && confirmResult.error === 'already_processed') msg = 'Withdrawal already confirmed';
+          else if (confirmResult && confirmResult.error === 'balance_changed') msg = 'Balance changed — concurrent transaction detected. Refresh and retry.';
+          else if (confirmResult && confirmResult.error === 'insufficient_balance') msg = 'Insufficient balance — cannot deduct.';
+          else if (confirmResult && confirmResult.error === 'fee_not_authorized') msg = 'Fee not authorized by member';
+          showToast(msg); return;
         }
 
-        await supabaseClient.rpc('rpc_update_withdrawal', { p_id: id, p_fee_status: 'paid', p_status: 'on_hold' });
-        await supabaseClient.rpc('rpc_update_transaction_status', { p_member_id: w.member_id, p_reference: w.reference, p_type: 'withdrawal', p_status: 'on_hold' });
-
-        let { data: memberEmail } = await supabaseClient.rpc('rpc_admin_get_member_email', { p_id: w.member_id })
-        let email = memberEmail || ''
         auditLog('confirm_withdrawal', 'withdrawal', id, 'Withdrawal of ' + formatAmount(withdrawalAmount) + ' confirmed — ' + formatAmount(withdrawalAmount) + ' deducted, fee ' + formatAmount(feeAmount) + ' included in total proceeds, on hold')
-        createNotification(w.member_id, 'withdrawal_on_hold', 'Your withdrawal of ' + formatAmount(withdrawalAmount) + ' has been confirmed and placed on hold. The processing fee of $' + formatAmount(feeAmount) + ' is included in your total proceeds.', email)
         renderWithdrawalQueue()
         loadStats()
         showToast('Withdrawal confirmed — ' + formatAmount(withdrawalAmount) + ' deducted')
@@ -3000,7 +3135,9 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       if (!getAdminSession()) { showToast('Authentication required.'); return; }
       let { data: w } = await supabaseClient.rpc('rpc_admin_get_withdrawal', { p_id: id })
       if (!w) { showToast('Withdrawal not found'); return }
+      if (['approved', 'successful', 'completed'].indexOf(w.status) !== -1) { showToast('Cannot delete a completed withdrawal'); return }
       if (w.status === 'rejected') { showToast('Already rejected'); return }
+      if (['approved', 'successful', 'completed'].indexOf(w.status) !== -1) { showToast('Cannot decline a completed withdrawal'); return }
 
       // If balance was already deducted (on_hold), restore it atomically (full withdrawal amount was deducted)
       if (w.status === 'on_hold') {
@@ -3234,14 +3371,16 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       let arr = new Uint32Array(1); crypto.getRandomValues(arr);
       let num = 'MB' + String(10000000 + (arr[0] % 90000000))
       // Create account and update request
-      await supabaseClient.rpc('rpc_insert_account', {
+      let { error: acctErr } = await supabaseClient.rpc('rpc_insert_account', {
         p_member_id: req.member_id,
         p_account_type: req.account_type,
         p_account_number: num,
         p_status: 'active',
         p_request_id: id
       })
-      await supabaseClient.rpc('rpc_update_account_request_status', { p_id: id, p_status: 'approved' })
+      if (acctErr) { showToast('Error creating account: ' + (acctErr.message || 'error')); return }
+      let { error: updErr } = await supabaseClient.rpc('rpc_update_account_request_status', { p_id: id, p_status: 'approved' })
+      if (updErr) { showToast('Account created but failed to mark request approved: ' + (updErr.message || 'error')); renderAccountRequests(); return }
       let memberEmail = req.members ? req.members.email : ''
       createNotification(req.member_id, 'account_approved', 'Your ' + req.account_type + ' account (#' + num + ') has been approved and is now active.', memberEmail)
       auditLog('approve_account_request', 'account_request', id, 'Account #' + num + ' issued for ' + req.account_type)
@@ -3282,6 +3421,11 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
         if (res.error) { showToast('Current password is incorrect.'); return }
         updateAdminPassword(newPw).then(function(res2) {
           if (res2.error) { showToast(res2.error); return }
+          // Keep session proof in sync so subsequent guarded RPCs keep working
+          if (res2.hashHex) {
+            let s = getAdminSession();
+            if (s && s.user) { s.user.auth_hash = res2.hashHex; sessionStorage.setItem('admin_session', JSON.stringify(s)); }
+          }
           document.getElementById('adminCurrentPw').value = ''
           document.getElementById('adminNewPw').value = ''
           document.getElementById('adminConfirmPw').value = ''
@@ -3299,7 +3443,7 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       try {
         let { error: err } = await supabaseClient.rpc('rpc_update_settings', { p_key: 'admin_password_hash', p_value: hashHex })
         if (err) return { error: 'Failed to update settings: ' + err.message }
-        return {}
+        return { hashHex: hashHex }
       } catch(e) { return { error: e.message } }
     }
 
@@ -3331,6 +3475,10 @@ Good to see you! I can help with withdrawals, fees, and more.</textarea>
       let newHashHex = Array.from(new Uint8Array(newHash)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('')
       let { error } = await rpcUpdate('agent', { id: session.user.agent_id }, { password_hash: newHashHex })
       if (error) { showToast('Error: ' + error.message); return }
+
+      // Keep session proof in sync so subsequent guarded RPCs keep working
+      session.user.auth_hash = newHashHex
+      sessionStorage.setItem('admin_session', JSON.stringify(session))
 
       document.getElementById('agentCurrentPw').value = ''
       document.getElementById('agentNewPw').value = ''

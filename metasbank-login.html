@@ -214,13 +214,13 @@
       try {
         memberLogin(username, accessKey).then(function(result) {
           if (result.error) {
-            showLoginError('Invalid credentials')
+            showLoginError(result.error)
             btn.textContent = 'Login'; btn.disabled = false; btn.style.opacity = '1'
           } else {
             window.location.href = '/dashboard/'
           }
         }).catch(function(err) {
-          showLoginError('Invalid credentials')
+          showLoginError('Connection error. Please try again.')
           btn.textContent = 'Login'; btn.disabled = false; btn.style.opacity = '1'
         })
       } catch(e) {

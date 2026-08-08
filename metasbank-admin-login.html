@@ -77,7 +77,7 @@
   <script>
     document.documentElement.classList.add('js-loading');
     (function(){try{var t=localStorage.getItem('mb_theme');if(t==='light'){document.documentElement.classList.add('light-mode')}else if(t!=='dark'){var h=new Date().getHours();if(h>=6&&h<18)document.documentElement.classList.add('light-mode')}}catch(e){}})();
-    (function(){try{if(sessionStorage.getItem('admin_session')){window.location.replace('/admin/')}}catch(e){}})();
+    (function(){try{var s=JSON.parse(sessionStorage.getItem('admin_session')||'null');if(s&&s.user){var r=(s.user.role==='admin')?'/admin/':'/agent/';window.location.replace(r)}}catch(e){}})();
     document.addEventListener('DOMContentLoaded', function(){ requestAnimationFrame(function(){ document.documentElement.classList.remove('js-loading') }) });
   </script>
 </head>
@@ -161,7 +161,6 @@
     document.getElementById('adminLoginForm').addEventListener('submit', function(e) { e.preventDefault(); handleAdminLogin() })
     if (supabaseClient) supabaseClient.auth.signOut().catch(function() {})
     sessionStorage.removeItem('admin_session')
-    if (typeof loadAdminPasswordHash === 'function') loadAdminPasswordHash()
     function handleAdminLogin() {
       const btn = document.getElementById('adminLoginBtn')
       if (btn.disabled) return

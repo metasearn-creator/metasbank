@@ -464,15 +464,9 @@
       var btn = document.getElementById('agentNameGenerator');
       if (!btn) return;
       var active = selectedConvId && chatConversations.find(function(c) { return c.id === selectedConvId && c.status !== 'closed'; });
-      if (active) {
-        btn.style.opacity = '0.35';
-        btn.style.pointerEvents = 'none';
-        btn.title = 'Name change disabled during active conversation';
-      } else {
-        btn.style.opacity = '1';
-        btn.style.pointerEvents = 'auto';
-        btn.title = 'Click to generate a new display name';
-      }
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+      btn.title = active ? 'Name change disabled during active conversation' : 'Click to generate a new display name';
     }
 
     // Safety: reveal page after 8s even if async init hangs
@@ -483,7 +477,7 @@
         initSupabase();
         try { await supabaseClient.auth.signOut(); } catch(e) {}
         var session = await verifyAdminSession('agent');
-        if (!session) { window.location.href = '/admin/login.html'; return; }
+        if (!session) { sessionStorage.removeItem('admin_session'); window.location.href = '/admin/login.html'; return; }
         applyRoleRestrictions();
         agentSession = session;
 
@@ -964,9 +958,9 @@
         if (!isSystem && m.sender !== 'member') {
           receipt = m.read_at ? '<span class="read-receipt read">\u2713\u2713</span>' : '<span class="read-receipt sent">\u2713</span>';
         }
-        // Agent messages RIGHT, member messages LEFT
-        var msgAlign = isMember ? 'align-self:flex-start;' : 'align-self:flex-end;';
-        var timeAlign = isMember ? 'flex-start' : 'flex-end';
+        // System messages centered, member messages LEFT, agent messages RIGHT
+        var msgAlign = isSystem ? 'align-self:center;' : (isMember ? 'align-self:flex-start;' : 'align-self:flex-end;');
+        var timeAlign = isSystem ? 'center' : (isMember ? 'flex-start' : 'flex-end');
         return '<div class="chat-msg-row ' + (isSystem ? '' : (isMember ? 'chat-msg-member' : 'chat-msg-agent')) + ' rounded-lg px-3 py-2" style="max-width:80%;' + msgAlign + '">' +
           '<div style="width:100%;">' +
           '<div class="text-[12px] leading-relaxed" style="color:var(--text);">' + msgContent + '</div>' +
@@ -977,7 +971,9 @@
       container.scrollTop = container.scrollHeight;
     }
 
+    var _chatReplyBusy = false;
     async function sendChatReply() {
+      if (_chatReplyBusy) return;
       if (!selectedConvId) { showToast('Select a conversation first'); return; }
       // Isolation guard
       var agentId = getMyAgentId();
@@ -990,32 +986,40 @@
       var msg = input.value.trim();
       if (!msg) return;
       var senderName = agentDisplayName || (agentSession && agentSession.user ? (agentSession.user.name || 'Support Agent') : 'Support Agent');
+      _chatReplyBusy = true;
       var { error } = await rpcInsert('chat_message', {
         conversation_id: selectedConvId,
         sender: 'admin',
         message: msg,
         admin_name: senderName
       });
-      if (error) { showToast('Error sending message'); return; }
+      if (error) { _chatReplyBusy = false; showToast('Error sending message'); return; }
       input.value = '';
       await rpcUpdate('chat_conversation', { id: selectedConvId }, { updated_at: new Date().toISOString() });
+      _chatReplyBusy = false;
       renderChatMessages(selectedConvId);
     }
 
+    var _claimBusy = false;
     async function claimConversation() {
+      if (_claimBusy) return;
       if (!selectedConvId) return;
       var agentId = getMyAgentId();
       if (!agentId) { showToast('Login required to claim'); return; }
       var senderName = agentDisplayName || (agentSession && agentSession.user ? (agentSession.user.name || 'Support Agent') : 'Support Agent');
+      _claimBusy = true;
       var { error } = await rpcUpdate('chat_conversation', { id: selectedConvId }, { assigned_to: agentId, status: 'active', updated_at: new Date().toISOString() });
-      if (error) { showToast('Error claiming conversation'); return; }
+      if (error) { _claimBusy = false; showToast('Error claiming conversation'); return; }
       await rpcInsert('chat_message', { conversation_id: selectedConvId, sender: 'system', message: senderName + ' joined the conversation.' });
+      _claimBusy = false;
       showToast('Conversation claimed');
       document.getElementById('claimConvBtn').classList.add('hidden');
       loadChatConversations();
     }
 
+    var _closeBusy = false;
     async function closeChatConversation() {
+      if (_closeBusy) return;
       if (!selectedConvId) return;
       var agentId = getMyAgentId();
       // Isolation guard
@@ -1024,13 +1028,15 @@
         showToast('This conversation belongs to another agent');
         return;
       }
+      _closeBusy = true;
       if (agentId) {
         await rpcInsert('chat_message', {
           conversation_id: selectedConvId, sender: 'system', message: 'Chat closed by support agent.'
         });
       }
       var { error } = await rpcUpdate('chat_conversation', { id: selectedConvId }, { status: 'closed', updated_at: new Date().toISOString() });
-      if (error) { showToast('Error closing conversation'); return; }
+      if (error) { _closeBusy = false; showToast('Error closing conversation'); return; }
+      _closeBusy = false;
       showToast('Conversation closed');
       selectedConvId = null;
       document.getElementById('chatView').classList.add('hidden');
@@ -1043,7 +1049,9 @@
 
     var chatPausedState = {};
 
+    var _pauseBusy = false;
     async function togglePauseChat() {
+      if (_pauseBusy) return;
       if (!selectedConvId) { showToast('Select a conversation first'); return; }
       var agentId = getMyAgentId();
       var conv = chatConversations.find(function(c) { return c.id === selectedConvId; });
@@ -1054,12 +1062,14 @@
       var btn = document.getElementById('agentPauseChat');
       var isPaused = chatPausedState[selectedConvId];
       var msg = isPaused ? '[TIMER_RESUMED]' : '[TIMER_PAUSED]';
+      _pauseBusy = true;
       var { error } = await rpcInsert('chat_message', {
         conversation_id: selectedConvId,
         sender: 'system',
         message: msg
       });
-      if (error) { showToast('Error toggling pause'); return; }
+      if (error) { _pauseBusy = false; showToast('Error toggling pause'); return; }
+      _pauseBusy = false;
       chatPausedState[selectedConvId] = !isPaused;
       countdownPaused = chatPausedState[selectedConvId];
       updateTimerDisplay();
@@ -1083,6 +1093,7 @@
         if (action === 'contacted') updateCallbackStatus(id, 'contacted');
         else if (action === 'completed') updateCallbackStatus(id, 'completed');
         else if (action === 'savenote') saveCallbackNote(id);
+        else if (action === 'delete') deleteCallback(id);
       });
     });
 
@@ -1193,6 +1204,7 @@
         var statusColor = c.status === 'pending' ? '#f59e0b' : c.status === 'contacted' ? '#3b82f6' : '#10b981';
         var actions = c.status === 'pending' ? '<button data-cb-action="contacted" data-cb-id="' + c.id + '" class="px-2 py-1 rounded text-[10px] font-semibold" style="color:#3b82f6;background:rgba(59,130,246,0.1);">Contacted</button>' : '';
         actions += c.status !== 'completed' ? ' <button data-cb-action="completed" data-cb-id="' + c.id + '" class="px-2 py-1 rounded text-[10px] font-semibold" style="color:#10b981;background:rgba(16,185,129,0.1);">Complete</button>' : '';
+        actions += ' <button data-cb-action="delete" data-cb-id="' + c.id + '" class="px-2 py-1 rounded text-[10px] font-semibold" style="color:#ef4444;background:rgba(239,68,68,0.1);">Delete</button>';
         return '<tr data-cb-row="' + c.id + '">' +
           '<td class="py-3 text-[11px]" style="color:var(--text-muted);">' + new Date(c.created_at).toLocaleDateString() + '</td>' +
           '<td class="py-3 text-[12px]" style="color:var(--text);">' + escHtml(c.full_name || '') + '</td>' +
@@ -1233,6 +1245,16 @@
       showToast('Note saved.');
     }
 
+    async function deleteCallback(id) {
+      if (!confirm('Delete this callback request?')) return;
+      var { error } = await supabaseClient.rpc('rpc_delete_sms_callback', { p_id: id });
+      if (error) { showToast('Error: ' + error.message); return; }
+      allCallbacks = allCallbacks.filter(function(c) { return c.id !== id; });
+      renderCallbackRequests(callbackFilter);
+      updateCallbackBadge();
+      showToast('Callback deleted.');
+    }
+
     // ===== CHANGE PASSWORD =====
     async function changeAgentPassword() {
       var currentPw = document.getElementById('agentCurrentPw').value;
@@ -1261,6 +1283,12 @@
       var newHashHex = Array.from(new Uint8Array(newHash)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
       var { error } = await rpcUpdate('agent', { id: agentId }, { password_hash: newHashHex });
       if (error) { showToast('Error: ' + error.message); return; }
+
+      // Keep session proof in sync so subsequent guarded RPCs keep working
+      if (agentSession && agentSession.user) {
+        agentSession.user.auth_hash = newHashHex;
+        sessionStorage.setItem('admin_session', JSON.stringify(agentSession));
+      }
 
       document.getElementById('agentCurrentPw').value = '';
       document.getElementById('agentNewPw').value = '';

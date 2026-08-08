@@ -13,8 +13,30 @@
     @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
     a { text-decoration: none; }
+    :root {
+      --bg: #0a0c12;
+      --text-brand: #e8eaf0;
+      --text-strong: rgba(255,255,255,0.3);
+      --text-mid: rgba(255,255,255,0.25);
+      --text-faint: rgba(255,255,255,0.12);
+      --text-footer: rgba(255,255,255,0.08);
+      --line: rgba(255,255,255,0.15);
+      --btn-color: #fff;
+      --btn-border: rgba(255,92,53,0.3);
+    }
+    .light-mode {
+      --bg: #eef0f4;
+      --text-brand: #1e2229;
+      --text-strong: #4f5665;
+      --text-mid: #6d7589;
+      --text-faint: rgba(0,0,0,0.22);
+      --text-footer: rgba(0,0,0,0.16);
+      --line: rgba(0,0,0,0.14);
+      --btn-color: #1e2229;
+      --btn-border: rgba(255,92,53,0.5);
+    }
     body {
-      background: #0a0c12;
+      background: var(--bg);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -22,6 +44,7 @@
       justify-content: center;
       font-family: 'Inter', sans-serif;
       overflow: hidden;
+      transition: background 0.4s;
     }
     .bg-glow {
       position: fixed;
@@ -34,12 +57,12 @@
       pointer-events: none;
     }
     .brand { font-family: 'EB Garamond', serif; }
-    .line { width: 40px; height: 1px; background: rgba(255,255,255,0.15); }
+    .line { width: 40px; height: 1px; background: var(--line); }
     .btn-signin {
       display: inline-block;
       padding: 14px 48px;
-      border: 1px solid rgba(255,92,53,0.3);
-      color: #fff;
+      border: 1px solid var(--btn-border);
+      color: var(--btn-color);
       font-size: 13px;
       font-weight: 500;
       letter-spacing: 0.15em;
@@ -53,6 +76,7 @@
     .btn-signin:hover {
       background: #ff5c35;
       border-color: #ff5c35;
+      color: #fff;
       box-shadow: 0 0 30px rgba(255,92,53,0.2);
     }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
@@ -61,6 +85,9 @@
     .animate-d4 { animation-delay: 0.4s; opacity: 0; }
     .animate-d6 { animation-delay: 0.6s; opacity: 0; }
   </style>
+  <script>
+    (function(){try{var t=localStorage.getItem('mb_theme');if(t==='light'){document.documentElement.classList.add('light-mode')}else if(t!=='dark'){var h=new Date().getHours();if(h>=6&&h<18)document.documentElement.classList.add('light-mode')}}catch(e){}})();
+  </script>
 </head>
 <body>
   <div class="bg-glow"></div>
@@ -69,18 +96,18 @@
     <div class="animate animate-d2 mb-6">
       <div class="flex items-center justify-center gap-3 mb-6">
         <div class="line"></div>
-        <span style="color: rgba(255,255,255,0.25); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 400;">Est. 2026</span>
+        <span style="color: var(--text-mid); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 400;">Est. 2026</span>
         <div class="line"></div>
       </div>
-      <h1 class="brand text-5xl md:text-7xl font-extrabold tracking-[0.04em]" style="color: #e8eaf0;">MetasBank</h1>
-      <p class="text-sm md:text-base mt-4" style="color: rgba(255,255,255,0.3); letter-spacing: 0.08em; font-weight: 300;">
+      <h1 class="brand text-5xl md:text-7xl font-extrabold tracking-[0.04em]" style="color: var(--text-brand);">MetasBank</h1>
+      <p class="text-sm md:text-base mt-4" style="color: var(--text-strong); letter-spacing: 0.08em; font-weight: 300;">
         Private Banking &middot; Discretion &middot; Excellence
       </p>
     </div>
 
     <div class="animate animate-d4 mt-12 flex items-center justify-center gap-4">
       <div class="line" style="width: 60px;"></div>
-      <span style="color: rgba(255,255,255,0.12); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;">Client Access</span>
+      <span style="color: var(--text-faint); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;">Client Access</span>
       <div class="line" style="width: 60px;"></div>
     </div>
 
@@ -89,7 +116,7 @@
     </div>
   </div>
 
-  <div class="absolute bottom-8 text-center w-full" style="color: rgba(255,255,255,0.08); font-size: 10px; letter-spacing: 0.1em;">
+  <div class="absolute bottom-8 text-center w-full" style="color: var(--text-footer); font-size: 10px; letter-spacing: 0.1em;">
     &copy; 2026 MetasBank. All rights reserved.
   </div>
 </body>

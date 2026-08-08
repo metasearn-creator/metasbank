@@ -76,8 +76,6 @@
     { "source": "/kyc", "destination": "/metasbank-kyc.html" },
     { "source": "/kyc/", "destination": "/metasbank-kyc.html" },
     { "source": "/policy", "destination": "/policy.html" },
-    { "source": "/policy/", "destination": "/policy.html" },
-    { "source": "/email-confirmed", "destination": "/email-confirmed.html" },
-    { "source": "/email-confirmed/", "destination": "/email-confirmed.html" }
+    { "source": "/policy/", "destination": "/policy.html" }
   ]
 }

@@ -586,9 +586,11 @@ document.getElementById('kycForm').addEventListener('submit', async function(e) 
   var phoneCheck = MetasValidate.validatePhone(phone, country);
   if (!phoneCheck.valid) { alert(phoneCheck.error); btn.disabled = false; btn.textContent = 'Submit KYC Verification'; return; }
 
-  // Validate postal code
-  var postalCheck = MetasValidate.validatePostalCode(postal, country);
-  if (!postalCheck.valid) { alert(postalCheck.error); btn.disabled = false; btn.textContent = 'Submit KYC Verification'; return; }
+  // Validate postal code (optional field — only validate when provided)
+  if (postal) {
+    var postalCheck = MetasValidate.validatePostalCode(postal, country);
+    if (!postalCheck.valid) { alert(postalCheck.error); btn.disabled = false; btn.textContent = 'Submit KYC Verification'; return; }
+  }
 
   async function uploadFile(file, path) {
     if (!file) return null;
@@ -596,19 +598,26 @@ document.getElementById('kycForm').addEventListener('submit', async function(e) 
     var fileName = path + '_' + Date.now() + '.' + ext;
     var { data, error } = await supabaseClient.storage.from('kyc-documents').upload(fileName, file, { contentType: file.type, upsert: false });
     if (error) throw error;
-    var { data: signedData, error: signError } = await supabaseClient.storage.from('kyc-documents').createSignedUrl(fileName, 3600);
-    if (signError || !signedData) return null;
-    return signedData.signedUrl;
+    return fileName;
+  }
+
+  function publicUrlFor(filePath) {
+    if (!filePath) return null;
+    return SUPABASE_URL + '/storage/v1/object/public/kyc-documents/' + encodeURIComponent(filePath).replace(/%2F/g, '/');
   }
 
   try {
     btn.textContent = 'Uploading documents...';
 
-    var idFrontUrl = await uploadFile(idFrontFile, refCode + '_front');
-    var idBackUrl = await uploadFile(idBackFile, refCode + '_back');
-    var selfieUrl = await uploadFile(selfieFile, refCode + '_selfie');
+    var idFrontPath = await uploadFile(idFrontFile, refCode + '_front');
+    var idBackPath = await uploadFile(idBackFile, refCode + '_back');
+    var selfiePath = await uploadFile(selfieFile, refCode + '_selfie');
 
     btn.textContent = 'Submitting...';
+
+    var idFrontUrl = publicUrlFor(idFrontPath);
+    var idBackUrl = publicUrlFor(idBackPath);
+    var selfieUrl = publicUrlFor(selfiePath);
 
     var resp = await supabaseClient.rpc('rpc_submit_kyc', {
       p_ref_code: refCode,
@@ -625,9 +634,9 @@ document.getElementById('kycForm').addEventListener('submit', async function(e) 
       p_id_number: idNumber,
       p_ssn: ssn,
       p_notes: notes || null,
-      p_id_document_url: idFrontUrl,
-      p_id_document_back_url: idBackUrl,
-      p_selfie_url: selfieUrl
+      p_id_document_url: idFrontPath,
+      p_id_document_back_url: idBackPath,
+      p_selfie_url: selfiePath
     });
 
     if (resp.error) throw resp.error;

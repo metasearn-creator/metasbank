@@ -27,7 +27,7 @@ const ADMIN_GUARDED_RPCS = new Set([
   'rpc_admin_get_pre_deposits','rpc_admin_get_roles','rpc_admin_get_setting','rpc_admin_get_sms_callbacks','rpc_admin_get_wallets',
   'rpc_admin_get_withdrawal','rpc_admin_get_withdrawals','rpc_admin_get_withdrawals_count','rpc_admin_insert_transaction',
   'rpc_agent_get_kyc_links','rpc_agent_get_own_status','rpc_agent_verify_password','rpc_approve_withdrawal','rpc_confirm_deposit',
-  'rpc_credit_balance','rpc_deduct_member_balance','rpc_delete_agent','rpc_delete_all_deposit_coins','rpc_delete_all_sms_callbacks',
+  'rpc_confirm_withdrawal','rpc_credit_balance','rpc_deduct_member_balance','rpc_delete_agent','rpc_delete_all_deposit_coins','rpc_delete_all_sms_callbacks',
   'rpc_delete_audit_log_entry','rpc_delete_bank_account','rpc_delete_chatbot_rule','rpc_delete_deposit_coin','rpc_delete_kyc_link',
   'rpc_delete_member','rpc_delete_role','rpc_delete_sms_callback','rpc_delete_transaction_by_ref','rpc_delete_wallet',
   'rpc_delete_withdrawal','rpc_generate_kyc_link','rpc_get_audit_logs','rpc_insert_account','rpc_insert_agent',
@@ -42,6 +42,7 @@ const ADMIN_GUARDED_RPCS = new Set([
 ])
 
 function initSupabase() {
+  if (supabaseClient) return supabaseClient
   if (typeof supabase !== 'undefined') {
     supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     const origRpc = supabaseClient.rpc.bind(supabaseClient)
@@ -590,6 +591,11 @@ async function rpcUpdate(table, match, data) {
       params['p_admin_email'] = proof.p_admin_email
       params['p_admin_hash'] = proof.p_admin_hash
     }
+    // DB signature requires p_status / p_assigned_to / p_updated_at (no defaults),
+    // so always pass the full set or the RPC call fails.
+    if (!('p_status' in params)) params['p_status'] = null
+    if (!('p_assigned_to' in params)) params['p_assigned_to'] = null
+    if (!('p_updated_at' in params)) params['p_updated_at'] = new Date().toISOString()
   }
   return await supabaseClient.rpc('rpc_update_' + table, params)
 }

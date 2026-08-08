@@ -10,7 +10,23 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { margin: 0; font-family: 'Inter', sans-serif; color: #1e2229; background: #fff; padding: 20px; line-height: 1.6; font-size: 13px; }
+    :root {
+      --bg: #0f1117;
+      --text: #e2e4e9;
+      --text-muted: #8b91a3;
+      --border: rgba(255,255,255,0.12);
+      --box-bg: #161a24;
+      --box-border: rgba(255,255,255,0.08);
+    }
+    .light-mode {
+      --bg: #fff;
+      --text: #1e2229;
+      --text-muted: #6b7185;
+      --border: #ddd;
+      --box-bg: #f8f9fb;
+      --box-border: #e5e7eb;
+    }
+    body { margin: 0; font-family: 'Inter', sans-serif; color: var(--text); background: var(--bg); padding: 20px; line-height: 1.6; font-size: 13px; transition: background 0.4s, color 0.4s; }
     button { border: none; background: none; text-decoration: none; }
     a { text-decoration: none; }
     @media (min-width: 640px) { body { padding: 40px; } }
@@ -21,18 +37,21 @@
     p { margin-bottom: 10px; }
     ul { margin: 8px 0 12px 20px; }
     li { margin-bottom: 4px; }
-    .header { text-align: center; padding-bottom: 24px; border-bottom: 1px solid #ddd; margin-bottom: 24px; }
+    .header { text-align: center; padding-bottom: 24px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
     .header .logo { font-size: 18px; font-weight: 800; color: #ff5c35; text-transform: uppercase; letter-spacing: 1px; }
-    .header .sub { font-size: 11px; color: #6b7185; margin-top: 2px; }
-    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #ddd; font-size: 10px; color: #8790a2; text-align: center; }
+    .header .sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 10px; color: var(--text-muted); text-align: center; }
     .section { margin-bottom: 8px; }
-    .badge { display: inline-block; background: #fff3ed; color: #ff5c35; padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-    .fee-box { background: #f8f9fb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 12px 0; }
-    .fee-box .label { font-size: 11px; color: #6b7185; }
-    .fee-box .value { font-size: 15px; font-weight: 700; color: #1e2229; }
+    .badge { display: inline-block; background: rgba(255,92,53,0.12); color: #ff5c35; padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .fee-box { background: var(--box-bg); border: 1px solid var(--box-border); border-radius: 8px; padding: 16px; margin: 12px 0; }
+    .fee-box .label { font-size: 11px; color: var(--text-muted); }
+    .fee-box .value { font-size: 15px; font-weight: 700; color: var(--text); }
     @media print { body { padding: 20px; } .no-print { display: none; } }
-    .note { background: #fff8e6; border-left: 3px solid #d4a017; padding: 10px 14px; border-radius: 4px; font-size: 12px; margin: 12px 0; }
+    .note { background: rgba(212,160,23,0.12); border-left: 3px solid #d4a017; padding: 10px 14px; border-radius: 4px; font-size: 12px; margin: 12px 0; }
   </style>
+  <script>
+    (function(){try{var t=localStorage.getItem('mb_theme');if(t==='light'){document.documentElement.classList.add('light-mode')}else if(t!=='dark'){var h=new Date().getHours();if(h>=6&&h<18)document.documentElement.classList.add('light-mode')}}catch(e){}})();
+  </script>
 </head>
 <body>
   <div class="container">
@@ -146,7 +165,7 @@
     <h3>5.4 Managing Cookies</h3>
     <p>You can control cookies through your browser settings. Disabling essential cookies may affect the functionality of your account, including the ability to log in or maintain your session.</p>
 
-    <h2>7. Contact & Support</h2>
+    <h2>6. Contact & Support</h2>
     <p>If you have any questions about these policies, please contact our support team through the live chat feature on your dashboard or email us at <strong>support@metasbank.com</strong>.</p>
 
     <div class="footer">
